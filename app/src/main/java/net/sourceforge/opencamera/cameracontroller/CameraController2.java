@@ -5740,7 +5740,7 @@ public class CameraController2 extends CameraController {
     /** Sets up a builder to have manual exposure time, if supported. The exposure time will be
      *  clamped to the allowed values, and manual ISO will also be set based on the current ISO value.
      */
-    private void setManualExposureTime(CaptureRequest.Builder stillBuilder, long exposure_time) {
+    private void setManualExposureTime(CaptureRequest.Builder stillBuilder, long exposure_time, boolean set_iso, int new_iso) {
         if( MyDebug.LOG )
             Log.d(TAG, "setManualExposureTime: " + exposure_time);
         Range<Long> exposure_time_range = characteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE); // may be null on some devices
@@ -5759,12 +5759,17 @@ public class CameraController2 extends CameraController {
             {
                 // set ISO
                 int iso = 800;
-                if( capture_result_has_iso )
+                if( set_iso )
+                    iso = new_iso;
+                else if( capture_result_has_iso )
                     iso = capture_result_iso;
                 // see https://sourceforge.net/p/opencamera/tickets/321/ - some devices may have auto ISO that's
                 // outside of the allowed manual iso range!
                 iso = Math.max(iso, iso_range.getLower());
                 iso = Math.min(iso, iso_range.getUpper());
+                if( MyDebug.LOG ) {
+                    Log.d(TAG, "iso: " + iso);
+                }
                 stillBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, iso );
             }
             if( capture_result_has_frame_duration  )
@@ -5847,7 +5852,7 @@ public class CameraController2 extends CameraController {
                             Log.d(TAG, "exposure_time_scale: " + exposure_time_scale);
                         }
                         modified_from_camera_settings = true;
-                        setManualExposureTime(stillBuilder, exposure_time);
+                        setManualExposureTime(stillBuilder, exposure_time, false, 0);
                     }
                 }
                 //stillBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
@@ -6490,7 +6495,21 @@ public class CameraController2 extends CameraController {
                                     if( MyDebug.LOG )
                                         Log.d(TAG, "also set long exposure time");
                                     modified_from_camera_settings = true;
-                                    setManualExposureTime(stillBuilder, exposure_time);
+
+                                    boolean set_new_iso = false;
+                                    int new_iso = 0;
+                                    if( capture_result_has_exposure_time ) {
+                                        // ISO*exposure should be a constant
+                                        set_new_iso = true;
+                                        new_iso = (int)((capture_result_iso * capture_result_exposure_time)/exposure_time);
+                                        // but don't make ISO too low
+                                        new_iso = Math.max(new_iso, capture_result_iso/2);
+                                        new_iso = Math.max(new_iso, 1100);
+                                        if( MyDebug.LOG )
+                                            Log.d(TAG, "... and set iso to " + new_iso);
+                                    }
+
+                                    setManualExposureTime(stillBuilder, exposure_time, set_new_iso, new_iso);
                                 }
                                 else {
                                     if( MyDebug.LOG )
@@ -6517,7 +6536,7 @@ public class CameraController2 extends CameraController {
                                         Log.d(TAG, "exposure_time_scale: " + exposure_time_scale);
                                     }
                                     modified_from_camera_settings = true;
-                                    setManualExposureTime(stillBuilder, exposure_time);
+                                    setManualExposureTime(stillBuilder, exposure_time, false, 0);
                                 }
                             }
                         }
