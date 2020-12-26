@@ -67,12 +67,14 @@ public class CameraController2 extends CameraController {
 
     private final boolean is_samsung;
     private final boolean is_samsung_s7; // Galaxy S7 or Galaxy S7 Edge
+    private final boolean is_samsung_galaxy_s;
 
     private CameraCharacteristics characteristics;
     // cached characteristics (use this for values that need to be frequently accessed, e.g., per frame, to improve performance);
     private int characteristics_sensor_orientation;
     private Facing characteristics_facing;
 
+    // camera features that we save (either to avoid repeatedly accessing, or we do our own modification)
     private List<Integer> zoom_ratios;
     private int current_zoom_value;
     private boolean supports_face_detect_mode_simple;
@@ -81,6 +83,9 @@ public class CameraController2 extends CameraController {
     private boolean supports_photo_video_recording;
     private boolean supports_white_balance_temperature;
     private String initial_focus_mode; // if non-null, focus mode to use if not set by Preview (rather than relying on the Builder template's default, which can be one that isn't supported, at least on Android emulator with its LIMITED camera!)
+    private boolean supports_exposure_time;
+    private long min_exposure_time;
+    private long max_exposure_time;
 
     private final static int tonemap_log_max_curve_points_c = 64;
     private final static float [] jtvideo_values_base = new float[] {
@@ -1757,9 +1762,11 @@ public class CameraController2 extends CameraController {
 
         this.is_samsung = Build.MANUFACTURER.toLowerCase(Locale.US).contains("samsung");
         this.is_samsung_s7 = Build.MODEL.toLowerCase(Locale.US).contains("sm-g93");
+        this.is_samsung_galaxy_s = is_samsung && Build.MODEL.toLowerCase(Locale.US).contains("sm-g");
         if( MyDebug.LOG ) {
             Log.d(TAG, "is_samsung: " + is_samsung);
             Log.d(TAG, "is_samsung_s7: " + is_samsung_s7);
+            Log.d(TAG, "is_samsung_galaxy_s: " + is_samsung_galaxy_s);
         }
 
         thread = new HandlerThread("CameraBackground"); 
@@ -2716,9 +2723,19 @@ public class CameraController2 extends CameraController {
                     camera_features.max_expo_bracketing_n_images = max_expo_bracketing_n_images;
                     camera_features.min_exposure_time = exposure_time_range.getLower();
                     camera_features.max_exposure_time = exposure_time_range.getUpper();
+                    if( is_samsung_galaxy_s && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
+                        // seems we can get away with longer exposure on some devices (e.g., Galaxy S10e claims only max of 0.1s, but works with 1/3s)
+                        if( MyDebug.LOG )
+                            Log.d(TAG, "boost max_exposure_time, was: " + max_exposure_time);
+                        camera_features.max_exposure_time = Math.max(camera_features.max_exposure_time, 1000000000L/3);
+                    }
                 }
             }
         }
+        // save to local fields:
+        this.supports_exposure_time = camera_features.supports_exposure_time;
+        this.min_exposure_time = camera_features.min_exposure_time;
+        this.max_exposure_time = camera_features.max_exposure_time;
 
         Range<Integer> exposure_range = characteristics.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE);
         camera_features.min_exposure = exposure_range.getLower();
@@ -5743,11 +5760,8 @@ public class CameraController2 extends CameraController {
     private void setManualExposureTime(CaptureRequest.Builder stillBuilder, long exposure_time, boolean set_iso, int new_iso) {
         if( MyDebug.LOG )
             Log.d(TAG, "setManualExposureTime: " + exposure_time);
-        Range<Long> exposure_time_range = characteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE); // may be null on some devices
         Range<Integer> iso_range = characteristics.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE); // may be null on some devices
-        if( exposure_time_range != null && iso_range != null ) {
-            long min_exposure_time = exposure_time_range.getLower();
-            long max_exposure_time = exposure_time_range.getUpper();
+        if( this.supports_exposure_time && iso_range != null ) {
             if( exposure_time < min_exposure_time )
                 exposure_time = min_exposure_time;
             if( exposure_time > max_exposure_time )
@@ -6136,14 +6150,7 @@ public class CameraController2 extends CameraController {
                     base_exposure_time = capture_result_exposure_time;
 
                 int n_half_images = expo_bracketing_n_images/2;
-                long min_exposure_time = base_exposure_time;
-                long max_exposure_time = base_exposure_time;
                 final double scale = Math.pow(2.0, expo_bracketing_stops/(double)n_half_images);
-                Range<Long> exposure_time_range = characteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE); // may be null on some devices
-                if( exposure_time_range != null ) {
-                    min_exposure_time = exposure_time_range.getLower();
-                    max_exposure_time = exposure_time_range.getUpper();
-                }
 
                 if( MyDebug.LOG ) {
                     Log.d(TAG, "taking expo bracketing with n_images: " + expo_bracketing_n_images);
@@ -6157,7 +6164,7 @@ public class CameraController2 extends CameraController {
                 // darker images
                 for(int i=0;i<n_half_images;i++) {
                     long exposure_time = base_exposure_time;
-                    if( exposure_time_range != null ) {
+                    if( supports_exposure_time ) {
                         double this_scale = scale;
                         for(int j=i;j<n_half_images-1;j++)
                             this_scale *= scale;
@@ -6185,7 +6192,7 @@ public class CameraController2 extends CameraController {
                 // lighter images
                 for(int i=0;i<n_half_images;i++) {
                     long exposure_time = base_exposure_time;
-                    if( exposure_time_range != null ) {
+                    if( supports_exposure_time ) {
                         double this_scale = scale;
                         for(int j=0;j<i;j++)
                             this_scale *= scale;
