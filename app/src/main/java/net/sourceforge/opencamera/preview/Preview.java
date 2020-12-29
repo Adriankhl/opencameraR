@@ -7659,7 +7659,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
 
     public void setUIRotation(int ui_rotation) {
         if( MyDebug.LOG )
-            Log.d(TAG, "setUIRotation");
+            Log.d(TAG, "setUIRotation: " + ui_rotation);
         this.ui_rotation = ui_rotation;
     }
 
