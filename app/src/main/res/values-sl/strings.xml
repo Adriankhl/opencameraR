@@ -129,7 +129,7 @@
     <string name="preference_rotate_preview_summary">Možnost vrtenja predogleda (ne bo vplivalo na nastale fotografije/videoposnetke)\n%s</string>
     <string name="preference_screen_gui">Gr. up. vmesnik na zaslonu …</string>
     <string name="preference_preview_size">Velikost predogleda</string>
-    <string name="preference_ui_placement">Posavitev up. vmesnika</string>
+    <string name="preference_ui_placement">Postavitev up. vmesnika</string>
     <string name="preference_immersive_mode">Vdelan način</string>
     <string name="preference_show_zoom">Prikaži povečavo</string>
     <string name="preference_show_zoom_summary">Prikaži trenutno raven povečave na zaslonu (ob povečavi)</string>
