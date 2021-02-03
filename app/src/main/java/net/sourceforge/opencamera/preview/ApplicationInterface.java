@@ -121,7 +121,6 @@ public interface ApplicationInterface {
     boolean getVideoFlashPref(); // option to switch flash on/off while recording video (should be false in most cases!)
     boolean getVideoLowPowerCheckPref(); // whether to stop video automatically on critically low battery
     String getPreviewSizePref(); // "preference_preview_size_wysiwyg" is recommended (preview matches aspect ratio of photo resolution as close as possible), but can also be "preference_preview_size_display" to maximise the preview size
-    String getPreviewRotationPref(); // return "0" for default; use "180" to rotate the preview 180 degrees
     String getLockOrientationPref(); // return "none" for default; use "portrait" or "landscape" to lock photos/videos to that orientation
     boolean getTouchCapturePref(); // whether to enable touch to capture
     boolean getDoubleTapCapturePref(); // whether to enable double-tap to capture
@@ -141,6 +140,7 @@ public interface ApplicationInterface {
     double getCalibratedLevelAngle(); // set to non-zero to calibrate the accelerometer used for the level angles
     boolean canTakeNewPhoto(); // whether taking new photos is allowed (e.g., can return false if queue for processing images would become full)
     boolean imageQueueWouldBlock(int n_raw, int n_jpegs); // called during some burst operations, whether we can allow taking the supplied number of extra photos
+    int getDisplayRotation(); // same behaviour as Activity.getWindowManager().getDefaultDisplay().getRotation() (including returning a member of Surface.ROTATION_*), but allows application to modify e.g. for upside-down preview
     // Camera2 only modes:
     long getExposureTimePref(); // only called if getISOPref() is not "default"
     float getFocusDistancePref(boolean is_target_distance);

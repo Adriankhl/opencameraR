@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -217,7 +218,7 @@ public class DrawPreview {
     private float view_angle_y_preview;
     private long last_view_angles_time;
 
-    private int take_photo_top; // coordinate (in canvas x coordinates) of top of the take photo icon
+    private int take_photo_top; // coordinate (in canvas x coordinates, or y coords if system_orientation_portrait==true) of top of the take photo icon
     private long last_take_photo_top_time;
 
     private int top_icon_shift; // shift that may be needed for on-screen text to avoid clashing with icons (when arranged "along top")
@@ -379,18 +380,34 @@ public class DrawPreview {
      *  *after* applying the rotation, when we want the top left of the icon as shown on screen.
      *  This should not be called every frame but instead should be cached, due to cost of calling
      *  view.getLocationOnScreen().
+     *  Update: For supporting landscape and portrait (if MainActivity.lock_to_landscape==false),
+     *  instead this returns the top side if in portrait. Note though we still need to take rotation
+     *  into account, as we still apply rotation to the icons when changing orienations (e.g., this
+     *  is needed when rotating from reverse landscape to portrait, for on-screen text like level
+     *  angle to be offset correctly above the shutter button (see take_photo_top) when the preview
+     *  has a wide aspect ratio.
      */
     private int getViewOnScreenX(View view) {
         view.getLocationOnScreen(gui_location);
-        int xpos = gui_location[0];
+
+        MainActivity.SystemOrientation system_orientation = main_activity.getSystemOrientation();
+        boolean system_orientation_portrait = system_orientation == MainActivity.SystemOrientation.PORTRAIT;
+        int xpos = gui_location[system_orientation_portrait ? 1 : 0];
         int rotation = Math.round(view.getRotation());
         // rotation can be outside [0, 359] if the user repeatedly rotates in same direction!
         rotation = (rotation % 360 + 360) % 360; // version of (rotation % 360) that work if rotation is -ve
         /*if( MyDebug.LOG )
             Log.d(TAG, "    mod rotation: " + rotation);*/
-        if( rotation == 180 || rotation == 90 ) {
-            // annoying behaviour that getLocationOnScreen takes the rotation into account
-            xpos -= view.getWidth();
+        // undo annoying behaviour that getLocationOnScreen takes the rotation into account
+        if( system_orientation_portrait ) {
+            if( rotation == 180 || rotation == 270 ) {
+                xpos -= view.getHeight();
+            }
+        }
+        else {
+            if( rotation == 90 || rotation == 180 ) {
+                xpos -= view.getWidth();
+            }
         }
         return xpos;
     }
@@ -663,7 +680,7 @@ public class DrawPreview {
         last_take_photo_top_time = 0;  // force take_photo_top to be recomputed
         last_top_icon_shift_time = 0; // for top_icon_shift to be recomputed
 
-        focus_seekbars_margin_left = -1; // just in case??
+        focus_seekbars_margin_left = -1; // needed as the focus seekbars can only be updated when visible
 
         has_settings = true;
     }
@@ -1021,7 +1038,7 @@ public class DrawPreview {
         }
     }
 
-    private void onDrawInfoLines(Canvas canvas, final int top_x, final int top_y, final int bottom_y, long time_ms) {
+    private void onDrawInfoLines(Canvas canvas, final int top_x, final int top_y, final int bottom_y, final int device_ui_rotation, long time_ms) {
         Preview preview = main_activity.getPreview();
         CameraController camera_controller = preview.getCameraController();
         int ui_rotation = preview.getUIRotation();
@@ -1035,15 +1052,16 @@ public class DrawPreview {
         final int gap_y = (int) (0 * scale + 0.5f); // convert dps to pixels
         final int icon_gap_y = (int) (2 * scale + 0.5f); // convert dps to pixels
         if( ui_rotation == 90 || ui_rotation == 270 ) {
+            // n.b., this is only for when lock_to_landscape==true, so we don't look at device_ui_rotation
             int diff = canvas.getWidth() - canvas.getHeight();
             location_x += diff/2;
             location_y -= diff/2;
         }
-        if( ui_rotation == 90 ) {
+        if( device_ui_rotation == 90 ) {
             location_y = canvas.getHeight() - location_y - (int) (20 * scale + 0.5f);
         }
         boolean align_right = false;
-        if( ui_rotation == 180 ) {
+        if( device_ui_rotation == 180 ) {
             location_x = canvas.getWidth() - location_x;
             p.setTextAlign(Paint.Align.RIGHT);
             align_right = true;
@@ -1109,7 +1127,7 @@ public class DrawPreview {
             first_line_height = Math.max(first_line_height, height);
         }
         // update location_y for first line (time and camera id)
-        if( ui_rotation == 90 ) {
+        if( device_ui_rotation == 90 ) {
             // upside-down portrait
             location_y -= first_line_height;
         }
@@ -1144,7 +1162,7 @@ public class DrawPreview {
                 }
                 int height = applicationInterface.drawTextWithBackground(canvas, p, free_memory_gb_string, Color.WHITE, Color.BLACK, location_x, location_y, MyApplicationInterface.Alignment.ALIGNMENT_TOP, null, MyApplicationInterface.Shadow.SHADOW_OUTLINE, text_bounds_free_memory);
                 height += gap_y;
-                if( ui_rotation == 90 ) {
+                if( device_ui_rotation == 90 ) {
                     location_y -= height;
                 }
                 else {
@@ -1228,7 +1246,7 @@ public class DrawPreview {
                 height += gap_y;
                 // only move location_y if we actually print something (because on old camera API, even if the ISO option has
                 // been enabled, we'll never be able to display the on-screen ISO)
-                if( ui_rotation == 90 ) {
+                if( device_ui_rotation == 90 ) {
                     location_y -= height;
                 }
                 else {
@@ -1245,7 +1263,7 @@ public class DrawPreview {
 
             int location_x2 = location_x - flash_padding;
             final int icon_size = (int) (16 * scale + 0.5f); // convert dps to pixels
-            if( ui_rotation == 180 ) {
+            if( device_ui_rotation == 180 ) {
                 location_x2 = location_x - icon_size + flash_padding;
             }
 
@@ -1272,7 +1290,7 @@ public class DrawPreview {
                     canvas.drawBitmap(location_off_bitmap, null, icon_dest, p);
                 }
 
-                if( ui_rotation == 180 ) {
+                if( device_ui_rotation == 180 ) {
                     location_x2 -= icon_size + flash_padding;
                 }
                 else {
@@ -1294,7 +1312,7 @@ public class DrawPreview {
                 p.setAlpha(255);
                 canvas.drawBitmap(is_raw_only_pref ? raw_only_bitmap : raw_jpeg_bitmap, null, icon_dest, p);
 
-                if( ui_rotation == 180 ) {
+                if( device_ui_rotation == 180 ) {
                     location_x2 -= icon_size + flash_padding;
                 }
                 else {
@@ -1311,7 +1329,7 @@ public class DrawPreview {
                 p.setAlpha(255);
                 canvas.drawBitmap(face_detection_bitmap, null, icon_dest, p);
 
-                if( ui_rotation == 180 ) {
+                if( device_ui_rotation == 180 ) {
                     location_x2 -= icon_size + flash_padding;
                 }
                 else {
@@ -1328,7 +1346,7 @@ public class DrawPreview {
                 p.setAlpha(255);
                 canvas.drawBitmap(auto_stabilise_bitmap, null, icon_dest, p);
 
-                if( ui_rotation == 180 ) {
+                if( device_ui_rotation == 180 ) {
                     location_x2 -= icon_size + flash_padding;
                 }
                 else {
@@ -1367,7 +1385,7 @@ public class DrawPreview {
                     canvas.drawBitmap(bitmap, null, icon_dest, p);
                     p.setColorFilter(null);
 
-                    if( ui_rotation == 180 ) {
+                    if( device_ui_rotation == 180 ) {
                         location_x2 -= icon_size + flash_padding;
                     }
                     else {
@@ -1387,7 +1405,7 @@ public class DrawPreview {
                 p.setAlpha(255);
                 canvas.drawBitmap(photostamp_bitmap, null, icon_dest, p);
 
-                if( ui_rotation == 180 ) {
+                if( device_ui_rotation == 180 ) {
                     location_x2 -= icon_size + flash_padding;
                 }
                 else {
@@ -1404,7 +1422,7 @@ public class DrawPreview {
                 p.setAlpha(255);
                 canvas.drawBitmap(audio_disabled_bitmap, null, icon_dest, p);
 
-                if( ui_rotation == 180 ) {
+                if( device_ui_rotation == 180 ) {
                     location_x2 -= icon_size + flash_padding;
                 }
                 else {
@@ -1422,7 +1440,7 @@ public class DrawPreview {
                 p.setAlpha(255);
                 canvas.drawBitmap(capture_rate_factor < 1.0f ? slow_motion_bitmap : time_lapse_bitmap, null, icon_dest, p);
 
-                if( ui_rotation == 180 ) {
+                if( device_ui_rotation == 180 ) {
                     location_x2 -= icon_size + flash_padding;
                 }
                 else {
@@ -1438,7 +1456,7 @@ public class DrawPreview {
                 p.setAlpha(255);
                 canvas.drawBitmap(high_speed_fps_bitmap, null, icon_dest, p);
 
-                if( ui_rotation == 180 ) {
+                if( device_ui_rotation == 180 ) {
                     location_x2 -= icon_size + flash_padding;
                 }
                 else {
@@ -1486,7 +1504,7 @@ public class DrawPreview {
                 needs_flash_time = -1;
             }
 
-            if( ui_rotation == 90 ) {
+            if( device_ui_rotation == 90 ) {
                 location_y -= icon_gap_y;
             }
             else {
@@ -1506,11 +1524,11 @@ public class DrawPreview {
                     // n.b., if changing the histogram_height, remember to update focus_seekbar and
                     // focus_bracketing_target_seekbar margins in activity_main.xml
                     int location_x2 = location_x - flash_padding;
-                    if( ui_rotation == 180 ) {
+                    if( device_ui_rotation == 180 ) {
                         location_x2 = location_x - histogram_width + flash_padding;
                     }
                     icon_dest.set(location_x2 - flash_padding, location_y, location_x2 - flash_padding + histogram_width, location_y + histogram_height);
-                    if( ui_rotation == 90 ) {
+                    if( device_ui_rotation == 90 ) {
                         icon_dest.top -= histogram_height;
                         icon_dest.bottom -= histogram_height;
                     }
@@ -1626,7 +1644,7 @@ public class DrawPreview {
     /** This includes drawing of the UI that requires the canvas to be rotated according to the preview's
      *  current UI rotation.
      */
-    private void drawUI(Canvas canvas, long time_ms) {
+    private void drawUI(Canvas canvas, int device_ui_rotation, long time_ms) {
         Preview preview = main_activity.getPreview();
         CameraController camera_controller = preview.getCameraController();
         int ui_rotation = preview.getUIRotation();
@@ -1635,6 +1653,8 @@ public class DrawPreview {
         double level_angle = preview.getLevelAngle();
         boolean has_geo_direction = preview.hasGeoDirection();
         double geo_direction = preview.getGeoDirection();
+        MainActivity.SystemOrientation system_orientation = main_activity.getSystemOrientation();
+        boolean system_orientation_portrait = system_orientation == MainActivity.SystemOrientation.PORTRAIT;
         int text_base_y = 0;
 
         canvas.save();
@@ -1643,23 +1663,24 @@ public class DrawPreview {
         if( camera_controller != null && !preview.isPreviewPaused() ) {
 			/*canvas.drawText("PREVIEW", canvas.getWidth() / 2,
 					canvas.getHeight() / 2, p);*/
+
             int gap_y = (int) (20 * scale + 0.5f); // convert dps to pixels
             int text_y = (int) (16 * scale + 0.5f); // convert dps to pixels
             boolean avoid_ui = false;
             // fine tuning to adjust placement of text with respect to the GUI, depending on orientation
-            if( ui_placement == MainUI.UIPlacement.UIPLACEMENT_TOP && ( ui_rotation == 0 || ui_rotation == 180 ) ) {
+            if( ui_placement == MainUI.UIPlacement.UIPLACEMENT_TOP && ( device_ui_rotation == 0 || device_ui_rotation == 180 ) ) {
                 text_base_y = canvas.getHeight() - (int)(0.1*gap_y);
                 avoid_ui = true;
             }
-            else if( ui_rotation == ( ui_placement == MainUI.UIPlacement.UIPLACEMENT_RIGHT ? 0 : 180 ) ) {
+            else if( device_ui_rotation == ( ui_placement == MainUI.UIPlacement.UIPLACEMENT_RIGHT ? 0 : 180 ) ) {
                 text_base_y = canvas.getHeight() - (int)(0.1*gap_y);
                 avoid_ui = true;
             }
-            else if( ui_rotation == ( ui_placement == MainUI.UIPlacement.UIPLACEMENT_RIGHT ? 180 : 0 ) ) {
+            else if( device_ui_rotation == ( ui_placement == MainUI.UIPlacement.UIPLACEMENT_RIGHT ? 180 : 0 ) ) {
                 text_base_y = canvas.getHeight() - (int)(2.5*gap_y); // leave room for GUI icons
             }
-            else if( ui_rotation == 90 || ui_rotation == 270 ) {
-                // ui_rotation 90 is upside down portrait
+            else if( device_ui_rotation == 90 || device_ui_rotation == 270 ) {
+                // 90 is upside down portrait
                 // 270 is portrait
 
                 if( last_take_photo_top_time == 0 || time_ms > last_take_photo_top_time + 1000 ) {
@@ -1670,11 +1691,12 @@ public class DrawPreview {
                     // align with "top" of the take_photo button, but remember to take the rotation into account!
                     int view_left = getViewOnScreenX(view);
                     preview.getView().getLocationOnScreen(gui_location);
-                    int this_left = gui_location[0];
+                    int this_left = gui_location[system_orientation_portrait ? 1 : 0];
                     take_photo_top = view_left - this_left;
 
                     last_take_photo_top_time = time_ms;
                     /*if( MyDebug.LOG ) {
+                        Log.d(TAG, "device_ui_rotation: " + device_ui_rotation);
                         Log.d(TAG, "view_left: " + view_left);
                         Log.d(TAG, "this_left: " + this_left);
                         Log.d(TAG, "take_photo_top: " + take_photo_top);
@@ -1682,7 +1704,9 @@ public class DrawPreview {
                 }
 
 				// diff_x is the difference from the centre of the canvas to the position we want
-                int diff_x = take_photo_top - canvas.getWidth()/2;
+                int max_x = system_orientation_portrait ? canvas.getHeight() : canvas.getWidth();
+                int mid_x = max_x/2;
+                int diff_x = take_photo_top - mid_x;
 
 				/*if( MyDebug.LOG ) {
 					Log.d(TAG, "view left: " + view_left);
@@ -1701,8 +1725,7 @@ public class DrawPreview {
                 int diff_x = preview.getView().getRootView().getRight()/2 - offset_x;
                 */
 
-                int max_x = canvas.getWidth();
-                if( ui_rotation == 90 ) {
+                if( device_ui_rotation == 90 ) {
                     // so we don't interfere with the top bar info (datetime, free memory, ISO) when upside down
                     max_x -= (int)(2.5*gap_y);
                 }
@@ -1712,9 +1735,9 @@ public class DrawPreview {
 					Log.d(TAG, "canvas.getWidth()/2 + diff_x: " + (canvas.getWidth()/2+diff_x));
 					Log.d(TAG, "max_x: " + max_x);
 				}*/
-                if( canvas.getWidth()/2 + diff_x > max_x ) {
+                if( mid_x + diff_x > max_x ) {
                     // in case goes off the size of the canvas, for "black bar" cases (when preview aspect ratio < screen aspect ratio)
-                    diff_x = max_x - canvas.getWidth()/2;
+                    diff_x = max_x - mid_x;
                 }
                 text_base_y = canvas.getHeight()/2 + diff_x - (int)(0.5*gap_y);
             }
@@ -1905,7 +1928,7 @@ public class DrawPreview {
                     p.setTextSize(14 * scale + 0.5f); // convert dps to pixels
                     p.setTextAlign(Paint.Align.CENTER);
                     int pixels_offset_y = 2*text_y; // avoid overwriting the zoom
-                    if( ui_rotation == 0 && applicationInterface.getPhotoMode() == MyApplicationInterface.PhotoMode.FocusBracketing ) {
+                    if( device_ui_rotation == 0 && applicationInterface.getPhotoMode() == MyApplicationInterface.PhotoMode.FocusBracketing ) {
                         // avoid clashing with the target focus bracketing seekbar in landscape orientation
                         pixels_offset_y = 5*gap_y;
                     }
@@ -1986,10 +2009,19 @@ public class DrawPreview {
                 // avoid computing every time, due to cost of calling View.getLocationOnScreen()
                 /*if( MyDebug.LOG )
                     Log.d(TAG, "update cached top_icon_shift");*/
-                int top_margin = getViewOnScreenX(top_icon) + top_icon.getWidth();
+                int top_margin = getViewOnScreenX(top_icon);
+                if( system_orientation == MainActivity.SystemOrientation.LANDSCAPE )
+                    top_margin += top_icon.getWidth();
+                else if( system_orientation == MainActivity.SystemOrientation.PORTRAIT )
+                    top_margin += top_icon.getHeight();
+                // n.b., don't adjust top_margin for icon width/height for an reverse orientation
                 preview.getView().getLocationOnScreen(gui_location);
-                int preview_left = gui_location[0];
+                int preview_left = gui_location[system_orientation_portrait ? 1 : 0];
+                if( system_orientation == MainActivity.SystemOrientation.REVERSE_LANDSCAPE )
+                    preview_left += preview.getView().getWidth(); // actually want preview-right for reverse landscape
                 this.top_icon_shift = top_margin - preview_left;
+                if( system_orientation == MainActivity.SystemOrientation.REVERSE_LANDSCAPE )
+                    this.top_icon_shift = -this.top_icon_shift;
                 /*if( MyDebug.LOG ) {
                     Log.d(TAG, "top_icon.getRotation(): " + top_icon.getRotation());
                     Log.d(TAG, "preview_left: " + preview_left);
@@ -2001,7 +2033,7 @@ public class DrawPreview {
             }
 
             if( this.top_icon_shift > 0 ) {
-                if( ui_rotation == 90 || ui_rotation == 270 ) {
+                if( device_ui_rotation == 90 || device_ui_rotation == 270 ) {
                     // portrait
                     top_y += top_icon_shift;
                 }
@@ -2031,15 +2063,51 @@ public class DrawPreview {
                 if( MyDebug.LOG )
                     Log.d(TAG, "set focus_seekbars_margin_left to " + focus_seekbars_margin_left);
 
+                // "left" and "right" here are written assuming we're in landscape system orientation
+
                 View view = main_activity.findViewById(R.id.focus_seekbar);
                 RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams)view.getLayoutParams();
-                layoutParams.setMargins(focus_seekbars_margin_left, 0, 0, 0);
+                preview.getView().getLocationOnScreen(gui_location);
+                int preview_left = gui_location[system_orientation_portrait ? 1 : 0];
+                if( system_orientation == MainActivity.SystemOrientation.REVERSE_LANDSCAPE )
+                    preview_left += preview.getView().getWidth(); // actually want preview-right for reverse landscape
+
+                view.getLocationOnScreen(gui_location);
+                int seekbar_right = gui_location[system_orientation_portrait ? 1 : 0];
+                if( system_orientation == MainActivity.SystemOrientation.LANDSCAPE || system_orientation == MainActivity.SystemOrientation.PORTRAIT ) {
+                    // n.b., we read view.getWidth() even if system_orientation is portrait, because the seekbar is rotated in portrait orientation
+                    seekbar_right += view.getWidth();
+                }
+                else {
+                    // and for reversed landscape, the seekbar is rotated 180 degrees, and getLocationOnScreen() returns the location after the rotation
+                    seekbar_right -= view.getWidth();
+                }
+
+                int min_seekbar_width = (int) (150 * scale + 0.5f); // convert dps to pixels
+                int new_seekbar_width;
+                if( system_orientation == MainActivity.SystemOrientation.LANDSCAPE || system_orientation == MainActivity.SystemOrientation.PORTRAIT ) {
+                    new_seekbar_width = seekbar_right - (preview_left+focus_seekbars_margin_left);
+                }
+                else {
+                    // reversed landscape
+                    new_seekbar_width = preview_left - focus_seekbars_margin_left - seekbar_right;
+                }
+                new_seekbar_width = Math.max(new_seekbar_width, min_seekbar_width);
+                /*if( MyDebug.LOG ) {
+                    Log.d(TAG, "preview_left: " + preview_left);
+                    Log.d(TAG, "seekbar_right: " + seekbar_right);
+                    Log.d(TAG, "new_seekbar_width: " + new_seekbar_width);
+                }*/
+                layoutParams.width = new_seekbar_width;
                 view.setLayoutParams(layoutParams);
 
                 view = main_activity.findViewById(R.id.focus_bracketing_target_seekbar);
                 layoutParams = (RelativeLayout.LayoutParams)view.getLayoutParams();
-                layoutParams.setMargins(focus_seekbars_margin_left, 0, 0, 0);
+                layoutParams.width = new_seekbar_width;
                 view.setLayoutParams(layoutParams);
+
+                // need to update due to changing width of focus seekbars
+                main_activity.getMainUI().setFocusSeekbarsRotation();
             }
         }
 
@@ -2048,14 +2116,15 @@ public class DrawPreview {
         int battery_width = (int) (5 * scale + 0.5f); // convert dps to pixels
         int battery_height = 4*battery_width;
         if( ui_rotation == 90 || ui_rotation == 270 ) {
+            // n.b., this is only for when lock_to_landscape==true, so we don't look at device_ui_rotation
             int diff = canvas.getWidth() - canvas.getHeight();
             battery_x += diff/2;
             battery_y -= diff/2;
         }
-        if( ui_rotation == 90 ) {
+        if( device_ui_rotation == 90 ) {
             battery_y = canvas.getHeight() - battery_y - battery_height;
         }
-        if( ui_rotation == 180 ) {
+        if( device_ui_rotation == 180 ) {
             battery_x = canvas.getWidth() - battery_x - battery_width;
         }
         if( show_battery_pref ) {
@@ -2091,14 +2160,16 @@ public class DrawPreview {
             top_x += (int) (10 * scale + 0.5f); // convert dps to pixels
         }
 
-        onDrawInfoLines(canvas, top_x, top_y, text_base_y, time_ms);
+        onDrawInfoLines(canvas, top_x, top_y, text_base_y, device_ui_rotation, time_ms);
 
         canvas.restore();
     }
 
-    private void drawAngleLines(Canvas canvas, long time_ms) {
+    private void drawAngleLines(Canvas canvas, int device_ui_rotation, long time_ms) {
         Preview preview = main_activity.getPreview();
         CameraController camera_controller = preview.getCameraController();
+        MainActivity.SystemOrientation system_orientation = main_activity.getSystemOrientation();
+        boolean system_orientation_portrait = system_orientation == MainActivity.SystemOrientation.PORTRAIT;
         boolean has_level_angle = preview.hasLevelAngle();
         boolean actual_show_angle_line_pref;
         if( photoMode == MyApplicationInterface.PhotoMode.Panorama ) {
@@ -2111,28 +2182,35 @@ public class DrawPreview {
         boolean allow_angle_lines = camera_controller != null && !preview.isPreviewPaused();
 
         if( allow_angle_lines && has_level_angle && ( actual_show_angle_line_pref || show_pitch_lines_pref || show_geo_direction_lines_pref ) ) {
-            int ui_rotation = preview.getUIRotation();
             double level_angle = preview.getLevelAngle();
             boolean has_pitch_angle = preview.hasPitchAngle();
             double pitch_angle = preview.getPitchAngle();
             boolean has_geo_direction = preview.hasGeoDirection();
             double geo_direction = preview.getGeoDirection();
             // n.b., must draw this without the standard canvas rotation
-            int radius_dps = (ui_rotation == 90 || ui_rotation == 270) ? 60 : 80;
+            int radius_dps = (device_ui_rotation == 90 || device_ui_rotation == 270) ? 60 : 80;
             int radius = (int) (radius_dps * scale + 0.5f); // convert dps to pixels
             double angle = - preview.getOrigLevelAngle();
             // see http://android-developers.blogspot.co.uk/2010/09/one-screen-turn-deserves-another.html
-            int rotation = main_activity.getWindowManager().getDefaultDisplay().getRotation();
+            int rotation = main_activity.getDisplayRotation();
             switch (rotation) {
                 case Surface.ROTATION_90:
-                case Surface.ROTATION_270:
                     angle -= 90.0;
                     break;
-                case Surface.ROTATION_0:
+                case Surface.ROTATION_270:
+                    angle += 90.0;
+                    break;
                 case Surface.ROTATION_180:
+                    angle += 180.0;
+                    break;
+                case Surface.ROTATION_0:
                 default:
                     break;
             }
+			/*if( MyDebug.LOG ) {
+                Log.d(TAG, "system_orientation: " + system_orientation);
+                Log.d(TAG, "rotation: " + rotation);
+            }*/
 			/*if( MyDebug.LOG ) {
 				Log.d(TAG, "orig_level_angle: " + preview.getOrigLevelAngle());
 				Log.d(TAG, "angle: " + angle);
@@ -2196,8 +2274,15 @@ public class DrawPreview {
                 }
             }
             updateCachedViewAngles(time_ms); // ensure view_angle_x_preview, view_angle_y_preview are computed and up to date
-            float camera_angle_x = this.view_angle_x_preview;
-            float camera_angle_y = this.view_angle_y_preview;
+            float camera_angle_x, camera_angle_y;
+            if( system_orientation_portrait ) {
+                camera_angle_x = this.view_angle_y_preview;
+                camera_angle_y = this.view_angle_x_preview;
+            }
+            else {
+                camera_angle_x = this.view_angle_x_preview;
+                camera_angle_y = this.view_angle_y_preview;
+            }
             float angle_scale_x = (float)( canvas.getWidth() / (2.0 * Math.tan( Math.toRadians((camera_angle_x/2.0)) )) );
             float angle_scale_y = (float)( canvas.getHeight() / (2.0 * Math.tan( Math.toRadians((camera_angle_y/2.0)) )) );
 			/*if( MyDebug.LOG ) {
@@ -2215,7 +2300,7 @@ public class DrawPreview {
             float angle_scale = (float)Math.sqrt( angle_scale_x*angle_scale_x + angle_scale_y*angle_scale_y );
             angle_scale *= preview.getZoomRatio();
             if( has_pitch_angle && show_pitch_lines_pref ) {
-                int pitch_radius_dps = (ui_rotation == 90 || ui_rotation == 270) ? 100 : 80;
+                int pitch_radius_dps = (device_ui_rotation == 90 || device_ui_rotation == 270) ? 100 : 80;
                 int pitch_radius = (int) (pitch_radius_dps * scale + 0.5f); // convert dps to pixels
                 int angle_step = 10;
                 if( preview.getZoomRatio() >= 2.0f )
@@ -2257,7 +2342,7 @@ public class DrawPreview {
                 }
             }
             if( has_geo_direction && has_pitch_angle && show_geo_direction_lines_pref ) {
-                int geo_radius_dps = (ui_rotation == 90 || ui_rotation == 270) ? 80 : 100;
+                int geo_radius_dps = (device_ui_rotation == 90 || device_ui_rotation == 270) ? 80 : 100;
                 int geo_radius = (int) (geo_radius_dps * scale + 0.5f); // convert dps to pixels
                 float geo_angle = (float)Math.toDegrees(geo_direction);
                 int angle_step = 10;
@@ -2567,6 +2652,19 @@ public class DrawPreview {
             }
         }
 
+        // If MainActivity.lock_to_landscape==true, then the ui_rotation represents the orientation of the
+        // device; if MainActivity.lock_to_landscape==false then ui_rotation is always 0 as we don't need to
+        // apply any orientation ourselves. However, we're we do want to know the true rotation of the
+        // device, as it affects how certain elements of the UI are layed out.
+        int device_ui_rotation;
+        if( MainActivity.lock_to_landscape ) {
+            device_ui_rotation = ui_rotation;
+        }
+        else {
+            MainActivity.SystemOrientation system_orientation = main_activity.getSystemOrientation();
+            device_ui_rotation = MainActivity.getRotationFromSystemOrientation(system_orientation);
+        }
+
         if( camera_controller != null && taking_picture && !front_screen_flash && take_photo_border_pref ) {
             p.setColor(Color.WHITE);
             p.setStyle(Paint.Style.STROKE);
@@ -2635,9 +2733,9 @@ public class DrawPreview {
 
         doThumbnailAnimation(canvas, time_ms);
 
-        drawUI(canvas, time_ms);
+        drawUI(canvas, device_ui_rotation, time_ms);
 
-        drawAngleLines(canvas, time_ms);
+        drawAngleLines(canvas, device_ui_rotation, time_ms);
 
         doFocusAnimation(canvas, time_ms);
 
@@ -2658,17 +2756,33 @@ public class DrawPreview {
         if( enable_gyro_target_spot && camera_controller != null ) {
             GyroSensor gyroSensor = main_activity.getApplicationInterface().getGyroSensor();
             if( gyroSensor.isRecording() ) {
+                MainActivity.SystemOrientation system_orientation = main_activity.getSystemOrientation();
+                boolean system_orientation_portrait = system_orientation == MainActivity.SystemOrientation.PORTRAIT;
                 for(float [] gyro_direction : gyro_directions) {
                     gyroSensor.getRelativeInverseVector(transformed_gyro_direction, gyro_direction);
                     gyroSensor.getRelativeInverseVector(transformed_gyro_direction_up, gyro_direction_up);
                     // note that although X of gyro_direction represents left to right on the device, because we're in landscape mode,
                     // this is y coordinates on the screen
-                    float angle_x = - (float)Math.asin(transformed_gyro_direction[1]);
-                    float angle_y = - (float)Math.asin(transformed_gyro_direction[0]);
+                    float angle_x, angle_y;
+                    if( system_orientation_portrait ) {
+                        angle_x = (float)Math.asin(transformed_gyro_direction[0]);
+                        angle_y = - (float)Math.asin(transformed_gyro_direction[1]);
+                    }
+                    else {
+                        angle_x = - (float)Math.asin(transformed_gyro_direction[1]);
+                        angle_y = - (float)Math.asin(transformed_gyro_direction[0]);
+                    }
                     if( Math.abs(angle_x) < 0.5f*Math.PI && Math.abs(angle_y) < 0.5f*Math.PI ) {
                         updateCachedViewAngles(time_ms); // ensure view_angle_x_preview, view_angle_y_preview are computed and up to date
-                        float camera_angle_x = this.view_angle_x_preview;
-                        float camera_angle_y = this.view_angle_y_preview;
+                        float camera_angle_x, camera_angle_y;
+                        if( system_orientation_portrait ) {
+                            camera_angle_x = this.view_angle_y_preview;
+                            camera_angle_y = this.view_angle_x_preview;
+                        }
+                        else {
+                            camera_angle_x = this.view_angle_x_preview;
+                            camera_angle_y = this.view_angle_y_preview;
+                        }
                         float angle_scale_x = (float) (canvas.getWidth() / (2.0 * Math.tan(Math.toRadians((camera_angle_x / 2.0)))));
                         float angle_scale_y = (float) (canvas.getHeight() / (2.0 * Math.tan(Math.toRadians((camera_angle_y / 2.0)))));
                         angle_scale_x *= preview.getZoomRatio();

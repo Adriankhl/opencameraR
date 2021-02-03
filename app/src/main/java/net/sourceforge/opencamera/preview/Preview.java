@@ -333,8 +333,8 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     private boolean supports_tonemap_curve;
     private float [] supported_apertures;
     private boolean has_focus_area;
-    private int focus_screen_x;
-    private int focus_screen_y;
+    private float focus_camera_x;
+    private float focus_camera_y;
     private long focus_complete_time = -1;
     private long focus_started_time = -1;
     private int focus_success = FOCUS_DONE;
@@ -536,16 +536,12 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
 		return preview_to_camera_matrix;
 	}*/
 
-    private ArrayList<CameraController.Area> getAreas(float x, float y) {
-        float [] coords = {x, y};
-        calculatePreviewToCameraMatrix();
-        preview_to_camera_matrix.mapPoints(coords);
-        float focus_x = coords[0];
-        float focus_y = coords[1];
-
+    /** Return a focus area from supplied point. Supplied coordinates should be in camera
+     *  coordinates.
+     */
+    private ArrayList<CameraController.Area> getAreas(float focus_x, float focus_y) {
         int focus_size = 50;
         if( MyDebug.LOG ) {
-            Log.d(TAG, "x, y: " + x + ", " + y);
             Log.d(TAG, "focus x, y: " + focus_x + ", " + focus_y);
         }
         Rect rect = new Rect();
@@ -660,13 +656,23 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         // don't set focus areas on touch if the user is touching to unpause!
         if( camera_controller != null && !this.using_face_detection && !was_paused ) {
             this.has_focus_area = false;
-            ArrayList<CameraController.Area> areas = getAreas(event.getX(), event.getY());
+
+            if( MyDebug.LOG ) {
+                Log.d(TAG, "x, y: " + event.getX() + ", " + event.getY());
+            }
+            float [] coords = {event.getX(), event.getY()};
+            calculatePreviewToCameraMatrix();
+            preview_to_camera_matrix.mapPoints(coords);
+            float focus_x = coords[0];
+            float focus_y = coords[1];
+            ArrayList<CameraController.Area> areas = getAreas(focus_x, focus_y);
+
             if( camera_controller.setFocusAndMeteringArea(areas) ) {
                 if( MyDebug.LOG )
                     Log.d(TAG, "set focus (and metering?) area");
                 this.has_focus_area = true;
-                this.focus_screen_x = (int)event.getX();
-                this.focus_screen_y = (int)event.getY();
+                this.focus_camera_x = focus_x;
+                this.focus_camera_y = focus_y;
             }
             else {
                 if( MyDebug.LOG )
@@ -919,13 +925,13 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         }
         if( MyDebug.LOG )
             Log.d(TAG, "textureview size: " + textureview_w + ", " + textureview_h);
-        int rotation = getDisplayRotation();
+        int rotation = applicationInterface.getDisplayRotation();
         Matrix matrix = new Matrix();
         RectF viewRect = new RectF(0, 0, this.textureview_w, this.textureview_h);
         RectF bufferRect = new RectF(0, 0, this.preview_h, this.preview_w);
         float centerX = viewRect.centerX();
         float centerY = viewRect.centerY();
-        if( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {
+        if( rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270  ) {
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
             matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
             float scale = Math.max(
@@ -933,6 +939,9 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                     (float) textureview_w / preview_w);
             matrix.postScale(scale, scale, centerX, centerY);
             matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+        }
+        else if( rotation == Surface.ROTATION_180 ) {
+            matrix.postRotate(180, centerX, centerY);
         }
         cameraSurface.setTransform(matrix);
     }
@@ -3691,36 +3700,12 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         return aspect_ratio;
     }
 
-    /** Returns the ROTATION_* enum of the display relative to the natural device orientation.
-     */
-    public int getDisplayRotation() {
-        // gets the display rotation (as a Surface.ROTATION_* constant), taking into account the getRotatePreviewPreferenceKey() setting
-        Activity activity = (Activity)this.getContext();
-        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-
-        String rotate_preview = applicationInterface.getPreviewRotationPref();
-        if( MyDebug.LOG )
-            Log.d(TAG, "    rotate_preview = " + rotate_preview);
-        if( rotate_preview.equals("180") ) {
-            switch (rotation) {
-                case Surface.ROTATION_0: rotation = Surface.ROTATION_180; break;
-                case Surface.ROTATION_90: rotation = Surface.ROTATION_270; break;
-                case Surface.ROTATION_180: rotation = Surface.ROTATION_0; break;
-                case Surface.ROTATION_270: rotation = Surface.ROTATION_90; break;
-                default:
-                    break;
-            }
-        }
-
-        return rotation;
-    }
-
     /** Returns the rotation in degrees of the display relative to the natural device orientation.
      */
     private int getDisplayRotationDegrees() {
         if( MyDebug.LOG )
             Log.d(TAG, "getDisplayRotationDegrees");
-        int rotation = getDisplayRotation();
+        int rotation = applicationInterface.getDisplayRotation();
         int degrees = 0;
         switch (rotation) {
             case Surface.ROTATION_0: degrees = 0; break;
@@ -8430,7 +8415,12 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     public Pair<Integer, Integer> getFocusPos() {
-        return new Pair<>(focus_screen_x, focus_screen_y);
+        // note, we don't store the screen coordinates, as they may become out of date in the
+        // screen orientation changes (if MainActivity.lock_to_landscape==false)
+        float [] coords = {focus_camera_x, focus_camera_y};
+        calculateCameraToPreviewMatrix();
+        camera_to_preview_matrix.mapPoints(coords);
+        return new Pair<>((int)coords[0], (int)coords[1]);
     }
 
     public int getMaxNumFocusAreas() {

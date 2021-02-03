@@ -51,6 +51,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.util.Pair;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.widget.ImageButton;
 
@@ -1075,11 +1076,6 @@ public class MyApplicationInterface extends BasicApplicationInterface {
     }
 
     @Override
-    public String getPreviewRotationPref() {
-        return sharedPreferences.getString(PreferenceKeys.RotatePreviewPreferenceKey, "0");
-    }
-
-    @Override
     public String getLockOrientationPref() {
         if( getPhotoMode() == PhotoMode.Panorama )
             return "portrait"; // for now panorama only supports portrait
@@ -1408,6 +1404,34 @@ public class MyApplicationInterface extends BasicApplicationInterface {
         if( MyDebug.LOG )
             Log.d(TAG, "imageQueueWouldBlock");
         return imageSaver.queueWouldBlock(n_raw, n_jpegs);
+    }
+
+    /** Returns the ROTATION_* enum of the display relative to the natural device orientation, but
+     *  also checks for the preview being rotated due to user preference
+     *  RotatePreviewPreferenceKey.
+     */
+    @Override
+    public int getDisplayRotation() {
+        // important to use cached rotation to reduce issues of incorrect focus square location when
+        // rotating device, due to strange Android behaviour where rotation changes shortly before
+        // the configuration actually changes
+        int rotation = main_activity.getDisplayRotation();
+
+        String rotate_preview = sharedPreferences.getString(PreferenceKeys.RotatePreviewPreferenceKey, "0");
+        if( MyDebug.LOG )
+            Log.d(TAG, "    rotate_preview = " + rotate_preview);
+        if( rotate_preview.equals("180") ) {
+            switch (rotation) {
+                case Surface.ROTATION_0: rotation = Surface.ROTATION_180; break;
+                case Surface.ROTATION_90: rotation = Surface.ROTATION_270; break;
+                case Surface.ROTATION_180: rotation = Surface.ROTATION_0; break;
+                case Surface.ROTATION_270: rotation = Surface.ROTATION_90; break;
+                default:
+                    break;
+            }
+        }
+
+        return rotation;
     }
 
     @Override

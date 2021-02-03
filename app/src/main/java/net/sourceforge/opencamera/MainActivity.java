@@ -38,6 +38,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.hardware.display.DisplayManager;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -67,6 +68,7 @@ import android.content.res.Configuration;
 import android.renderscript.RenderScript;
 import android.speech.tts.TextToSpeech;
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.exifinterface.media.ExifInterface;
 
@@ -81,6 +83,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.OrientationEventListener;
+import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -199,6 +202,30 @@ public class MainActivity extends Activity {
     private static final float WATER_DENSITY_SALTWATER = 1.03f;
     private float mWaterDensity = 1.0f;
 
+    // whether to lock to landscape orientation, or allow switching between portrait and landscape orientations
+    public static final boolean lock_to_landscape = true;
+    //public static final boolean lock_to_landscape = false;
+
+    // handling for lock_to_landscape==false:
+
+    public enum SystemOrientation {
+        LANDSCAPE,
+        PORTRAIT,
+        REVERSE_LANDSCAPE
+    }
+
+    private MyDisplayListener displayListener;
+
+    private boolean has_cached_system_orientation;
+    private SystemOrientation cached_system_orientation;
+
+    private boolean hasOldSystemOrientation;
+    private SystemOrientation oldSystemOrientation;
+
+    private boolean has_cached_display_rotation;
+    private long cached_display_rotation_time_ms;
+    private int cached_display_rotation;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         long debug_time = 0;
@@ -210,13 +237,6 @@ public class MainActivity extends Activity {
         if( MyDebug.LOG )
             Log.d(TAG, "activity_count: " + activity_count);
         super.onCreate(savedInstanceState);
-
-        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 ) {
-            // don't show orientation animations
-            WindowManager.LayoutParams layout = getWindow().getAttributes();
-            layout.rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_CROSSFADE;
-            getWindow().setAttributes(layout);
-        }
 
         setContentView(R.layout.activity_main);
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false); // initialise any unset preferences to their default values
@@ -328,6 +348,26 @@ public class MainActivity extends Activity {
         preview = new Preview(applicationInterface, ((ViewGroup) this.findViewById(R.id.preview)));
         if( MyDebug.LOG )
             Log.d(TAG, "onCreate: time after creating preview: " + (System.currentTimeMillis() - debug_time));
+
+        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 ) {
+            // don't show orientation animations
+            // must be done after creating Preview (so we know if Camera2 API or not)
+            WindowManager.LayoutParams layout = getWindow().getAttributes();
+            // If locked to landscape, ROTATION_ANIMATION_SEAMLESS/JUMPCUT has the problem that when going to
+            // Settings in portrait, we briefly see the UI change - this is because we set the flag
+            // to no longer lock to landscape, and that change happens to quickly.
+            // This isn't a problem when lock_to_landscape==false, and we want
+            // ROTATION_ANIMATION_SEAMLESS so that there is no/minimal pause from the preview when
+            // rotating the device. However if using old camera API, we get an ugly transition with
+            // ROTATION_ANIMATION_SEAMLESS (probably related to not using TextureView?)
+            if( lock_to_landscape || !preview.usingCamera2API() )
+                layout.rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_CROSSFADE;
+            else if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O )
+                layout.rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_SEAMLESS;
+            else
+                layout.rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_JUMPCUT;
+            getWindow().setAttributes(layout);
+        }
 
         // Setup multi-camera buttons (must be done after creating preview so we know which Camera API is being used,
         // and before initialising on-screen visibility).
@@ -483,10 +523,14 @@ public class MainActivity extends Activity {
             decorView.getRootView().setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
                 @Override
                 public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-                    if( MyDebug.LOG )
-                        Log.d(TAG, "inset: " + insets.getSystemWindowInsetRight());
+                    if( MyDebug.LOG ) {
+                        Log.d(TAG, "inset right: " + insets.getSystemWindowInsetRight());
+                        Log.d(TAG, "inset bottom: " + insets.getSystemWindowInsetBottom());
+                    }
                     if( navigation_gap == 0 ) {
-                        navigation_gap = insets.getSystemWindowInsetRight();
+                        SystemOrientation system_orientation = getSystemOrientation();
+                        boolean system_orientation_portrait = system_orientation == SystemOrientation.PORTRAIT;
+                        navigation_gap = system_orientation_portrait ? insets.getSystemWindowInsetBottom() : insets.getSystemWindowInsetRight();
                         if( MyDebug.LOG )
                             Log.d(TAG, "navigation_gap is " + navigation_gap);
                         // Sometimes when this callback is called, the navigation_gap may still be 0 even if
@@ -1383,6 +1427,8 @@ public class MainActivity extends Activity {
         // Note that we do it here rather than customising the theme's android:windowBackground, so this doesn't affect other views - in particular, the MyPreferenceFragment settings
         getWindow().getDecorView().getRootView().setBackgroundColor(Color.BLACK);
 
+        registerDisplayListener();
+
         mSensorManager.registerListener(accelerometerListener, mSensorAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         magneticSensor.registerMagneticListener(mSensorManager);
         orientationEventListener.enable();
@@ -1400,6 +1446,7 @@ public class MainActivity extends Activity {
         soundPoolManager.loadSound(R.raw.mybeep);
         soundPoolManager.loadSound(R.raw.mybeep_hi);
 
+        resetCachedSystemOrientation(); // just in case?
         mainUI.layoutUI();
 
         updateGalleryIcon(); // update in case images deleted whilst idle
@@ -1470,6 +1517,7 @@ public class MainActivity extends Activity {
         this.app_is_paused = true;
 
         mainUI.destroyPopup(); // important as user could change/reset settings from Android settings when pausing
+        unregisterDisplayListener();
         mSensorManager.unregisterListener(accelerometerListener);
         magneticSensor.unregisterMagneticListener(mSensorManager);
         orientationEventListener.disable();
@@ -1504,14 +1552,237 @@ public class MainActivity extends Activity {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
+    private class MyDisplayListener implements DisplayManager.DisplayListener {
+        private int old_rotation;
+
+        private MyDisplayListener() {
+            int rotation = MainActivity.this.getWindowManager().getDefaultDisplay().getRotation();
+            if( MyDebug.LOG ) {
+                Log.d(TAG, "MyDisplayListener");
+                Log.d(TAG, "rotation: " + rotation);
+            }
+            old_rotation = rotation;
+        }
+
+        @Override
+        public void onDisplayAdded(int displayId) {
+        }
+
+        @Override
+        public void onDisplayRemoved(int displayId) {
+        }
+
+        @Override
+        public void onDisplayChanged(int displayId) {
+            int rotation = MainActivity.this.getWindowManager().getDefaultDisplay().getRotation();
+            if( MyDebug.LOG ) {
+                Log.d(TAG, "onDisplayChanged: " + displayId);
+                Log.d(TAG, "rotation: " + rotation);
+                Log.d(TAG, "old_rotation: " + rotation);
+            }
+            if( ( rotation == Surface.ROTATION_0 && old_rotation == Surface.ROTATION_180 ) ||
+                    ( rotation == Surface.ROTATION_180 && old_rotation == Surface.ROTATION_0 ) ||
+                    ( rotation == Surface.ROTATION_90 && old_rotation == Surface.ROTATION_270 ) ||
+                    ( rotation == Surface.ROTATION_270 && old_rotation == Surface.ROTATION_90 )
+            ) {
+                if( MyDebug.LOG )
+                    Log.d(TAG, "switched between landscape and reverse orientation");
+                onSystemOrientationChanged();
+            }
+
+            old_rotation = rotation;
+        }
+    }
+
+    /** Creates and registers a display listener, needed to handle switches between landscape and
+     *  reverse landscape (without going via portrait) when lock_to_landscape==false.
+     */
+    private void registerDisplayListener() {
+        if( MyDebug.LOG )
+            Log.d(TAG, "registerDisplayListener");
+        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && !lock_to_landscape ) {
+            displayListener = new MyDisplayListener();
+            DisplayManager displayManager = (DisplayManager) this.getSystemService(Context.DISPLAY_SERVICE);
+            displayManager.registerDisplayListener(displayListener, null);
+        }
+    }
+
+    private void unregisterDisplayListener() {
+        if( MyDebug.LOG )
+            Log.d(TAG, "unregisterDisplayListener");
+        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && displayListener != null ) {
+            DisplayManager displayManager = (DisplayManager) this.getSystemService(Context.DISPLAY_SERVICE);
+            displayManager.unregisterDisplayListener(displayListener);
+            displayListener = null;
+        }
+    }
+
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         if( MyDebug.LOG )
-            Log.d(TAG, "onConfigurationChanged()");
+            Log.d(TAG, "onConfigurationChanged(): " + newConfig.orientation);
         // configuration change can include screen orientation (landscape/portrait) when not locked (when settings is open)
         // needed if app is paused/resumed when settings is open and device is in portrait mode
-        preview.setCameraDisplayOrientation();
+        // update: need this all the time when lock_to_landscape==false
+        onSystemOrientationChanged();
         super.onConfigurationChanged(newConfig);
+    }
+
+    private void onSystemOrientationChanged() {
+        if( MyDebug.LOG )
+            Log.d(TAG, "onSystemOrientationChanged");
+
+        // n.b., need to call this first, before preview.setCameraDisplayOrientation(), since
+        // preview.setCameraDisplayOrientation() will call getDisplayRotation() and we don't want
+        // to be using the outdated cached value now that the rotation has changed!
+        resetCachedSystemOrientation();
+
+        preview.setCameraDisplayOrientation();
+        if( !lock_to_landscape ) {
+            SystemOrientation newSystemOrientation = getSystemOrientation();
+            if( hasOldSystemOrientation && oldSystemOrientation == newSystemOrientation ) {
+                if( MyDebug.LOG )
+                    Log.d(TAG, "onSystemOrientationChanged: orientation hasn't changed");
+            }
+            else {
+                if( hasOldSystemOrientation ) {
+                    // handle rotation animation
+                    int start_rotation = getRotationFromSystemOrientation(oldSystemOrientation) - getRotationFromSystemOrientation(newSystemOrientation);
+                    if( MyDebug.LOG )
+                        Log.d(TAG, "start_rotation: " + start_rotation);
+                    if( start_rotation < -180 )
+                        start_rotation += 360;
+                    else if( start_rotation > 180 )
+                        start_rotation -= 360;
+                    mainUI.layoutUIWithRotation(start_rotation);
+                }
+                else {
+                    mainUI.layoutUI();
+                }
+                applicationInterface.getDrawPreview().updateSettings();
+
+                hasOldSystemOrientation = true;
+                oldSystemOrientation = newSystemOrientation;
+            }
+        }
+    }
+
+    /** Returns the current system orientation.
+     *  Note if lock_to_landscape is true, this always returns LANDSCAPE even if called when we're
+     *  allowing configuration changes (e.g., in Settings or a dialog is showing). (This method,
+     *  and hence calls to it, were added to support lock_to_landscape==false behaviour, and we
+     *  want to avoid changing behaviour for lock_to_landscape==true behaviour.)
+     *  Note that this also caches the orientation: firstly for performance (as this is called from
+     *  DrawPreview), secondly to support REVERSE_LANDSCAPE, we don't want a sudden change if
+     *  getDefaultDisplay().getRotation() changes after the configuration changes.
+     */
+    public SystemOrientation getSystemOrientation() {
+        if( lock_to_landscape ) {
+            return SystemOrientation.LANDSCAPE;
+        }
+        if( has_cached_system_orientation ) {
+            return cached_system_orientation;
+        }
+        SystemOrientation result;
+        int system_orientation = getResources().getConfiguration().orientation;
+        if( MyDebug.LOG )
+            Log.d(TAG, "system orientation: " + system_orientation);
+        switch( system_orientation ) {
+            case Configuration.ORIENTATION_LANDSCAPE:
+                result = SystemOrientation.LANDSCAPE;
+                // now try to distinguish between landscape and reverse landscape
+
+                // check whether the display matches the landscape configuration, in case this is inconsistent?
+                Point display_size = new Point();
+                Display display = getWindowManager().getDefaultDisplay();
+                display.getSize(display_size);
+                if( display_size.x > display_size.y ) {
+                    int rotation = getWindowManager().getDefaultDisplay().getRotation();
+                    if( MyDebug.LOG )
+                        Log.d(TAG, "rotation: " + rotation);
+                    switch( rotation ) {
+                        case Surface.ROTATION_0:
+                        case Surface.ROTATION_90:
+                            // landscape
+                            if( MyDebug.LOG )
+                                Log.d(TAG, "landscape");
+                            break;
+                        case Surface.ROTATION_180:
+                        case Surface.ROTATION_270:
+                            // reverse landscape
+                            if( MyDebug.LOG )
+                                Log.d(TAG, "reverse landscape");
+                            result = SystemOrientation.REVERSE_LANDSCAPE;
+                            break;
+                        default:
+                            if( MyDebug.LOG )
+                                Log.e(TAG, "unknown rotation: " + rotation);
+                            break;
+                    }
+                }
+                else {
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "display size not landscape: " + display_size);
+                }
+                break;
+            case Configuration.ORIENTATION_PORTRAIT:
+                result = SystemOrientation.PORTRAIT;
+                break;
+            default:
+                if( MyDebug.LOG )
+                    Log.e(TAG, "unknown system orientation: " + system_orientation);
+                result = SystemOrientation.LANDSCAPE;
+                break;
+        }
+        if( MyDebug.LOG )
+            Log.d(TAG, "system orientation is now: " + result);
+        this.has_cached_system_orientation = true;
+        this.cached_system_orientation = result;
+        return result;
+    }
+
+    /** Returns rotation in degrees (as a multiple of 90 degrees) corresponding to the supplied
+     *  system orientation.
+     */
+    public static int getRotationFromSystemOrientation(SystemOrientation system_orientation) {
+        int rotation;
+        if( system_orientation == MainActivity.SystemOrientation.PORTRAIT )
+            rotation = 270;
+        else if( system_orientation == MainActivity.SystemOrientation.REVERSE_LANDSCAPE )
+            rotation = 180;
+        else
+            rotation = 0;
+        return rotation;
+    }
+
+    private void resetCachedSystemOrientation() {
+        this.has_cached_system_orientation = false;
+        this.has_cached_display_rotation = false;
+    }
+
+    /** A wrapper for getWindowManager().getDefaultDisplay().getRotation(), except if
+     *  lock_to_landscape==false, this checks for the display being inconsistent with the system
+     *  orientation, and if so, returns a cached value.
+     */
+    public int getDisplayRotation() {
+        if( lock_to_landscape ) {
+            return getWindowManager().getDefaultDisplay().getRotation();
+        }
+        // we cache to reduce effect of annoying problem where rotation changes shortly before the
+        // configuration actually changes (several frames), so on-screen elements would briefly show
+        // in wrong location when device rotates from/to portrait and landscape; also not a bad idea
+        // to cache for performance anyway, to avoid calling
+        // getWindowManager().getDefaultDisplay().getRotation() every frame
+        long time_ms = System.currentTimeMillis();
+        if( has_cached_display_rotation && time_ms < cached_display_rotation_time_ms + 1000 ) {
+            return cached_display_rotation;
+        }
+        has_cached_display_rotation = true;
+        int rotation = getWindowManager().getDefaultDisplay().getRotation();
+        cached_display_rotation = rotation;
+        cached_display_rotation_time_ms = time_ms;
+        return rotation;
     }
 
     public void waitUntilImageQueueEmpty() {
@@ -2959,11 +3230,13 @@ public class MainActivity extends Activity {
     	}*/
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        // force to landscape mode
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE); // testing for devices with unusual sensor orientation (e.g., Nexus 5X)
+        if( lock_to_landscape ) {
+            // force to landscape mode
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE); // testing for devices with unusual sensor orientation (e.g., Nexus 5X)
+        }
         if( preview != null ) {
-            // also need to call setCameraDisplayOrientation, as this handles if the user switched from portrait to reverse landscape whilst in settings/etc
+            // also need to call preview.setCameraDisplayOrientation, as this handles if the user switched from portrait to reverse landscape whilst in settings/etc
             // as switching from reverse landscape back to landscape isn't detected in onConfigurationChanged
             // update: now probably irrelevant now that we close/reopen the camera, but keep it here anyway
             preview.setCameraDisplayOrientation();
@@ -3046,8 +3319,10 @@ public class MainActivity extends Activity {
     public void setWindowFlagsForSettings(boolean set_lock_protect) {
         if( MyDebug.LOG )
             Log.d(TAG, "setWindowFlagsForSettings: " + set_lock_protect);
-        // allow screen rotation
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        if( lock_to_landscape ) {
+            // allow screen rotation
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        }
 
         // revert to standard screen blank behaviour
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -4734,6 +5009,9 @@ public class MainActivity extends Activity {
         SeekBar focusSeekBar = findViewById(is_target_distance ? R.id.focus_bracketing_target_seekbar : R.id.focus_seekbar);
         final int visibility = is_visible ? View.VISIBLE : View.GONE;
         focusSeekBar.setVisibility(visibility);
+        if( is_visible ) {
+            applicationInterface.getDrawPreview().updateSettings(); // needed so that we reset focus_seekbars_margin_left, as the focus seekbars can only be updated when visible
+        }
     }
 
     public void setManualWBSeekbar() {
