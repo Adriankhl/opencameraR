@@ -10930,7 +10930,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         setToDefault();
 
-        int display_orientation = mPreview.getDisplayRotation();
+        int display_orientation = mActivity.getApplicationInterface().getDisplayRotation();
         Log.d(TAG, "display_orientation = " + display_orientation);
 
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
@@ -10939,7 +10939,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         editor.apply();
         updateForSettings();
 
-        int new_display_orientation = mPreview.getDisplayRotation();
+        int new_display_orientation =  mActivity.getApplicationInterface().getDisplayRotation();
         Log.d(TAG, "new_display_orientation = " + new_display_orientation);
         assertEquals(new_display_orientation, ((display_orientation + 2) % 4));
     }
