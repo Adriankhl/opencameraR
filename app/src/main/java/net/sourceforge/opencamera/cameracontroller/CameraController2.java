@@ -7299,6 +7299,11 @@ public class CameraController2 extends CameraController {
                     Log.d(TAG, "frameNumber: " + frameNumber);
                     Log.d(TAG, "exposure time: " + request.get(CaptureRequest.SENSOR_EXPOSURE_TIME));
                 }
+                else if( getRequestTagType(request) == RequestTagType.CAPTURE_BURST_IN_PROGRESS ) {
+                    Log.d(TAG, "onCaptureStarted: capture burst in progress");
+                    Log.d(TAG, "frameNumber: " + frameNumber);
+                    Log.d(TAG, "exposure time: " + request.get(CaptureRequest.SENSOR_EXPOSURE_TIME));
+                }
             }
             // n.b., we don't play the shutter sound here for RequestTagType.CAPTURE, as it typically sounds "too late"
             // (if ever we changed this, would also need to fix for burst, where we only set the RequestTagType.CAPTURE for the last image)
@@ -7324,6 +7329,13 @@ public class CameraController2 extends CameraController {
             if( MyDebug.LOG ) {
                 if( getRequestTagType(request) == RequestTagType.CAPTURE ) {
                     Log.d(TAG, "onCaptureCompleted: capture");
+                    Log.d(TAG, "sequenceId: " + result.getSequenceId());
+                    Log.d(TAG, "frameNumber: " + result.getFrameNumber());
+                    Log.d(TAG, "exposure time: " + request.get(CaptureRequest.SENSOR_EXPOSURE_TIME));
+                    Log.d(TAG, "frame duration: " + request.get(CaptureRequest.SENSOR_FRAME_DURATION));
+                }
+                else if( getRequestTagType(request) == RequestTagType.CAPTURE_BURST_IN_PROGRESS ) {
+                    Log.d(TAG, "onCaptureCompleted: capture burst in progress");
                     Log.d(TAG, "sequenceId: " + result.getSequenceId());
                     Log.d(TAG, "frameNumber: " + result.getFrameNumber());
                     Log.d(TAG, "exposure time: " + request.get(CaptureRequest.SENSOR_EXPOSURE_TIME));
