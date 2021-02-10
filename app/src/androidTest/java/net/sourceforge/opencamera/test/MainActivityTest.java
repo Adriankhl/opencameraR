@@ -8205,8 +8205,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         int n_new_files = getNFiles() - n_files;
         Log.d(TAG, "n_new_files: " + n_new_files);
-        assertEquals(1, n_new_files);
-
+        // note, if using scoped storage without SAF (i.e., mediastore API), then the video file won't show up until after we've finished recording (IS_PENDING is set to 0)
+        assertEquals(MainActivity.useScopedStorage() && !mActivity.getStorageUtils().isUsingSAF() ? 0 : 1, n_new_files);
     }
 
     public void testTakeVideoFlashVideo() throws InterruptedException {
