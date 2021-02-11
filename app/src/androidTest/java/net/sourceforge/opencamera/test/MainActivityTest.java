@@ -887,11 +887,15 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "frame size: " + mPreview.getView().getWidth() + ", " + mPreview.getView().getHeight());
         double frame_aspect_ratio = ((double)mPreview.getView().getWidth()) / (double)mPreview.getView().getHeight();
         double preview_aspect_ratio = ((double)mPreview.getCameraController().getPreviewSize().width) / (double)mPreview.getCameraController().getPreviewSize().height;
+        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            frame_aspect_ratio = 1.0f / frame_aspect_ratio;
+        }
         Log.d(TAG, "frame_aspect_ratio: " + frame_aspect_ratio);
         Log.d(TAG, "preview_aspect_ratio: " + preview_aspect_ratio);
         // we calculate etol like this, due to errors from rounding
         //double etol = 1.0f / Math.min((double)mPreview.getWidth(), (double)mPreview.getHeight()) + 1.0e-5;
         double etol = (double)mPreview.getView().getWidth() / (double)(mPreview.getView().getHeight() * (mPreview.getView().getHeight()-1) ) + 1.0e-5;
+        Log.d(TAG, "etol: " + etol);
         assertTrue( Math.abs(frame_aspect_ratio - preview_aspect_ratio) <= etol );
     }
 
@@ -916,6 +920,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         //double targetRatio = mPreview.getTargetRatioForPreview(display_size);
         double targetRatio = mPreview.getTargetRatio();
         double expTargetRatio = ((double)display_size.x) / (double)display_size.y;
+        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            expTargetRatio = 1.0f / expTargetRatio;
+        }
         Log.d(TAG, "targetRatio: " + targetRatio);
         Log.d(TAG, "expTargetRatio: " + expTargetRatio);
         assertTrue( Math.abs(targetRatio - expTargetRatio) <= 1.0e-5 );
@@ -1499,6 +1506,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         int [] gui_location = new int[2];
         mPreview.getView().getLocationOnScreen(gui_location);
+        Log.d(TAG, "gui_location: " + Arrays.toString(gui_location));
         final int step_dist_c = 2;
         final float scale = mActivity.getResources().getDisplayMetrics().density;
         final int large_step_dist_c = (int) (80 * scale + 0.5f); // convert dps to pixels
@@ -1532,20 +1540,33 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertNull(mPreview.getCameraController().getFocusAreas());
         assertNull(mPreview.getCameraController().getMeteringAreas());
 
-        Log.d(TAG, "bottom-left");
-        TouchUtils.drag(MainActivityTest.this, gui_location[0]+step_dist_c, gui_location[0], gui_location[1]+height-1-step_dist_c, gui_location[1]+height-1, step_count_c);
-        assertTrue(mPreview.hasFocusArea());
-        assertNotNull(mPreview.getCameraController().getFocusAreas());
-        assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
-        assertNotNull(mPreview.getCameraController().getMeteringAreas());
-        assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
+        // skip bottom right, conflicts with zoom on various devices
+        // but note in portrait mode, this is bottom-left that we need to skip
+
+        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            Log.d(TAG, "bottom-right");
+            TouchUtils.drag(MainActivityTest.this, gui_location[0]+width-1-step_dist_c, gui_location[0]+width-1, gui_location[1]+height-1-step_dist_c, gui_location[1]+height-1, step_count_c);
+            assertTrue(mPreview.hasFocusArea());
+            assertNotNull(mPreview.getCameraController().getFocusAreas());
+            assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
+            assertNotNull(mPreview.getCameraController().getMeteringAreas());
+            assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
+        }
+        else {
+            Log.d(TAG, "bottom-left");
+            TouchUtils.drag(MainActivityTest.this, gui_location[0]+step_dist_c, gui_location[0], gui_location[1]+height-1-step_dist_c, gui_location[1]+height-1, step_count_c);
+            assertTrue(mPreview.hasFocusArea());
+            assertNotNull(mPreview.getCameraController().getFocusAreas());
+            assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
+            assertNotNull(mPreview.getCameraController().getMeteringAreas());
+            assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
+        }
 
         mPreview.clearFocusAreas();
         assertFalse(mPreview.hasFocusArea());
         assertNull(mPreview.getCameraController().getFocusAreas());
         assertNull(mPreview.getCameraController().getMeteringAreas());
 
-        // skip bottom right, conflicts with zoom on various devices
     }
 
     /* Test face detection, and that we don't get the focus/metering areas set.
@@ -8629,10 +8650,18 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "gallery right: " + galleryButton.getRight());
         Log.d(TAG, "gallery top: " + galleryButton.getTop());
 
-        assertTrue(settingsButton.getRight() > (int)(0.8*display_size.x));
-        assertEquals(0, settingsButton.getTop());
-        assertEquals(display_size.x, galleryButton.getRight());
-        assertEquals(0, galleryButton.getTop());
+        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            assertTrue(settingsButton.getBottom() > (int)(0.8*display_size.y));
+            assertEquals(display_size.x, settingsButton.getRight());
+            assertEquals(display_size.y-1, galleryButton.getBottom());
+            assertEquals(display_size.x, galleryButton.getRight());
+        }
+        else {
+            assertTrue(settingsButton.getRight() > (int)(0.8*display_size.x));
+            assertEquals(0, settingsButton.getTop());
+            assertEquals(display_size.x, galleryButton.getRight());
+            assertEquals(0, galleryButton.getTop());
+        }
 
         {
             SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
@@ -8647,10 +8676,18 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "gallery right: " + galleryButton.getRight());
         Log.d(TAG, "gallery top: " + galleryButton.getTop());
 
-        assertTrue(settingsButton.getRight() < (int)(0.2*display_size.x));
-        assertEquals(0, settingsButton.getTop());
-        assertEquals(display_size.x, galleryButton.getRight());
-        assertEquals(0, galleryButton.getTop());
+        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            assertTrue(settingsButton.getBottom() < (int)(0.2*display_size.y));
+            assertEquals(display_size.x, settingsButton.getRight());
+            assertEquals(display_size.y-1, galleryButton.getBottom());
+            assertEquals(display_size.x, galleryButton.getRight());
+        }
+        else {
+            assertTrue(settingsButton.getRight() < (int)(0.2*display_size.x));
+            assertEquals(0, settingsButton.getTop());
+            assertEquals(display_size.x, galleryButton.getRight());
+            assertEquals(0, galleryButton.getTop());
+        }
 
         assertFalse(mActivity.popupIsOpen());
         clickView(popupButton);
