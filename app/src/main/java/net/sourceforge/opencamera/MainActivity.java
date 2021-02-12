@@ -565,12 +565,16 @@ public class MainActivity extends Activity {
                         String immersive_mode = sharedPreferences.getString(PreferenceKeys.ImmersiveModePreferenceKey, "immersive_mode_low_profile");
                         boolean hide_ui = immersive_mode.equals("immersive_mode_gui") || immersive_mode.equals("immersive_mode_everything");
 
-                        if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+                        // Note that Android example code says to test against SYSTEM_UI_FLAG_FULLSCREEN,
+                        // but this stopped working on Android 11, as when calling setSystemUiVisibility(0)
+                        // to exit immersive mode, when we arrive here the flag SYSTEM_UI_FLAG_FULLSCREEN
+                        // is still set. Fixed by checking for SYSTEM_UI_FLAG_HIDE_NAVIGATION instead -
+                        // which makes some sense since we run in fullscreen mode all the time anyway.
+                        //if( (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0 ) {
+                        if( (visibility & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0 ) {
                             if( MyDebug.LOG )
                                 Log.d(TAG, "system bars now visible");
-                            // The system bars are visible. Make any desired
-                            // adjustments to your UI, such as showing the action bar or
-                            // other navigational controls.
+                            // change UI due to having exited immersive mode
                             if( hide_ui )
                                 mainUI.setImmersiveMode(false);
                             setImmersiveTimer();
@@ -578,9 +582,7 @@ public class MainActivity extends Activity {
                         else {
                             if( MyDebug.LOG )
                                 Log.d(TAG, "system bars now NOT visible");
-                            // The system bars are NOT visible. Make any desired
-                            // adjustments to your UI, such as hiding the action bar or
-                            // other navigational controls.
+                            // change UI due to having entered immersive mode
                             if( hide_ui )
                                 mainUI.setImmersiveMode(true);
                         }
