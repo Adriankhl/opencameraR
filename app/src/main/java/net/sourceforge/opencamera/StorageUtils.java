@@ -1158,7 +1158,7 @@ public class StorageUtils {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private Media getLatestMediaSAF(Uri treeUri) {
         if (MyDebug.LOG)
-            Log.d(TAG, "getLatestMedia: " + treeUri);
+            Log.d(TAG, "getLatestMediaSAF: " + treeUri);
 
         Media media = null;
 
