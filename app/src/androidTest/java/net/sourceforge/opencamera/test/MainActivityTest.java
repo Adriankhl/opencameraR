@@ -12315,10 +12315,41 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         return bitmap;
     }*/
 
+    /** Converts a path to a Uri for com.android.providers.media.documents.
+     */
+    private Uri getDocumentUri(String filename) throws FileNotFoundException {
+        Log.d(TAG, "getDocumentUri: " + filename);
+
+        // convert from File path format to Storage Access Framework form
+        Uri treeUri = Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADCIM%2FtestOpenCamera");
+        Log.d(TAG, "treeUri: " + treeUri);
+        if( !filename.startsWith(images_base_path) ) {
+            Log.e(TAG, "unknown base for: " + filename);
+            throw new FileNotFoundException();
+        }
+        String stem = filename.substring(images_base_path.length());
+        Uri stemUri = Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADCIM" + stem.replace("/", "%2F"));
+        Log.d(TAG, "stem: " + stem);
+        Log.d(TAG, "stemUri: " + stemUri);
+        //String docID = "primary:DCIM" + stem;
+        String docID = DocumentsContract.getTreeDocumentId(stemUri);
+        Log.d(TAG, "docID: " + docID);
+        Uri uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docID);
+
+        if( uri == null ) {
+            throw new FileNotFoundException();
+        }
+        return uri;
+    }
+
     private Bitmap getBitmapFromFile(String filename) throws FileNotFoundException {
         return getBitmapFromFile(filename, 1);
     }
 
+    /** Loads bitmap from supplied filename.
+     *  Note that on Android 10+ (with scoped storage), this uses Storage Access Framework, which
+     *  means Open Camera must have SAF permission to the folder DCIM/testOpenCamera.
+     */
     private Bitmap getBitmapFromFile(String filename, int inSampleSize) throws FileNotFoundException {
         Log.d(TAG, "getBitmapFromFile: " + filename);
         BitmapFactory.Options options = new BitmapFactory.Options();
@@ -12330,7 +12361,23 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             options.inDensity = inSampleSize;
             options.inTargetDensity = 1;
         }
-        Bitmap bitmap = BitmapFactory.decodeFile(filename, options);
+        Bitmap bitmap;
+
+        if( MainActivity.useScopedStorage() ) {
+            Uri uri = getDocumentUri(filename);
+            Log.d(TAG, "uri: " + uri);
+            InputStream is = mActivity.getContentResolver().openInputStream(uri);
+            bitmap = BitmapFactory.decodeStream(is, null, options);
+            try {
+                is.close();
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+            bitmap = BitmapFactory.decodeFile(filename, options);
+        }
         if( bitmap == null )
             throw new FileNotFoundException();
         Log.d(TAG, "    done: " + bitmap);
@@ -12744,10 +12791,11 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertTrue(Math.abs(exp_max_value - hdrHistogramDetails.max_value) <= 3);
     }
 
-    final private String hdr_images_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/testOpenCamera/testdata/hdrsamples/";
-    final private String avg_images_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/testOpenCamera/testdata/avgsamples/";
-    final private String logprofile_images_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/testOpenCamera/testdata/logprofilesamples/";
-    final private String panorama_images_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/testOpenCamera/testdata/panoramasamples/";
+    final private String images_base_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath();
+    final private String hdr_images_path = images_base_path + "/testOpenCamera/testdata/hdrsamples/";
+    final private String avg_images_path = images_base_path + "/testOpenCamera/testdata/avgsamples/";
+    final private String logprofile_images_path = images_base_path + "/testOpenCamera/testdata/logprofilesamples/";
+    final private String panorama_images_path = images_base_path + "/testOpenCamera/testdata/panoramasamples/";
 
     /** Tests HDR algorithm on test samples "saintpaul".
      */
