@@ -8,6 +8,7 @@ public class VideoTests {
     public static Test suite() {
         TestSuite suite = new TestSuite(MainTests.class.getName());
         suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideo"));
+        // put these tests first as they require various permissions be allowed, that can only be set by user action:
         if( !MainActivityTest.test_camera2 ) {
             suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideoAudioControl"));
         }
@@ -16,6 +17,15 @@ public class VideoTests {
             suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideoSubtitles"));
             suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideoSubtitlesSAF"));
             suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideoSubtitlesGPS"));
+        }
+        if( MainActivityTest.test_camera2 ) {
+            // tests for video log profile (but these don't actually record video)
+            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile1"));
+            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile2"));
+            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile3"));
+            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile1_extra_strong"));
+            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile2_extra_strong"));
+            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile3_extra_strong"));
         }
 
         suite.addTest(TestSuite.createTest(MainActivityTest.class, "testIntentVideo"));
@@ -78,15 +88,6 @@ public class VideoTests {
         /*suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideoBitrate"));
         suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideo4K"));*/
 
-        // tests for video log profile (but these don't actually record video)
-        if( MainActivityTest.test_camera2 ) {
-            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile1"));
-            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile2"));
-            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile3"));
-            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile1_extra_strong"));
-            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile2_extra_strong"));
-            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testLogProfile3_extra_strong"));
-        }
         return suite;
     }
 }
