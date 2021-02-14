@@ -12733,6 +12733,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     private void checkHistogramDetails(HistogramDetails hdrHistogramDetails, int exp_min_value, int exp_median_value, int exp_max_value) {
+        Log.d(TAG, "checkHistogramDetails");
         Log.d(TAG, "compare min value " + hdrHistogramDetails.min_value + " to expected " + exp_min_value);
         Log.d(TAG, "compare median value " + hdrHistogramDetails.median_value + " to expected " + exp_median_value);
         Log.d(TAG, "compare max value " + hdrHistogramDetails.max_value + " to expected " + exp_max_value);
@@ -16836,6 +16837,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     private void saveBitmap(Bitmap bitmap, String name) throws IOException {
+        Log.d(TAG, "saveBitmap: " + name);
         File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/" + name);
         OutputStream outputStream = new FileOutputStream(file);
         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream);
