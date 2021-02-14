@@ -16753,7 +16753,18 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         HistogramDetails hdrHistogramDetails = subTestLogProfile(image_path, "testLogProfile2_output.jpg");
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 58, 243);
-        checkHistogramDetails(hdrHistogramDetails, 0, 41, 241);
+
+        CameraController2 camera_controller2 = (CameraController2)mPreview.getCameraController();
+        TonemapCurve curve = camera_controller2.testGetTonemapCurve();
+        Log.d(TAG, "point count: " + curve.getPointCount(0));
+        if( curve.getPointCount(0) == 32 ) {
+            // special case codepath for Galaxy S10e tonemap curves bugs means we get slightly different
+            // result
+            checkHistogramDetails(hdrHistogramDetails, 0, 35, 241);
+        }
+        else {
+            checkHistogramDetails(hdrHistogramDetails, 0, 41, 241);
+        }
     }
 
     /** Tests video log profile algorithm on test samples in "testLogProfile3".
@@ -16793,7 +16804,18 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         HistogramDetails hdrHistogramDetails = subTestLogProfile(image_path, "testLogProfile1_extra_strong_output.jpg");
 
         //checkHistogramDetails(hdrHistogramDetails, 2, 67, 254);
-        checkHistogramDetails(hdrHistogramDetails, 0, 13, 254);
+
+        CameraController2 camera_controller2 = (CameraController2)mPreview.getCameraController();
+        TonemapCurve curve = camera_controller2.testGetTonemapCurve();
+        Log.d(TAG, "point count: " + curve.getPointCount(0));
+        if( curve.getPointCount(0) == 32 ) {
+            // special case codepath for Galaxy S10e tonemap curves bugs means we get slightly different
+            // result
+            checkHistogramDetails(hdrHistogramDetails, 0, 8, 254);
+        }
+        else {
+            checkHistogramDetails(hdrHistogramDetails, 0, 13, 254);
+        }
     }
 
     /** Tests video log profile algorithm on test samples in "testAvg20".
@@ -16813,7 +16835,18 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         HistogramDetails hdrHistogramDetails = subTestLogProfile(image_path, "testLogProfile2_extra_strong_output.jpg");
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 126, 250);
-        checkHistogramDetails(hdrHistogramDetails, 0, 66, 244);
+
+        CameraController2 camera_controller2 = (CameraController2)mPreview.getCameraController();
+        TonemapCurve curve = camera_controller2.testGetTonemapCurve();
+        Log.d(TAG, "point count: " + curve.getPointCount(0));
+        if( curve.getPointCount(0) == 32 ) {
+            // special case codepath for Galaxy S10e tonemap curves bugs means we get slightly different
+            // result
+            checkHistogramDetails(hdrHistogramDetails, 0, 51, 244);
+        }
+        else {
+            checkHistogramDetails(hdrHistogramDetails, 0, 66, 244);
+        }
     }
 
     /** Tests video log profile algorithm on test samples in "testLogProfile3".
