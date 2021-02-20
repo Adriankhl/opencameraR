@@ -1,6 +1,7 @@
 package net.sourceforge.opencamera.test;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -36,6 +37,8 @@ import net.sourceforge.opencamera.ui.PopupView;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 //import android.content.res.AssetManager;
@@ -58,6 +61,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 //import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
@@ -12361,10 +12365,12 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             options.inDensity = inSampleSize;
             options.inTargetDensity = 1;
         }
+
+        Uri uri = null;
         Bitmap bitmap;
 
         if( MainActivity.useScopedStorage() ) {
-            Uri uri = getDocumentUri(filename);
+            uri = getDocumentUri(filename);
             Log.d(TAG, "uri: " + uri);
             InputStream is = mActivity.getContentResolver().openInputStream(uri);
             bitmap = BitmapFactory.decodeStream(is, null, options);
@@ -12384,8 +12390,20 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         // now need to take exif orientation into account, as some devices or camera apps store the orientation in the exif tag,
         // which getBitmap() doesn't account for
+        ParcelFileDescriptor parcelFileDescriptor = null;
+        FileDescriptor fileDescriptor = null;
         try {
-            ExifInterface exif = new ExifInterface(filename);
+            ExifInterface exif = null;
+            if( uri != null ) {
+                parcelFileDescriptor = mActivity.getContentResolver().openFileDescriptor(uri, "r");
+                if( parcelFileDescriptor != null ) {
+                    fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+                    exif = new ExifInterface(fileDescriptor);
+                }
+            }
+            else {
+                exif = new ExifInterface(filename);
+            }
             if( exif != null ) {
                 int exif_orientation_s = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
                 boolean needs_tf = false;
@@ -12427,6 +12445,16 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         }
         catch(IOException e) {
             e.printStackTrace();
+        }
+        finally {
+            if( parcelFileDescriptor != null ) {
+                try {
+                    parcelFileDescriptor.close();
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
         /*{
             for(int y=0;y<bitmap.getHeight();y++) {
@@ -16917,13 +16945,92 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         checkHistogramDetails(hdrHistogramDetails, 0, 170, 255);
     }
 
+    /** Returns the mediastore Uri for the supplied filename inside the supplied baseUri, or null
+     *  if an entry can't be found.
+     */
+    private Uri getUriFromName(Uri baseUri, String name) {
+        Uri uri = null;
+        String [] projection = new String[]{MediaStore.Images.ImageColumns._ID};
+        Cursor cursor = null;
+        try {
+            cursor = mActivity.getContentResolver().query(baseUri, projection, MediaStore.Images.ImageColumns.DISPLAY_NAME + " LIKE ?", new String[]{name}, null);
+            if( cursor != null && cursor.moveToFirst() ) {
+                Log.d(TAG, "found: " + cursor.getCount());
+                long id = cursor.getLong(0);
+                uri = ContentUris.withAppendedId(baseUri, id);
+                Log.d(TAG, "id: " + id);
+                Log.d(TAG, "uri: " + uri);
+            }
+        }
+        catch(Exception e) {
+            Log.e(TAG, "Exception trying to find uri from filename");
+            e.printStackTrace();
+        }
+        finally {
+            if( cursor != null ) {
+                cursor.close();
+            }
+        }
+        return uri;
+    }
+
     private void saveBitmap(Bitmap bitmap, String name) throws IOException {
         Log.d(TAG, "saveBitmap: " + name);
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/" + name);
-        OutputStream outputStream = new FileOutputStream(file);
+
+        File file = null;
+        ContentValues contentValues = null;
+        Uri uri = null;
+        OutputStream outputStream;
+        if( MainActivity.useScopedStorage() ) {
+            Uri folder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ?
+                    MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY) :
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+
+            // first try to delete pre-existing image
+            Uri old_uri = getUriFromName(folder, name);
+            if( old_uri != null ) {
+                Log.d(TAG, "delete: " + old_uri);
+                mActivity.getContentResolver().delete(old_uri, null, null);
+            }
+
+            contentValues = new ContentValues();
+            contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, name);
+            String extension = name.substring(name.lastIndexOf("."));
+            String mime_type = mActivity.getStorageUtils().getImageMimeType(extension);
+            Log.d(TAG, "mime_type: " + mime_type);
+            contentValues.put(MediaStore.Images.Media.MIME_TYPE, mime_type);
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
+                String relative_path = Environment.DIRECTORY_DCIM + File.separator;
+                Log.d(TAG, "relative_path: " + relative_path);
+                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, relative_path);
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 1);
+            }
+
+            uri = mActivity.getContentResolver().insert(folder, contentValues);
+            Log.d(TAG, "saveUri: " + uri);
+            if( uri == null ) {
+                throw new IOException();
+            }
+            outputStream = mActivity.getContentResolver().openOutputStream(uri);
+        }
+        else {
+            file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + File.separator + name);
+            outputStream = new FileOutputStream(file);
+        }
+
         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream);
         outputStream.close();
-        mActivity.getStorageUtils().broadcastFile(file, true, false, true);
+
+        if( MainActivity.useScopedStorage() ) {
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
+                contentValues.clear();
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0);
+                mActivity.getContentResolver().update(uri, contentValues, null, null);
+            }
+        }
+        else {
+            mActivity.getStorageUtils().broadcastFile(file, true, false, true);
+        }
     }
 
     /**

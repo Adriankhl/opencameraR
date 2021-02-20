@@ -781,7 +781,7 @@ public class StorageUtils {
 
     /** Return the mime type corresponding to the supplied extension. Supports images only, not video.
      */
-    String getImageMimeType(String extension) {
+    public String getImageMimeType(String extension) {
         String mimeType;
         switch (extension) {
             case "dng":
