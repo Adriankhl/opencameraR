@@ -71,6 +71,8 @@ public class StorageUtils {
     }
 
     void clearLastMediaScanned() {
+        if( MyDebug.LOG )
+            Log.d(TAG, "clearLastMediaScanned");
         last_media_scanned = null;
     }
 
