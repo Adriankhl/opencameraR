@@ -262,7 +262,7 @@ public class HDRProcessor {
                 Log.d(TAG, "parameter_B = " + parameter_B);
             }
 
-            if( MyDebug.LOG ) {
+            /*if( MyDebug.LOG ) {
                 // log samples to a CSV file
                 File file = new File(context.getExternalFilesDir(null).getPath() + "/net.sourceforge.opencamera.hdr_samples_" + id + ".csv");
                 if( file.exists() ) {
@@ -300,7 +300,7 @@ public class HDRProcessor {
                     }
                 }
                 MediaScannerConnection.scanFile(context, new String[] { file.getAbsolutePath() }, null, null);
-            }
+            }*/
         }
     }
 
