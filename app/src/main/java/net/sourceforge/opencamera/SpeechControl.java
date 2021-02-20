@@ -43,8 +43,6 @@ class SpeechControl {
     }
 
     void showToast(boolean force) {
-        if( MyDebug.LOG )
-            Log.d(TAG, "speechRecognizerStarted");
         if( force || !shown_toast || System.currentTimeMillis() > last_toast_time_ms + 10000 ) {
             shown_toast = true;
             last_toast_time_ms = System.currentTimeMillis();
