@@ -1247,9 +1247,9 @@ public class StorageUtils {
                     }
 
                     String this_filename = cursor.getString(column_name_c);
-                    if( MyDebug.LOG ) {
+                    /*if( MyDebug.LOG ) {
                         Log.d(TAG, "Date: " + this_date + " doc_id: " + doc_id + " Name: " + this_filename + " Uri: " + this_uri);
-                    }
+                    }*/
 
                     if( latest_uri == null || this_date > latest_date ) {
                         latest_uri = this_uri;
