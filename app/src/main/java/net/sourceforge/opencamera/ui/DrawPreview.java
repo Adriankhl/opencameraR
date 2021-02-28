@@ -2188,6 +2188,7 @@ public class DrawPreview {
             boolean has_geo_direction = preview.hasGeoDirection();
             double geo_direction = preview.getGeoDirection();
             // n.b., must draw this without the standard canvas rotation
+            // lines should be shorter in portrait
             int radius_dps = (device_ui_rotation == 90 || device_ui_rotation == 270) ? 60 : 80;
             int radius = (int) (radius_dps * scale + 0.5f); // convert dps to pixels
             double angle = - preview.getOrigLevelAngle();
@@ -2300,7 +2301,8 @@ public class DrawPreview {
             float angle_scale = (float)Math.sqrt( angle_scale_x*angle_scale_x + angle_scale_y*angle_scale_y );
             angle_scale *= preview.getZoomRatio();
             if( has_pitch_angle && show_pitch_lines_pref ) {
-                int pitch_radius_dps = (device_ui_rotation == 90 || device_ui_rotation == 270) ? 100 : 80;
+                // lines should be shorter in portrait
+                int pitch_radius_dps = (device_ui_rotation == 90 || device_ui_rotation == 270) ? 80 : 100;
                 int pitch_radius = (int) (pitch_radius_dps * scale + 0.5f); // convert dps to pixels
                 int angle_step = 10;
                 if( preview.getZoomRatio() >= 2.0f )
@@ -2342,7 +2344,9 @@ public class DrawPreview {
                 }
             }
             if( has_geo_direction && has_pitch_angle && show_geo_direction_lines_pref ) {
-                int geo_radius_dps = (device_ui_rotation == 90 || device_ui_rotation == 270) ? 80 : 100;
+                // lines should be longer in portrait - n.b., this is opposite to behaviour of pitch lines, as
+                // geo lines are drawn perpendicularly
+                int geo_radius_dps = (device_ui_rotation == 90 || device_ui_rotation == 270) ? 100 : 80;
                 int geo_radius = (int) (geo_radius_dps * scale + 0.5f); // convert dps to pixels
                 float geo_angle = (float)Math.toDegrees(geo_direction);
                 int angle_step = 10;
