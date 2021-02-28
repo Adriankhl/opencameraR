@@ -3883,6 +3883,7 @@ public class CameraController2 extends CameraController {
             return 0; // total burst size is unknown
         return n_burst_total;
     }
+
     @Override
     public void setOptimiseAEForDRO(boolean optimise_ae_for_dro) {
         if( MyDebug.LOG )
@@ -3894,6 +3895,13 @@ public class CameraController2 extends CameraController {
             this.optimise_ae_for_dro = false;
             if( MyDebug.LOG )
                 Log.d(TAG, "don't modify ae for OnePlus");
+        }
+        else if( is_samsung ) {
+            // At least some Samsung devices (e.g., Galaxy S10e on Android 11) give better results in auto mode
+            // than manual mode, so we're better off staying in auto mode.
+            this.optimise_ae_for_dro = false;
+            if( MyDebug.LOG )
+                Log.d(TAG, "don't modify ae for Samsung");
         }
         else {
             this.optimise_ae_for_dro = optimise_ae_for_dro;
@@ -6535,7 +6543,9 @@ public class CameraController2 extends CameraController {
                                     Log.d(TAG, "optimise for bright scene");
                                 //n_burst = 2;
                                 n_burst = 3;
-                                if( !camera_settings.has_iso ) {
+                                // At least some Samsung devices (e.g., Galaxy S10e on Android 11) give better results in auto mode
+                                // than manual mode, so we're better off staying in auto mode.
+                                if( !camera_settings.has_iso && !is_samsung ) {
                                     double exposure_time_scale = getScaleForExposureTime(exposure_time, fixed_exposure_time, scaled_exposure_time, full_exposure_time_scale);
                                     exposure_time *= exposure_time_scale;
                                     if( MyDebug.LOG ) {
