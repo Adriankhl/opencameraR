@@ -753,8 +753,6 @@
     <string name="preference_water_type_summary">设置正确的水下兔笼的类型，可以提高水下拍摄时深度计算的准确性</string>
     <string name="remote_connected">控制器已连接</string>
 
-    <string name="preference_remote_type_kraken">Kraken智能家居</string>
-
     <string name="preference_stamp_geo_address">使用地址</string>
     <string name="preference_stamp_geo_address_both">尽量显示地址和坐标</string>
     <string name="preference_stamp_geo_address_prefer">GPS坐标优先</string>

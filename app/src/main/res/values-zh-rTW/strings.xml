@@ -800,8 +800,6 @@
     <string name="preference_water_type_summary">使用水下防水盒時，如果選擇正確的水的類型，可以提高拍攝的準確性。</string>
     <string name="remote_connected">遠端已連線</string>
 
-    <string name="preference_remote_type_kraken">Kraken Smart Housing</string>
-
     <string name="preference_stamp_geo_address">使用地址</string>
     <!-- preference_stamp_geo_address_summary defined below -->
     <string name="preference_stamp_geo_address_both">可以的話，除了 GPS 座標之外也顯示地址</string>

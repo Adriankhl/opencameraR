@@ -802,7 +802,7 @@
     <string name="preference_water_type_summary">For underwater housings, improves accuracy if correct water type is selected.</string>
     <string name="remote_connected">Remote connected</string>
 
-    <string name="preference_remote_type_kraken">Kraken Smart Housing</string>
+    <string name="preference_remote_type_kraken" translatable="false">Kraken</string>
 
     <string name="preference_stamp_geo_address">Use addresses</string>
     <!-- preference_stamp_geo_address_summary defined below -->
