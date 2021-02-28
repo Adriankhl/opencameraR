@@ -65,6 +65,7 @@ public class CameraController2 extends CameraController {
     private CameraDevice camera;
     private final String cameraIdS;
 
+    private final boolean is_oneplus;
     private final boolean is_samsung;
     private final boolean is_samsung_s7; // Galaxy S7 or Galaxy S7 Edge
     private final boolean is_samsung_galaxy_s;
@@ -1760,10 +1761,12 @@ public class CameraController2 extends CameraController {
         this.preview_error_cb = preview_error_cb;
         this.camera_error_cb = camera_error_cb;
 
+        this.is_oneplus = Build.MANUFACTURER.toLowerCase(Locale.US).contains("oneplus");
         this.is_samsung = Build.MANUFACTURER.toLowerCase(Locale.US).contains("samsung");
         this.is_samsung_s7 = Build.MODEL.toLowerCase(Locale.US).contains("sm-g93");
         this.is_samsung_galaxy_s = is_samsung && Build.MODEL.toLowerCase(Locale.US).contains("sm-g");
         if( MyDebug.LOG ) {
+            Log.d(TAG, "is_oneplus: " + is_oneplus);
             Log.d(TAG, "is_samsung: " + is_samsung);
             Log.d(TAG, "is_samsung_s7: " + is_samsung_s7);
             Log.d(TAG, "is_samsung_galaxy_s: " + is_samsung_galaxy_s);
@@ -3888,10 +3891,9 @@ public class CameraController2 extends CameraController {
     public void setOptimiseAEForDRO(boolean optimise_ae_for_dro) {
         if( MyDebug.LOG )
             Log.d(TAG, "setOptimiseAEForDRO: " + optimise_ae_for_dro);
-        boolean is_oneplus = Build.MANUFACTURER.toLowerCase(Locale.US).contains("oneplus");
         if( is_oneplus ) {
-            // OnePlus 3T has preview corruption / camera freezing problems when using manual shutter speeds
-            // So best not to modify auto-exposure for DRO
+            // OnePlus 3T has preview corruption / camera freezing problems when using manual shutter speeds.
+            // So best not to modify auto-exposure for DRO.
             this.optimise_ae_for_dro = false;
             if( MyDebug.LOG )
                 Log.d(TAG, "don't modify ae for OnePlus");
@@ -6501,7 +6503,6 @@ public class CameraController2 extends CameraController {
                             if( MyDebug.LOG )
                                 Log.d(TAG, "optimise for dark scene");
                             n_burst = noise_reduction_low_light ? N_IMAGES_NR_DARK_LOW_LIGHT : N_IMAGES_NR_DARK;
-                            boolean is_oneplus = Build.MANUFACTURER.toLowerCase(Locale.US).contains("oneplus");
                             // OnePlus 3T at least has bug where manual ISO can't be set to above 800, so dark images end up too dark -
                             // so no point enabling this code, which is meant to brighten the scene, not make it darker!
                             if( !camera_settings.has_iso && !is_oneplus ) {
