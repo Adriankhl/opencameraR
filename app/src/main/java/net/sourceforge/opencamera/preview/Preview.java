@@ -7753,8 +7753,11 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     private void recreatePreviewBitmap() {
-        if( MyDebug.LOG )
+        if( MyDebug.LOG ) {
             Log.d(TAG, "recreatePreviewBitmap");
+            Log.d(TAG, "textureview_w: " + textureview_w);
+            Log.d(TAG, "textureview_h: " + textureview_h);
+        }
         freePreviewBitmap();
 
         if( want_preview_bitmap ) {
