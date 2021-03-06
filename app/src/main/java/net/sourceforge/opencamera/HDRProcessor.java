@@ -1484,6 +1484,7 @@ public class HDRProcessor {
 
         processAvgScript.set_avg_factor(avg_factor);
 
+        // higher wiener_C (and higher wiener_cutoff_factor) means more averaging (but more risk of ghosting)
         // if changing this, pay close attention to tests testAvg6, testAvg8, testAvg17, testAvg23
         float limited_iso = Math.min(iso, 400);
         float wiener_cutoff_factor = 1.0f;
