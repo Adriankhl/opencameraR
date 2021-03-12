@@ -1508,6 +1508,8 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
                         alertDialog.setTitle(R.string.preference_save_settings_filename);
 
                         final EditText editText = new EditText(getActivity());
+                        // set hint instead of content description for EditText, see https://support.google.com/accessibility/android/answer/6378120
+                        editText.setHint(getResources().getString(R.string.preference_save_settings_filename));
                         alertDialog.setView(editText);
 
                         final MainActivity main_activity = (MainActivity)MyPreferenceFragment.this.getActivity();

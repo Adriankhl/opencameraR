@@ -1918,6 +1918,8 @@ public class MainActivity extends Activity {
         alertDialog.setTitle(R.string.preference_textstamp);
 
         final EditText editText = new EditText(this);
+        // set hint instead of content description for EditText, see https://support.google.com/accessibility/android/answer/6378120
+        editText.setHint(getResources().getString(R.string.preference_textstamp));
         editText.setText(applicationInterface.getTextStampPref());
         alertDialog.setView(editText);
         alertDialog.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -4217,6 +4219,8 @@ public class MainActivity extends Activity {
         alertDialog.setTitle(R.string.preference_save_location);
 
         final EditText editText = new EditText(this);
+        // set hint instead of content description for EditText, see https://support.google.com/accessibility/android/answer/6378120
+        editText.setHint(getResources().getString(R.string.preference_save_location));
         editText.setInputType(InputType.TYPE_CLASS_TEXT);
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         editText.setText(sharedPreferences.getString(PreferenceKeys.SaveLocationPreferenceKey, "OpenCamera"));
