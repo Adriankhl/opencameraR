@@ -295,7 +295,7 @@
                 android:key="preference_show_when_locked"
                 android:title="@string/preference_show_when_locked"
                 android:summary="@string/preference_show_when_locked_summary"
-                android:defaultValue="true"
+                android:defaultValue="false"
                 />
 
            <SwitchPreference
