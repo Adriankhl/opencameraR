@@ -540,7 +540,7 @@ public class CameraController2 extends CameraController {
                 if( MyDebug.LOG )
                     Log.d(TAG, "setting white balance temperature: " + white_balance_temperature);
                 // manual white balance
-                RggbChannelVector rggbChannelVector = convertTemperatureToRggb(white_balance_temperature);
+                RggbChannelVector rggbChannelVector = convertTemperatureToRggbVector(white_balance_temperature);
                 builder.set(CaptureRequest.COLOR_CORRECTION_MODE, CameraMetadata.COLOR_CORRECTION_MODE_TRANSFORM_MATRIX);
                 builder.set(CaptureRequest.COLOR_CORRECTION_GAINS, rggbChannelVector);
                 changed = true;
@@ -1140,9 +1140,14 @@ public class CameraController2 extends CameraController {
         // n.b., if we add more methods, remember to update setupBuilder() above!
     }
 
+    private static RggbChannelVector convertTemperatureToRggbVector(int temperature_kelvin) {
+        float [] rggb = convertTemperatureToRggb(temperature_kelvin);
+        return new RggbChannelVector(rggb[0], rggb[1], rggb[2], rggb[3]);
+    }
+
     /** Converts a white balance temperature to red, green even, green odd and blue components.
      */
-    private RggbChannelVector convertTemperatureToRggb(int temperature_kelvin) {
+    public static float [] convertTemperatureToRggb(int temperature_kelvin) {
         float temperature = temperature_kelvin / 100.0f;
         float red;
         float green;
@@ -1195,63 +1200,90 @@ public class CameraController2 extends CameraController {
             Log.d(TAG, "green: " + green);
             Log.d(TAG, "blue: " + blue);
         }
-        return new RggbChannelVector((red/255)*2,(green/255),(green/255),(blue/255)*2);
+
+        red = (red/255.0f);
+        green = (green/255.0f);
+        blue = (blue/255.0f);
+
+        red = RGBtoGain(red);
+        green = RGBtoGain(green);
+        blue = RGBtoGain(blue);
+        if( MyDebug.LOG ) {
+            Log.d(TAG, "red gain: " + red);
+            Log.d(TAG, "green gain: " + green);
+            Log.d(TAG, "blue gain: " + blue);
+        }
+
+        return new float[]{red,green/2,green/2,blue};
+    }
+
+    private static float RGBtoGain(float value) {
+        final float max_gain_c = 10.0f;
+        if( value < 1.0e-5f ) {
+            return max_gain_c;
+        }
+        value = 1.0f/value;
+        value = Math.min(max_gain_c, value);
+        return value;
+    }
+
+    public static int convertRggbVectorToTemperature(RggbChannelVector rggbChannelVector) {
+        return convertRggbToTemperature(new float[]{rggbChannelVector.getRed(), rggbChannelVector.getGreenEven(), rggbChannelVector.getGreenOdd(), rggbChannelVector.getBlue()});
     }
 
     /** Converts a red, green even, green odd and blue components to a white balance temperature.
      *  Note that this is not necessarily an inverse of convertTemperatureToRggb, since many rggb
      *  values can map to the same temperature.
      */
-    private int convertRggbToTemperature(RggbChannelVector rggbChannelVector) {
+    public static int convertRggbToTemperature(float [] rggb) {
         if( MyDebug.LOG ) {
             Log.d(TAG, "temperature:");
-            Log.d(TAG, "    red: " + rggbChannelVector.getRed());
-            Log.d(TAG, "    green even: " + rggbChannelVector.getGreenEven());
-            Log.d(TAG, "    green odd: " + rggbChannelVector.getGreenOdd());
-            Log.d(TAG, "    blue: " + rggbChannelVector.getBlue());
+            Log.d(TAG, "    red: " + rggb[0]);
+            Log.d(TAG, "    green even: " + rggb[1]);
+            Log.d(TAG, "    green odd: " + rggb[2]);
+            Log.d(TAG, "    blue: " + rggb[3]);
         }
-        float red = rggbChannelVector.getRed();
-        float green_even = rggbChannelVector.getGreenEven();
-        float green_odd = rggbChannelVector.getGreenOdd();
-        float blue = rggbChannelVector.getBlue();
-        float green = 0.5f*(green_even + green_odd);
+        float red = rggb[0];
+        float green_even = rggb[1];
+        float green_odd = rggb[2];
+        float blue = rggb[3];
+        float green = (green_even + green_odd);
 
-        float max = Math.max(red, blue);
-        if( green > max )
-            green = max;
+        red = GaintoRGB(red);
+        green = GaintoRGB(green);
+        blue = GaintoRGB(blue);
 
-        float scale = 255.0f/max;
-        red *= scale;
-        green *= scale;
-        blue *= scale;
+        red *= 255.0f;
+        green *= 255.0f;
+        blue *= 255.0f;
 
-        int red_i = (int)red;
-        int green_i = (int)green;
-        int blue_i = (int)blue;
+        int red_i = (int)(red+0.5f);
+        int green_i = (int)(green+0.5f);
+        int blue_i = (int)(blue+0.5f);
         int temperature;
         if( red_i == blue_i ) {
             temperature = 6600;
         }
         else if( red_i > blue_i ) {
             // temperature <= 6600
-            int t_g = (int)( 100 * Math.exp((green_i + 161.1195681661) / 99.4708025861) );
+            float t_g = (float)( 100 * Math.exp((green + 161.1195681661) / 99.4708025861) );
             if( blue_i == 0 ) {
-                temperature = t_g;
+                temperature = (int)(t_g+0.5f);
             }
             else {
-                int t_b = (int)( 100 * (Math.exp((blue_i + 305.0447927307) / 138.5177312231) + 10) );
-                temperature = (t_g + t_b)/2;
+                float t_b = (float)( 100 * (Math.exp((blue + 305.0447927307) / 138.5177312231) + 10) );
+                temperature = (int)((t_g + t_b)/2+0.5f);
             }
         }
         else {
-            // temperature >= 6700
+            // temperature >= 6600
             if( red_i <= 1 || green_i <= 1 ) {
                 temperature = max_white_balance_temperature_c;
             }
             else {
-                int t_r = (int)(100 * (Math.pow(red_i / 329.698727446, 1.0 / -0.1332047592) + 60.0));
-                int t_g = (int)(100 * (Math.pow(green_i / 288.1221695283, 1.0 / -0.0755148492) + 60.0));
-                temperature = (t_r + t_g) / 2;
+                float t_r = (float)(100 * (Math.pow(red / 329.698727446, 1.0 / -0.1332047592) + 60.0));
+                float t_g = (float)(100 * (Math.pow(green / 288.1221695283, 1.0 / -0.0755148492) + 60.0));
+                temperature = (int)((t_r + t_g)/2+0.5f);
             }
         }
         temperature = Math.max(temperature, min_white_balance_temperature_c);
@@ -1260,6 +1292,14 @@ public class CameraController2 extends CameraController {
             Log.d(TAG, "    temperature: " + temperature);
         }
         return temperature;
+    }
+
+    private static float GaintoRGB(float value) {
+        if( value <= 1.0f ) {
+            return 1.0f;
+        }
+        value = 1.0f/value;
+        return value;
     }
 
     private class OnImageAvailableListener implements ImageReader.OnImageAvailableListener {
@@ -7193,7 +7233,7 @@ public class CameraController2 extends CameraController {
     @Override
     public int captureResultWhiteBalanceTemperature() {
         // for performance reasons, we don't convert from rggb to temperature in every frame, rather only when requested
-        return convertRggbToTemperature(capture_result_white_balance_rggb);
+        return convertRggbVectorToTemperature(capture_result_white_balance_rggb);
     }
 
     @Override
@@ -7921,7 +7961,7 @@ public class CameraController2 extends CameraController {
             /*if( MyDebug.LOG ) {
                 RggbChannelVector vector = result.get(CaptureResult.COLOR_CORRECTION_GAINS);
                 if( vector != null ) {
-                    convertRggbToTemperature(vector); // logging will occur in this function
+                    convertRggbVectorToTemperature(vector); // logging will occur in this function
                 }
             }*/
         }

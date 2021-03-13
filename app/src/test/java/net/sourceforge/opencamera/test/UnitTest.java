@@ -956,4 +956,32 @@ public class UnitTest {
         assertEquals(luminanceInfos.get(2), luminanceInfosSorted.get(5));
 
     }
+
+    private void roundTripWhiteBalanceTemperature(int temperature) {
+        float [] rggb = CameraController2.convertTemperatureToRggb(temperature);
+        Log.d(TAG, "red: " + rggb[0]);
+        Log.d(TAG, "green even: " + rggb[1]);
+        Log.d(TAG, "green odd: " + rggb[2]);
+        Log.d(TAG, "blue: " + rggb[3]);
+        int new_temperature = CameraController2.convertRggbToTemperature(rggb);
+        assertEquals(temperature, new_temperature);
+    }
+
+    @Test
+    public void whiteBalanceTemperature() {
+        Log.d(TAG, "whiteBalanceTemperature");
+
+        // n.b., round trip won't work for low temperatures due to hitting max gain
+        roundTripWhiteBalanceTemperature(3000);
+        roundTripWhiteBalanceTemperature(4000);
+        roundTripWhiteBalanceTemperature(5000);
+        roundTripWhiteBalanceTemperature(6000);
+        roundTripWhiteBalanceTemperature(6600);
+        roundTripWhiteBalanceTemperature(7000);
+        roundTripWhiteBalanceTemperature(8000);
+        roundTripWhiteBalanceTemperature(9000);
+        roundTripWhiteBalanceTemperature(10000);
+        roundTripWhiteBalanceTemperature(12000);
+        roundTripWhiteBalanceTemperature(15000);
+    }
 }
