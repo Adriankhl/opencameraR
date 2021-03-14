@@ -355,7 +355,7 @@ public class MainActivity extends Activity {
             WindowManager.LayoutParams layout = getWindow().getAttributes();
             // If locked to landscape, ROTATION_ANIMATION_SEAMLESS/JUMPCUT has the problem that when going to
             // Settings in portrait, we briefly see the UI change - this is because we set the flag
-            // to no longer lock to landscape, and that change happens to quickly.
+            // to no longer lock to landscape, and that change happens too quickly.
             // This isn't a problem when lock_to_landscape==false, and we want
             // ROTATION_ANIMATION_SEAMLESS so that there is no/minimal pause from the preview when
             // rotating the device. However if using old camera API, we get an ugly transition with
