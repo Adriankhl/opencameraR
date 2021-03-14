@@ -203,8 +203,8 @@ public class MainActivity extends Activity {
     private float mWaterDensity = 1.0f;
 
     // whether to lock to landscape orientation, or allow switching between portrait and landscape orientations
-    public static final boolean lock_to_landscape = true;
-    //public static final boolean lock_to_landscape = false;
+    //public static final boolean lock_to_landscape = true;
+    public static final boolean lock_to_landscape = false;
 
     // handling for lock_to_landscape==false:
 
