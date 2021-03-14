@@ -2751,7 +2751,7 @@ public class DrawPreview {
             for(CameraController.Face face : faces_detected) {
                 // Android doc recommends filtering out faces with score less than 50 (same for both Camera and Camera2 APIs)
                 if( face.score >= 50 ) {
-                    canvas.drawRect(face.rect, p);
+                    canvas.drawRect(face.temp, p);
                 }
             }
             p.setStyle(Paint.Style.FILL); // reset

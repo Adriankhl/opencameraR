@@ -279,10 +279,13 @@ public abstract class CameraController {
 
     public static class Face {
         public final int score;
-        /* The has values from [-1000,-1000] (for top-left) to [1000,1000] (for bottom-right) for whatever is
+        /* The rect has values from [-1000,-1000] (for top-left) to [1000,1000] (for bottom-right) for whatever is
          * the current field of view (i.e., taking zoom into account).
          */
         public final Rect rect;
+        /** The temp rect is temporary storage that can be used by callers.
+         */
+        public final Rect temp = new Rect();
 
         Face(int score, Rect rect) {
             this.score = score;

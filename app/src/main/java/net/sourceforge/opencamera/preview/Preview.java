@@ -2204,15 +2204,6 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                         Activity activity = (Activity)Preview.this.getContext();
                         activity.runOnUiThread(new Runnable() {
                             public void run() {
-                                // convert rects to preview screen space - also needs to be done on UI thread
-                                // (otherwise can have crashes if camera_controller becomes null in the meantime)
-                                final Matrix matrix = getCameraToPreviewMatrix();
-                                for(CameraController.Face face : faces) {
-                                    face_rect.set(face.rect);
-                                    matrix.mapRect(face_rect);
-                                    face_rect.round(face.rect);
-                                }
-
                                 reportFaces(faces);
 
                                 if( faces_detected == null || faces_detected.length != faces.length ) {
@@ -2230,7 +2221,9 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                      */
                     private void reportFaces(CameraController.Face[] local_faces) {
                         // View.announceForAccessibility requires JELLY_BEAN
-                        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && accessibility_manager.isEnabled() && accessibility_manager.isTouchExplorationEnabled() ) {
+                        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN
+                                && accessibility_manager.isEnabled() && accessibility_manager.isTouchExplorationEnabled()
+                            ) {
                             int n_faces = local_faces.length;
                             FaceLocation face_location = FaceLocation.FACELOCATION_UNKNOWN;
                             if( n_faces > 0 ) {
@@ -2238,9 +2231,16 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                                 float avg_x = 0, avg_y = 0;
                                 final float bdry_frac_c = 0.35f;
                                 boolean all_centre = true;
+                                final Matrix matrix = getCameraToPreviewMatrix();
                                 for(CameraController.Face face : local_faces) {
-                                    float face_x = face.rect.centerX();
-                                    float face_y = face.rect.centerY();
+                                    //float face_x = face.rect.centerX();
+                                    //float face_y = face.rect.centerY();
+                                    // convert to screen space coordinates
+                                    face_rect.set(face.rect);
+                                    matrix.mapRect(face_rect);
+                                    float face_x = face_rect.centerX();
+                                    float face_y = face_rect.centerY();
+
                                     face_x /= (float)cameraSurface.getView().getWidth();
                                     face_y /= (float)cameraSurface.getView().getHeight();
                                     if( all_centre ) {
@@ -8421,8 +8421,8 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         // note, we don't store the screen coordinates, as they may become out of date in the
         // screen orientation changes (if MainActivity.lock_to_landscape==false)
         float [] coords = {focus_camera_x, focus_camera_y};
-        calculateCameraToPreviewMatrix();
-        camera_to_preview_matrix.mapPoints(coords);
+        final Matrix matrix = getCameraToPreviewMatrix();
+        matrix.mapPoints(coords);
         return new Pair<>((int)coords[0], (int)coords[1]);
     }
 
@@ -8474,7 +8474,20 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         return this.successfully_focused && System.currentTimeMillis() < this.successfully_focused_time + 5000;
     }
 
+    /** If non-null, this returned array will stored the currently detected faces (if face recognition
+     *  is enabled). The face.temp rect will store the face rectangle in screen coordinates.
+     */
     public CameraController.Face [] getFacesDetected() {
+        if( faces_detected != null ) {
+            // note, we don't store the screen coordinates, as they may become out of date in the
+            // screen orientation changes (if MainActivity.lock_to_landscape==false)
+            final Matrix matrix = getCameraToPreviewMatrix();
+            for(CameraController.Face face : faces_detected) {
+                face_rect.set(face.rect);
+                matrix.mapRect(face_rect);
+                face_rect.round(face.temp);
+            }
+        }
         // FindBugs warns about returning the array directly, but in fact we need to return direct access rather than copying, so that the on-screen display of faces rectangles updates
         return this.faces_detected;
     }
