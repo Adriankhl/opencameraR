@@ -323,7 +323,8 @@ public class CameraController2 extends CameraController {
         private long exposure_time = EXPOSURE_TIME_DEFAULT;
         private boolean has_aperture;
         private float aperture;
-        private Rect scalar_crop_region; // no need for has_scalar_crop_region, as we can set to null instead
+        private int default_zoom;
+        private float control_zoom_ratio;
         private boolean has_ae_exposure_compensation;
         private int ae_exposure_compensation;
         private boolean has_af_mode;
@@ -391,7 +392,7 @@ public class CameraController2 extends CameraController {
             setWhiteBalance(builder);
             setAntiBanding(builder);
             setAEMode(builder, is_still);
-            setCropRegion(builder);
+            setZoomRatio(builder);
             setExposureCompensation(builder);
             setFocusMode(builder);
             setFocusDistance(builder);
@@ -745,9 +746,10 @@ public class CameraController2 extends CameraController {
             return true;
         }
 
-        private void setCropRegion(CaptureRequest.Builder builder) {
-            if( scalar_crop_region != null ) {
-                builder.set(CaptureRequest.SCALER_CROP_REGION, scalar_crop_region);
+        @RequiresApi(api = Build.VERSION_CODES.R)
+        private void setZoomRatio(CaptureRequest.Builder builder) {
+            if( control_zoom_ratio > 0 ) {
+                builder.set(CaptureRequest.CONTROL_ZOOM_RATIO, control_zoom_ratio );
             }
         }
 
@@ -2225,6 +2227,7 @@ public class CameraController2 extends CameraController {
         return "Camera2 (Android L)";
     }
     
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public CameraFeatures getCameraFeatures() throws CameraControllerException {
         if( MyDebug.LOG )
@@ -2264,28 +2267,37 @@ public class CameraController2 extends CameraController {
             }
         }
 
-        float max_zoom = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+        float min_zoom = characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE).getLower();
+        float max_zoom = characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE).getUpper();
         camera_features.is_zoom_supported = max_zoom > 0.0f;
         if( MyDebug.LOG )
+            Log.d(TAG, "min_zoom: " + min_zoom);
             Log.d(TAG, "max_zoom: " + max_zoom);
         if( camera_features.is_zoom_supported ) {
             // set 20 steps per 2x factor
             final int steps_per_2x_factor = 20;
             //final double scale_factor = Math.pow(2.0, 1.0/(double)steps_per_2x_factor);
-            int n_steps =(int)( (steps_per_2x_factor * Math.log(max_zoom + 1.0e-11)) / Math.log(2.0));
-            final double scale_factor = Math.pow(max_zoom, 1.0/(double)n_steps);
+            int n_steps =(int)( (steps_per_2x_factor * Math.log(max_zoom / min_zoom + 1.0e-11)) / Math.log(2.0));
+            final double scale_factor = Math.pow(max_zoom / min_zoom, 1.0/(double)n_steps);
             if( MyDebug.LOG ) {
                 Log.d(TAG, "n_steps: " + n_steps);
                 Log.d(TAG, "scale_factor: " + scale_factor);
             }
             camera_features.zoom_ratios = new ArrayList<>();
-            camera_features.zoom_ratios.add(100);
-            double zoom = 1.0;
+            camera_features.zoom_ratios.add((int)(min_zoom * 100));
+            double zoom = min_zoom;
+
+            boolean done_default_zoom = false;
             for(int i=0;i<n_steps-1;i++) {
                 zoom *= scale_factor;
                 camera_features.zoom_ratios.add((int)(zoom*100));
+                if(zoom >= 1.0 && !done_default_zoom) {
+                    camera_settings.default_zoom = i;
+                    done_default_zoom = true;
+                }
             }
             camera_features.zoom_ratios.add((int)(max_zoom*100));
+            camera_features.min_zoom_ratio = min_zoom;
             camera_features.max_zoom = camera_features.zoom_ratios.size()-1;
             this.zoom_ratios = camera_features.zoom_ratios;
         }
@@ -4195,6 +4207,7 @@ public class CameraController2 extends CameraController {
         return this.current_zoom_value;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public void setZoom(int value) {
         if( zoom_ratios == null ) {
@@ -4208,37 +4221,8 @@ public class CameraController2 extends CameraController {
             throw new RuntimeException(); // throw as RuntimeException, as this is a programming error
         }
         float zoom = zoom_ratios.get(value)/100.0f;
-        Rect sensor_rect = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-        int left = sensor_rect.width()/2;
-        int right = left;
-        int top = sensor_rect.height()/2;
-        int bottom = top;
-        int hwidth = (int)(sensor_rect.width() / (2.0*zoom));
-        int hheight = (int)(sensor_rect.height() / (2.0*zoom));
-        left -= hwidth;
-        right += hwidth;
-        top -= hheight;
-        bottom += hheight;
-        if( MyDebug.LOG ) {
-            Log.d(TAG, "zoom: " + zoom);
-            Log.d(TAG, "hwidth: " + hwidth);
-            Log.d(TAG, "hheight: " + hheight);
-            Log.d(TAG, "sensor_rect left: " + sensor_rect.left);
-            Log.d(TAG, "sensor_rect top: " + sensor_rect.top);
-            Log.d(TAG, "sensor_rect right: " + sensor_rect.right);
-            Log.d(TAG, "sensor_rect bottom: " + sensor_rect.bottom);
-            Log.d(TAG, "left: " + left);
-            Log.d(TAG, "top: " + top);
-            Log.d(TAG, "right: " + right);
-            Log.d(TAG, "bottom: " + bottom);
-            /*Rect current_rect = previewBuilder.get(CaptureRequest.SCALER_CROP_REGION);
-            Log.d(TAG, "current_rect left: " + current_rect.left);
-            Log.d(TAG, "current_rect top: " + current_rect.top);
-            Log.d(TAG, "current_rect right: " + current_rect.right);
-            Log.d(TAG, "current_rect bottom: " + current_rect.bottom);*/
-        }
-        camera_settings.scalar_crop_region = new Rect(left, top, right, bottom);
-        camera_settings.setCropRegion(previewBuilder);
+        camera_settings.control_zoom_ratio = zoom;
+        camera_settings.setZoomRatio(previewBuilder);
         this.current_zoom_value = value;
         try {
             setRepeatingRequest();
@@ -4251,6 +4235,11 @@ public class CameraController2 extends CameraController {
             }
             e.printStackTrace();
         } 
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.R)
+    public void setDefaultZoom() {
+        setZoom(camera_settings.default_zoom);
     }
     
     @Override

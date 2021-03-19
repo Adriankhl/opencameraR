@@ -298,6 +298,7 @@ public class CameraController1 extends CameraController {
         CameraFeatures camera_features = new CameraFeatures();
         camera_features.is_zoom_supported = parameters.isZoomSupported();
         if( camera_features.is_zoom_supported ) {
+            camera_features.min_zoom_ratio = 1.0;
             camera_features.max_zoom = parameters.getMaxZoom();
             try {
                 camera_features.zoom_ratios = parameters.getZoomRatios();
@@ -309,6 +310,7 @@ public class CameraController1 extends CameraController {
                     Log.e(TAG, "NumberFormatException in getZoomRatios()");
                 e.printStackTrace();
                 camera_features.is_zoom_supported = false;
+                camera_features.min_zoom_ratio = 1.0;
                 camera_features.max_zoom = 0;
                 camera_features.zoom_ratios = null;
             }
@@ -935,6 +937,10 @@ public class CameraController1 extends CameraController {
             Log.e(TAG, "failed to set parameters for zoom");
             e.printStackTrace();
         }
+    }
+
+    public void setDefaultZoom() {
+        setZoom(0);
     }
 
     public int getExposureCompensation() {

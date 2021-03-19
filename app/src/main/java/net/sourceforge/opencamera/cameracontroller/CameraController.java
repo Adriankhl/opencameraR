@@ -60,6 +60,7 @@ public abstract class CameraController {
 
     public static class CameraFeatures {
         public boolean is_zoom_supported;
+        public double min_zoom_ratio;
         public int max_zoom;
         public List<Integer> zoom_ratios;
         public boolean supports_face_detection;
@@ -481,6 +482,7 @@ public abstract class CameraController {
     public abstract void setJpegQuality(int quality);
     public abstract int getZoom();
     public abstract void setZoom(int value);
+    public abstract void setDefaultZoom();
     public abstract int getExposureCompensation();
     public abstract boolean setExposureCompensation(int new_exposure);
     public abstract void setPreviewFpsRange(int min, int max);
