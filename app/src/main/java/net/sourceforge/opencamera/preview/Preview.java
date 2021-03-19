@@ -3906,12 +3906,12 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
             }
             else {
                 // find the closest zoom level
-                if( scale_factor > min_zoom_ratio ) {
+                if( scale_factor > 1.0f ) {
                     // zooming in
                     for(int i=zoom_factor;i<zoom_ratios.size();i++) {
                         if( zoom_ratios.get(i)/100.0f >= zoom_ratio ) {
                             if( MyDebug.LOG )
-                                Log.d(TAG, "zoom int, found new zoom by comparing " + zoom_ratios.get(i)/100.0f + " >= " + zoom_ratio);
+                                Log.d(TAG, "zoom in, found new zoom by comparing " + zoom_ratios.get(i)/100.0f + " >= " + zoom_ratio);
                             new_zoom_factor = i;
                             break;
                         }
