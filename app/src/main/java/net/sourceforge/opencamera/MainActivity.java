@@ -3239,6 +3239,10 @@ public class MainActivity extends Activity {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE); // testing for devices with unusual sensor orientation (e.g., Nexus 5X)
         }
+        else {
+            // allow orientation to change for camera, even if user has locked orientation
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+        }
         if( preview != null ) {
             // also need to call preview.setCameraDisplayOrientation, as this handles if the user switched from portrait to reverse landscape whilst in settings/etc
             // as switching from reverse landscape back to landscape isn't detected in onConfigurationChanged
@@ -3323,10 +3327,8 @@ public class MainActivity extends Activity {
     public void setWindowFlagsForSettings(boolean set_lock_protect) {
         if( MyDebug.LOG )
             Log.d(TAG, "setWindowFlagsForSettings: " + set_lock_protect);
-        if( lock_to_landscape ) {
-            // allow screen rotation
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-        }
+        // allow screen rotation
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
         // revert to standard screen blank behaviour
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
