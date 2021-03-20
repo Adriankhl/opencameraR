@@ -269,8 +269,15 @@ public class CameraController2 extends CameraController {
     /*private boolean capture_result_has_focus_distance;
     private float capture_result_focus_distance_min;
     private float capture_result_focus_distance_max;*/
-    private final static long max_preview_exposure_time_c = 1000000000L/12;
-    
+    /** Even if using long exposure, we want to set a maximum for the preview to avoid very low
+     *  frame rates.
+     *  Originally this was 1/12s, but I think we can get away with 1/5s - for this range, having
+     *  a WYSIWYG preview is probably still better than the reduced framerate. Also as a side-benefit,
+     *  it reduces the impact of the Samsung Galaxy Android 11 bug where manual exposure is ignored if
+     *  different to the preview.
+     */
+    private final static long max_preview_exposure_time_c = 1000000000L/5;
+
     private enum RequestTagType {
         CAPTURE, // request is either for a regular non-burst capture, or the last of a burst capture sequence
         CAPTURE_BURST_IN_PROGRESS // request is for a burst capture, but isn't the last of the burst capture sequence
@@ -2768,9 +2775,12 @@ public class CameraController2 extends CameraController {
                     camera_features.max_exposure_time = exposure_time_range.getUpper();
                     if( is_samsung_galaxy_s && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
                         // seems we can get away with longer exposure on some devices (e.g., Galaxy S10e claims only max of 0.1s, but works with 1/3s)
+                        // but Android 11 on Samsung devices also introduces a bug where manual exposure gets ignored if different to the preview,
+                        // and since the max preview rate is limited to 1/5s (see max_preview_exposure_time_c), there's no point
+                        // going above this!
                         if( MyDebug.LOG )
                             Log.d(TAG, "boost max_exposure_time, was: " + max_exposure_time);
-                        camera_features.max_exposure_time = Math.max(camera_features.max_exposure_time, 1000000000L/3);
+                        camera_features.max_exposure_time = Math.max(camera_features.max_exposure_time, 1000000000L/5);
                     }
                 }
             }
@@ -7890,7 +7900,11 @@ public class CameraController2 extends CameraController {
                 // (This affects the exposure time shown on on-screen preview - whilst showing the preview exposure time
                 // isn't necessarily wrong, it tended to confuse people, thinking that manual exposure time wasn't working
                 // when set above max_preview_exposure_time_c.)
-                if( camera_settings.has_iso && camera_settings.exposure_time > max_preview_exposure_time_c )
+                // Update: but on some devices (e.g., Galaxy S10e) the reported exposure time can become inaccurate when
+                // we set longer preview exposure times (fine at 1/15s, 1/10s, but wrong at 0.2s and 0.3s), possibly this is
+                // by design if the preview along supports certain rates(?), but best to fall back to the requested exposure
+                // time in manual mode if requested exposure is longer than 1/12s OR the max_preview_exposure_time_c.
+                if( camera_settings.has_iso && camera_settings.exposure_time > Math.min(max_preview_exposure_time_c, 1000000000L/12) )
                     capture_result_exposure_time = camera_settings.exposure_time;
 
                 if( capture_result_exposure_time <= 0 ) {
