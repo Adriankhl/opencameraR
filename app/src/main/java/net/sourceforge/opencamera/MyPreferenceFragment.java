@@ -1626,7 +1626,8 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
     }
 
     /** Programmatically set up dependencies for preference types (e.g., ListPreference) that don't
-     *  support this in xml (such as SwitchPreference and CheckBoxPreference).
+     *  support this in xml (such as SwitchPreference and CheckBoxPreference), or where this depends
+     *  on the device (e.g., Android version).
      */
     private void setupDependencies() {
         // set up dependency for preference_audio_noise_control_sensitivity on preference_audio_control
@@ -1655,6 +1656,14 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
                 }
             });
             setVideoProfileGammaDependency(pref.getValue()); // ensure dependency is enabled/disabled as required for initial value
+        }
+
+        if( !MyApplicationInterface.mediastoreSupportsVideoSubtitles() ) {
+            // video subtitles only supported with SAF on Android 11+
+            pref = (ListPreference)findPreference("preference_video_subtitle");
+            if( pref != null ) {
+                pref.setDependency("preference_using_saf");
+            }
         }
     }
 
@@ -1889,7 +1898,15 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
      */
     public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
         if( MyDebug.LOG )
-            Log.d(TAG, "onSharedPreferenceChanged");
+            Log.d(TAG, "onSharedPreferenceChanged: " + key);
+
+        if( key == null ) {
+            // On Android 11+, when targetting Android 11+, this method is called with key==null
+            // if preferences are cleared. Unclear if this happens here in practice, but return
+            // just in case.
+            return;
+        }
+
         Preference pref = findPreference(key);
         if( pref instanceof TwoStatePreference ) {
             TwoStatePreference twoStatePref = (TwoStatePreference)pref;

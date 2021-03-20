@@ -253,6 +253,8 @@
                 />
     
             <!--  if we move this to another PreferenceGroup, we should update code to remove this Preference -->
+            <!-- if this is changed to being different to SwitchPreference or we change the key name, consider whether
+                MyPreferenceFragment.setupDependencies() needs updating. -->
             <SwitchPreference
                 android:key="preference_using_saf"
                 android:title="@string/preference_using_saf"

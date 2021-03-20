@@ -1044,9 +1044,13 @@ the video itself, it stores the text in a separate subtitles
 SRT files, and use them to display the information as subtitles. The subtitles will record the date and time. If "Store location data" is enabled (see
 "Location settings" below), then the current location latitude and longitude coordinates will also be recorded (if the location is
 known). Similarly for "Store compass direction". Note that you can control the formatting style for date, time and location using
-the options under the "Photo settings" menu (Datestamp format, Timestamp format, GPS stamp format, Distance unit).
-Note that on Android 10+, using this option means the ".SRT" files will show in most gallery apps as separate unplayable video
-files. A workaround is to enable Settings/More camera controls/"Use Storage Access Framework".</p>
+    the options under the "Photo settings" menu (Datestamp format, Timestamp format, GPS stamp format, Distance unit).</p>
+<ul>
+    <li>Note that on Android 10, using this option means the ".SRT" files will show in most gallery apps as separate unplayable video
+        files. A workaround is to enable Settings/More camera controls/"Use Storage Access Framework".</li>
+    <li>On Android 11+, this option is only available if Settings/More camera controls/"Use Storage Access Framework" is
+        enabled. This is due to changes in Android 11 which affect how applications are able to save files.</li>
+</ul>
 
 <p><b>Video bitrate (approx)</b> - If set to a value other than "default", the default video bitrate is overridden. Higher values mean better
     quality video, but the files take up more disk space. Note that some values may be unsupported by your device, and may

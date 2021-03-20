@@ -1277,7 +1277,17 @@ public class MyApplicationInterface extends BasicApplicationInterface {
         return font_size;
     }
 
-    private String getVideoSubtitlePref() {
+    /** Whether the Mediastore API supports saving subtitle files.
+     */
+    static boolean mediastoreSupportsVideoSubtitles() {
+        // Android 11+ no longer allows mediastore API to save types that Android doesn't support!
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.R;
+    }
+
+    private String getVideoSubtitlePref(VideoMethod video_method) {
+        if( video_method == VideoMethod.MEDIASTORE && !mediastoreSupportsVideoSubtitles() ) {
+            return "preference_video_subtitle_no";
+        }
         return sharedPreferences.getString(PreferenceKeys.VideoSubtitlePref, "preference_video_subtitle_no");
     }
 
@@ -1966,7 +1976,7 @@ public class MyApplicationInterface extends BasicApplicationInterface {
             main_activity.getMainUI().setupExposureUI();
         }
         final VideoMethod video_method = this.createOutputVideoMethod();
-        boolean dategeo_subtitles = getVideoSubtitlePref().equals("preference_video_subtitle_yes");
+        boolean dategeo_subtitles = getVideoSubtitlePref(video_method).equals("preference_video_subtitle_yes");
         if( dategeo_subtitles && video_method != ApplicationInterface.VideoMethod.URI ) {
             final String preference_stamp_dateformat = this.getStampDateFormatPref();
             final String preference_stamp_timeformat = this.getStampTimeFormatPref();

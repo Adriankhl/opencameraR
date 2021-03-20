@@ -2366,6 +2366,12 @@ public class MainActivity extends Activity {
             if( MyDebug.LOG )
                 Log.d(TAG, "onSharedPreferenceChanged: " + key);
 
+            if( key == null ) {
+                // on Android 11+, when targetting Android 11+, this method is called with key==null
+                // if preferences are cleared (see testSettings(), or when doing "Reset settings")
+                return;
+            }
+
             any_change = true;
 
             switch( key ) {
@@ -3886,21 +3892,18 @@ public class MainActivity extends Activity {
             if( !done ) {
                 if( MyDebug.LOG )
                     Log.d(TAG, "try ACTION_VIEW");
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                // see http://stackoverflow.com/questions/11073832/no-activity-found-to-handle-intent - needed to fix crash if no gallery app installed
-                //Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("blah")); // test
-                if( intent.resolveActivity(getPackageManager()) != null ) {
-                    try {
-                        this.startActivity(intent);
-                    }
-                    catch(SecurityException e2) {
-                        // have received this crash from Google Play - don't display a toast, simply do nothing
-                        Log.e(TAG, "SecurityException from ACTION_VIEW startActivity");
-                        e2.printStackTrace();
-                    }
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                    this.startActivity(intent);
                 }
-                else{
+                catch(ActivityNotFoundException e) {
+                    e.printStackTrace();
                     preview.showToast(null, R.string.no_gallery_app);
+                }
+                catch(SecurityException e) {
+                    // have received this crash from Google Play - don't display a toast, simply do nothing
+                    Log.e(TAG, "SecurityException from ACTION_VIEW startActivity");
+                    e.printStackTrace();
                 }
             }
         }
@@ -4055,8 +4058,7 @@ public class MainActivity extends Activity {
                         Log.d(TAG, "returned single fileUri: " + fileUri);
                     // persist permission just in case?
                     final int takeFlags = resultData.getFlags()
-                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     try {
 					/*if( true )
 						throw new SecurityException(); // test*/
@@ -4111,8 +4113,7 @@ public class MainActivity extends Activity {
                         Log.d(TAG, "returned single fileUri: " + fileUri);
                     // persist permission just in case?
                     final int takeFlags = resultData.getFlags()
-                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     try {
 					/*if( true )
 						throw new SecurityException(); // test*/

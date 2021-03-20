@@ -16,7 +16,7 @@ public class VideoTests {
         if( !MainActivityTest.test_camera2 ) {
             suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideoSubtitles"));
             suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideoSubtitlesSAF"));
-            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideoSubtitlesGPS"));
+            suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideoSubtitlesGPSSAF"));
         }
         if( MainActivityTest.test_camera2 ) {
             // tests for video log profile (but these don't actually record video)

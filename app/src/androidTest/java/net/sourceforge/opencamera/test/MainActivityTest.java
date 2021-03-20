@@ -6456,7 +6456,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             updateForSettings();
         }
 
-        subTestTakeVideo(false, false, false, false, null, 5000, false, 1);
+        subTestTakeVideo(false, false, false, false, null, 5000, false,
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? 0 : 1 // boo, Android 11 doesn't allow video subtitles to be saved with mediastore API!
+        );
     }
 
     /** Tests video subtitles option, when using Storage Access Framework.
@@ -6479,9 +6481,10 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     /** Tests video subtitles option, including GPS - also tests losing the connection.
+     *  Also test with Storage Access Framework, so this can run on Android 11+.
      */
-    public void testTakeVideoSubtitlesGPS() throws InterruptedException {
-        Log.d(TAG, "testTakeVideoSubtitlesGPS");
+    public void testTakeVideoSubtitlesGPSSAF() throws InterruptedException {
+        Log.d(TAG, "testTakeVideoSubtitlesGPSSAF");
 
         setToDefault();
         {
@@ -6489,6 +6492,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             SharedPreferences.Editor editor = settings.edit();
             editor.putString(PreferenceKeys.VideoSubtitlePref, "preference_video_subtitle_yes");
             editor.putBoolean(PreferenceKeys.LocationPreferenceKey, true);
+            editor.putBoolean(PreferenceKeys.UsingSAFPreferenceKey, true);
+            editor.putString(PreferenceKeys.SaveLocationSAFPreferenceKey, "content://com.android.externalstorage.documents/tree/primary%3ADCIM%2FOpenCamera");
             editor.apply();
             updateForSettings();
         }
