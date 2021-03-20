@@ -4098,6 +4098,8 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     public String getExposureTimeString(long exposure_time) {
+        /*if( MyDebug.LOG )
+            Log.d(TAG, "getExposureTimeString(): " + exposure_time);*/
         double exposure_time_s = exposure_time/1000000000.0;
         String string;
         if( exposure_time > 100000000 ) {
@@ -4108,6 +4110,8 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
             double exposure_time_r = 1.0/exposure_time_s;
             string = " 1/" + (int)(exposure_time_r + 0.5) + getResources().getString(R.string.seconds_abbreviation);
         }
+        /*if( MyDebug.LOG )
+            Log.d(TAG, "getExposureTimeString() return: " + string);*/
         return string;
     }
 
