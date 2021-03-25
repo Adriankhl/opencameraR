@@ -1731,6 +1731,8 @@ public class MainActivity extends Activity {
             case Configuration.ORIENTATION_PORTRAIT:
                 result = SystemOrientation.PORTRAIT;
                 break;
+            case Configuration.ORIENTATION_SQUARE:
+            case Configuration.ORIENTATION_UNDEFINED:
             default:
                 if( MyDebug.LOG )
                     Log.e(TAG, "unknown system orientation: " + system_orientation);
