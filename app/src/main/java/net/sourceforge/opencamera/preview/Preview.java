@@ -699,8 +699,11 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         if( !this.is_video && !was_paused && applicationInterface.getTouchCapturePref() ) {
             if( MyDebug.LOG )
                 Log.d(TAG, "touch to capture");
-            // interpret as if user had clicked take photo/video button, except that we set the focus/metering areas
-            this.takePicturePressed(false, false);
+            // Interpret as if user had clicked take photo/video button, except that we set the focus/metering areas.
+            // We go via ApplicationInterface instead of going direct to Preview.takePicturePressed(), so that
+            // the application can handle same as if user had pressed shutter button (needed so that this works
+            // correctly in Panorama mode).
+            applicationInterface.requestTakePhoto();
             return true;
         }
 
@@ -738,8 +741,11 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         if( takePhotoOnDoubleTap() ) {
             if( MyDebug.LOG )
                 Log.d(TAG, "double-tap to capture");
-            // interpret as if user had clicked take photo/video button
-            takePicturePressed(false, false);
+            // Interpret as if user had clicked take photo/video button.
+            // We go via ApplicationInterface instead of going direct to Preview.takePicturePressed(), so that
+            // the application can handle same as if user had pressed shutter button (needed so that this works
+            // correctly in Panorama mode).
+            applicationInterface.requestTakePhoto();
         }
         return true;
     }

@@ -514,6 +514,10 @@ public abstract class BasicApplicationInterface implements ApplicationInterface 
     }
 
     @Override
+    public void requestTakePhoto() {
+    }
+
+    @Override
     public void setCameraIdPref(int cameraId) {
 
     }

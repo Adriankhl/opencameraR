@@ -2716,6 +2716,13 @@ public class MyApplicationInterface extends BasicApplicationInterface {
         main_activity.getMainUI().setSeekbarZoom(new_zoom);
     }
 
+    @Override
+    public void requestTakePhoto() {
+        if( MyDebug.LOG )
+            Log.d(TAG, "requestTakePhoto");
+        main_activity.takePicture(false);
+    }
+
     /** Switch to the first available camera that is front or back facing as desired.
      * @param front_facing Whether to switch to a front or back facing camera.
      */
