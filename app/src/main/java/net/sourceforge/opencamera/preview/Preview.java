@@ -620,10 +620,6 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         if( touch_was_multitouch ) {
             return true;
         }
-        if( !this.is_video && this.isTakingPhotoOrOnTimer() ) {
-            // if video, okay to refocus when recording
-            return true;
-        }
 
         // ignore swipes
         {
@@ -644,6 +640,24 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                     Log.d(TAG, "touch was a swipe");
                 return true;
             }
+        }
+
+        if( takePhotoOnDoubleTap() ) {
+            // need to wait until onSingleTapConfirmed() before calling handleSingleTouch(), e.g., don't
+            // want to do touch-to-focus if this is part of a double tap
+            return true;
+        }
+
+        return handleSingleTouch(event, was_paused);
+    }
+
+    private boolean handleSingleTouch(MotionEvent event, boolean was_paused) {
+        if( MyDebug.LOG )
+            Log.d(TAG, "handleSingleTouch");
+
+        if( !this.is_video && this.isTakingPhotoOrOnTimer() ) {
+            // if video, okay to refocus when recording
+            return true;
         }
 
         // note, we always try to force start the preview (in case is_preview_paused has become false)
@@ -711,14 +725,20 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         }
     }
 
+    /** Returns whether we will take a photo on a double tap.
+     */
+    private boolean takePhotoOnDoubleTap() {
+        return !is_video && applicationInterface.getDoubleTapCapturePref();
+    }
+
     @SuppressWarnings("SameReturnValue")
     public boolean onDoubleTap() {
         if( MyDebug.LOG )
             Log.d(TAG, "onDoubleTap()");
-        if( !is_video && applicationInterface.getDoubleTapCapturePref() ) {
+        if( takePhotoOnDoubleTap() ) {
             if( MyDebug.LOG )
                 Log.d(TAG, "double-tap to capture");
-            // interpret as if user had clicked take photo/video button (don't need to set focus/metering, as this was done in touchEvent() for the first touch of the double-tap)
+            // interpret as if user had clicked take photo/video button
             takePicturePressed(false, false);
         }
         return true;
@@ -726,9 +746,29 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
 
     private class DoubleTapListener extends GestureDetector.SimpleOnGestureListener {
         @Override
+        public boolean onSingleTapConfirmed(MotionEvent e) {
+            if( MyDebug.LOG )
+                Log.d(TAG, "onSingleTapConfirmed");
+            // If we're taking a photo on double tap, then for single taps we need to wait until these are confirmed
+            // otherwise we handle via Preview.touchEvent().
+            // Arguably we could handle everything via onSingleTapConfirmed(), but want to avoid
+            // unexpected changes of behaviour - plus it would mean a slight delay for touch to
+            // focus (since onSingleTapConfirmed obviously has to wait to be sure this isn't a
+            // double tap).
+            if( takePhotoOnDoubleTap() ) {
+                // now safe to handle the single touch
+                boolean was_paused = !is_preview_started;
+                if( MyDebug.LOG )
+                    Log.d(TAG, "was_paused: " + was_paused);
+                return handleSingleTouch(e, was_paused);
+            }
+            return false;
+        }
+
+        @Override
         public boolean onDoubleTap(MotionEvent e) {
             if( MyDebug.LOG )
-                Log.d(TAG, "onDoubleTap()");
+                Log.d(TAG, "onDoubleTap");
             return Preview.this.onDoubleTap();
         }
     }
