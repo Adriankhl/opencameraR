@@ -890,8 +890,16 @@ public class CameraController1 extends CameraController {
     }
 
     public boolean getVideoStabilization() {
-        Camera.Parameters parameters = this.getParameters();
-        return parameters.getVideoStabilization();
+        try {
+            Camera.Parameters parameters = this.getParameters();
+            return parameters.getVideoStabilization();
+        }
+        catch(RuntimeException e) {
+            // have had crashes from Google Play for getParameters - assume video stabilization not enabled
+            Log.e(TAG, "failed to get parameters for video stabilization");
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
