@@ -172,8 +172,9 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     private boolean is_video;
     private volatile MediaRecorder video_recorder; // must be volatile for test project reading the state
     private volatile boolean video_start_time_set; // must be volatile for test project reading the state
-    private long video_start_time; // when the video recording was started, or last resumed if it's was paused
+    private long video_start_time; // system time when the video recording was started, or last resumed if it was paused
     private long video_accumulated_time; // this time should be added to (System.currentTimeMillis() - video_start_time) to find the true video duration, that takes into account pausing/resuming, as well as any auto-restarts from max filesize
+    private long video_time_last_maxfilesize_restart; // when the video last restarted due to maxfilesize (or otherwise 0) - note this is time in ms relative to the recorded video, and not system time
     private boolean video_recorder_is_paused; // whether video_recorder is running but has paused
     private boolean video_restart_on_max_filesize;
     private static final long min_safe_restart_video_time = 1000; // if the remaining max time after restart is less than this, don't restart
@@ -1082,7 +1083,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         return applicationInterface.getContext();
     }
 
-    /** Restart video - either due to hitting maximum filesize, or maximum duration.
+    /** Restart video - either due to hitting maximum filesize (for pre-Android 8 when not able to restart seamlessly), or maximum duration.
      */
     private void restartVideo(boolean due_to_max_filesize) {
         if( MyDebug.LOG )
@@ -5224,6 +5225,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
             }
             else {
                 videoFileInfo.close();
+                video_time_last_maxfilesize_restart = getVideoTime(false);
                 applicationInterface.restartedVideo(videoFileInfo.video_method, videoFileInfo.video_uri, videoFileInfo.video_filename);
                 videoFileInfo = nextVideoFileInfo;
                 nextVideoFileInfo = null;
@@ -5695,6 +5697,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
 
         video_start_time = System.currentTimeMillis();
         video_start_time_set = true;
+        video_time_last_maxfilesize_restart = max_filesize_restart ? video_accumulated_time : 0;
         applicationInterface.startedVideo();
         // Don't send intent for ACTION_MEDIA_SCANNER_SCAN_FILE yet - wait until finished, so we get completed file.
         // Don't do any further calls after applicationInterface.startedVideo() that might throw an error - instead video error
@@ -8377,12 +8380,17 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         return isVideoRecording() && video_recorder_is_paused;
     }
 
-    public long getVideoTime() {
+    /** Returns the time of the current video.
+     *  In case of restarting due to max filesize (whether on Android 8+ or not), this includes the
+     *  total time of all the previous video files too, unless this_file_only==true;
+     */
+    public long getVideoTime(boolean this_file_only) {
+        long offset = this_file_only ? video_time_last_maxfilesize_restart : 0;
         if( this.isVideoRecordingPaused() ) {
-            return video_accumulated_time;
+            return video_accumulated_time - offset;
         }
         long time_now = System.currentTimeMillis();
-        return time_now - video_start_time + video_accumulated_time;
+        return time_now - video_start_time + video_accumulated_time - offset;
     }
 
     public long getVideoAccumulatedTime() {

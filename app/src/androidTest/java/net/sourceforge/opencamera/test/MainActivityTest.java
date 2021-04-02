@@ -6573,7 +6573,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertFalse(mPreview.isVideoRecordingPaused());
-                long video_time = mPreview.getVideoTime();
+                long video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 3000 - time_tol_ms );
                 assertTrue( video_time <= 3000 + time_tol_ms );
@@ -6601,7 +6601,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertTrue( mPreview.isVideoRecordingPaused() );
-                video_time = mPreview.getVideoTime();
+                video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 3000 - time_tol_ms );
                 assertTrue( video_time <= 3000 + time_tol_ms );
@@ -6631,7 +6631,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertFalse(mPreview.isVideoRecordingPaused());
-                video_time = mPreview.getVideoTime();
+                video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 6000 - time_tol_ms );
                 assertTrue( video_time <= 6000 + time_tol_ms );
@@ -6681,7 +6681,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertFalse(mPreview.isVideoRecordingPaused());
-                long video_time = mPreview.getVideoTime();
+                long video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 3000 - time_tol_ms );
                 assertTrue( video_time <= 3000 + time_tol_ms );
@@ -6711,7 +6711,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertTrue( mPreview.isVideoRecordingPaused() );
-                video_time = mPreview.getVideoTime();
+                video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 3000 - time_tol_ms );
                 assertTrue( video_time <= 3000 + time_tol_ms );
@@ -6899,12 +6899,12 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 // wait until automatically stops
                 Log.d(TAG, "wait until video recording stops");
                 long time_s = System.currentTimeMillis();
-                long video_time_s = mPreview.getVideoTime();
+                long video_time_s = mPreview.getVideoTime(false);
                 // simulate remaining memory now being reduced, so we don't keep trying to restart
                 mActivity.getApplicationInterface().test_available_memory = 10000000;
                 while( mPreview.isVideoRecording() ) {
                     assertTrue( System.currentTimeMillis() - time_s <= 35000 );
-                    long video_time = mPreview.getVideoTime();
+                    long video_time = mPreview.getVideoTime(false);
                     assertTrue( video_time >= video_time_s );
                 }
                 Log.d(TAG, "video recording now stopped");
@@ -6984,6 +6984,11 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             public int doTest() {
                 if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ) {
                     assertTrue(mPreview.isVideoRecording());
+
+                    long video_time = mPreview.getVideoTime(false);
+                    long video_time_this_file = mPreview.getVideoTime(true);
+                    assertEquals(video_time, video_time_this_file);
+
                     Log.d(TAG, "wait");
                     try {
                         Thread.sleep(10000);
@@ -7002,10 +7007,10 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 // wait until automatically stops
                 Log.d(TAG, "wait until video recording stops");
                 long time_s = System.currentTimeMillis();
-                long video_time_s = mPreview.getVideoTime();
+                long video_time_s = mPreview.getVideoTime(false);
                 while( mPreview.isVideoRecording() ) {
                     assertTrue( System.currentTimeMillis() - time_s <= 8000 );
-                    long video_time = mPreview.getVideoTime();
+                    long video_time = mPreview.getVideoTime(false);
                     assertTrue( video_time >= video_time_s );
                 }
                 Log.d(TAG, "video recording now stopped - wait for restart");
@@ -7028,7 +7033,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                         Log.e(TAG, "time: " + (c_time - time_s));
                     }
                     assertTrue( c_time - time_s <= 10000 );
-                    long video_time = mPreview.getVideoTime();
+                    long video_time = mPreview.getVideoTime(false);
                     if( video_time < video_time_s )
                         Log.d(TAG, "compare: " + video_time_s + " to " + video_time);
                     assertTrue( video_time + 1 >= video_time_s );
@@ -7082,6 +7087,13 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ) {
             assertTrue( n_new_files >= 2 );
         }
+
+        // if we've restarted, the total video time should be longer than the video time for the most recent file
+        long video_time = mPreview.getVideoTime(false);
+        long video_time_this_file = mPreview.getVideoTime(true);
+        Log.d(TAG, "video_time: " + video_time);
+        Log.d(TAG, "video_time_this_file: " + video_time_this_file);
+        assertTrue(video_time > video_time_this_file + 1000);
     }
 
     /** Max filesize is for ~4.5s, and max duration is 5s, check we only get 1 video.
@@ -7110,10 +7122,10 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 // wait until automatically stops
                 Log.d(TAG, "wait until video recording stops");
                 long time_s = System.currentTimeMillis();
-                long video_time_s = mPreview.getVideoTime();
+                long video_time_s = mPreview.getVideoTime(false);
                 while( mPreview.isVideoRecording() ) {
                     assertTrue( System.currentTimeMillis() - time_s <= 8000 );
-                    long video_time = mPreview.getVideoTime();
+                    long video_time = mPreview.getVideoTime(false);
                     assertTrue( video_time >= video_time_s );
                 }
                 Log.d(TAG, "video recording now stopped - check we don't restart");

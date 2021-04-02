@@ -1847,7 +1847,7 @@ public class DrawPreview {
                 }
             }
             else if( preview.isVideoRecording() ) {
-                long video_time = preview.getVideoTime();
+                long video_time = preview.getVideoTime(false);
                 String time_s = getTimeStringFromSeconds(video_time/1000);
             	/*if( MyDebug.LOG )
 					Log.d(TAG, "video_time: " + video_time + " " + time_s);*/
