@@ -347,9 +347,25 @@ public class MyApplicationInterface extends BasicApplicationInterface {
             contentValues.put(MediaStore.Video.Media.IS_PENDING, 1);
         }
 
-        last_video_file_uri = main_activity.getContentResolver().insert(folder, contentValues);
-        if( MyDebug.LOG )
-            Log.d(TAG, "uri: " + last_video_file_uri);
+        try {
+            last_video_file_uri = main_activity.getContentResolver().insert(folder, contentValues);
+            if( MyDebug.LOG )
+                Log.d(TAG, "uri: " + last_video_file_uri);
+        }
+        catch(IllegalArgumentException e) {
+            // can happen for mediastore method if invalid ContentResolver.insert() call
+            if( MyDebug.LOG )
+                Log.e(TAG, "IllegalArgumentException writing video file: " + e.getMessage());
+            e.printStackTrace();
+            throw new IOException();
+        }
+        catch(IllegalStateException e) {
+            // have received Google Play crashes from ContentResolver.insert() call for mediastore method
+            if( MyDebug.LOG )
+                Log.e(TAG, "IllegalStateException writing video file: " + e.getMessage());
+            e.printStackTrace();
+            throw new IOException();
+        }
         if( last_video_file_uri == null ) {
             throw new IOException();
         }
@@ -2191,6 +2207,18 @@ public class MyApplicationInterface extends BasicApplicationInterface {
                     catch(IOException e) {
                         if( MyDebug.LOG )
                             Log.e(TAG, "SubtitleVideoTimerTask failed to create or write");
+                        e.printStackTrace();
+                    }
+                    catch(IllegalArgumentException e) {
+                        // can happen for mediastore method if invalid ContentResolver.insert() call
+                        if( MyDebug.LOG )
+                            Log.e(TAG, "IllegalArgumentException from SubtitleVideoTimerTask writing file: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                    catch(IllegalStateException e) {
+                        // for ContentResolver.insert() call for mediastore method
+                        if( MyDebug.LOG )
+                            Log.e(TAG, "IllegalStateException from SubtitleVideoTimerTask writing file: " + e.getMessage());
                         e.printStackTrace();
                     }
                     if( MyDebug.LOG )

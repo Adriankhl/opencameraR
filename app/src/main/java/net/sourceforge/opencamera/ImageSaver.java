@@ -2616,6 +2616,13 @@ public class ImageSaver extends Thread {
             e.printStackTrace();
             main_activity.getPreview().showToast(null, R.string.failed_to_save_photo);
         }
+        catch(IllegalStateException e) {
+            // have received Google Play crashes from ContentResolver.insert() call for mediastore method
+            if( MyDebug.LOG )
+                Log.e(TAG, "IllegalStateException writing file: " + e.getMessage());
+            e.printStackTrace();
+            main_activity.getPreview().showToast(null, R.string.failed_to_save_photo);
+        }
 
         if( raw_only ) {
             // no saved image to record
@@ -3188,6 +3195,20 @@ public class ImageSaver extends Thread {
         catch(IOException e) {
             if( MyDebug.LOG )
                 Log.e(TAG, "ioexception writing raw image file");
+            e.printStackTrace();
+            main_activity.getPreview().showToast(null, R.string.failed_to_save_photo_raw);
+        }
+        catch(IllegalArgumentException e) {
+            // can happen for mediastore method if invalid ContentResolver.insert() call
+            if( MyDebug.LOG )
+                Log.e(TAG, "IllegalArgumentException writing raw file: " + e.getMessage());
+            e.printStackTrace();
+            main_activity.getPreview().showToast(null, R.string.failed_to_save_photo_raw);
+        }
+        catch(IllegalStateException e) {
+            // for ContentResolver.insert() call for mediastore method
+            if( MyDebug.LOG )
+                Log.e(TAG, "IllegalStateException writing raw file: " + e.getMessage());
             e.printStackTrace();
             main_activity.getPreview().showToast(null, R.string.failed_to_save_photo_raw);
         }
