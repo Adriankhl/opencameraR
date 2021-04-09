@@ -2152,7 +2152,26 @@ public class MyApplicationInterface extends BasicApplicationInterface {
                                         contentValues.put(MediaStore.Video.Media.RELATIVE_PATH, relative_path);
                                         contentValues.put(MediaStore.Video.Media.IS_PENDING, 1);
                                     }
-                                    uri = main_activity.getContentResolver().insert(folder, contentValues);
+
+                                    // Note, we catch exceptions specific to insert() here and rethrow as IOException,
+                                    // rather than catching below, to avoid catching things too broadly.
+                                    // Catching too broadly could mean we miss genuine problems that should be fixed.
+                                    try {
+                                        uri = main_activity.getContentResolver().insert(folder, contentValues);
+                                    }
+                                    catch(IllegalArgumentException e) {
+                                        // can happen for mediastore method if invalid ContentResolver.insert() call
+                                        if( MyDebug.LOG )
+                                            Log.e(TAG, "IllegalArgumentException from SubtitleVideoTimerTask inserting to mediastore: " + e.getMessage());
+                                        e.printStackTrace();
+                                        throw new IOException();
+                                    }
+                                    catch(IllegalStateException e) {
+                                        if( MyDebug.LOG )
+                                            Log.e(TAG, "IllegalStateException from SubtitleVideoTimerTask inserting to mediastore: " + e.getMessage());
+                                        e.printStackTrace();
+                                        throw new IOException();
+                                    }
                                     if( uri == null ) {
                                         throw new IOException();
                                     }
@@ -2181,18 +2200,6 @@ public class MyApplicationInterface extends BasicApplicationInterface {
                 catch(IOException e) {
                     if( MyDebug.LOG )
                         Log.e(TAG, "SubtitleVideoTimerTask failed to create or write");
-                    e.printStackTrace();
-                }
-                catch(IllegalArgumentException e) {
-                    // can happen for mediastore method if invalid ContentResolver.insert() call
-                    if( MyDebug.LOG )
-                        Log.e(TAG, "IllegalArgumentException from SubtitleVideoTimerTask writing file: " + e.getMessage());
-                    e.printStackTrace();
-                }
-                catch(IllegalStateException e) {
-                    // for ContentResolver.insert() call for mediastore method
-                    if( MyDebug.LOG )
-                        Log.e(TAG, "IllegalStateException from SubtitleVideoTimerTask writing file: " + e.getMessage());
                     e.printStackTrace();
                 }
                 if( MyDebug.LOG )

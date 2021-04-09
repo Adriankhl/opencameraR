@@ -2000,18 +2000,23 @@ public class ImageSaver extends Thread {
                 if( MyDebug.LOG ) {
                     Log.d(TAG, "x0 = " + x0 + " , y0 = " + y0);
                 }
-                // We need the bitmap to be mutable for photostamp to work - contrary to the documentation for Bitmap.createBitmap
-                // (which says it returns an immutable bitmap), we seem to always get a mutable bitmap anyway. A mutable bitmap
-                // would result in an exception "java.lang.IllegalStateException: Immutable bitmap passed to Canvas constructor"
-                // from the Canvas(bitmap) constructor call in the photostamp code, and I've yet to see this from Google Play.
                 new_bitmap = Bitmap.createBitmap(bitmap, x0, y0, w2, h2);
                 if( new_bitmap != bitmap ) {
                     bitmap.recycle();
                     bitmap = new_bitmap;
                 }
-                if( MyDebug.LOG )
-                    Log.d(TAG, "bitmap is mutable?: " + bitmap.isMutable());
                 System.gc();
+            }
+
+            if( MyDebug.LOG )
+                Log.d(TAG, "bitmap is mutable?: " + bitmap.isMutable());
+            // Usually createBitmap will return a mutable bitmap, but not if the source bitmap (which we set as immutable)
+            // is returned (if the level angle is (tolerantly) 0.
+            // see testPhotoStamp() for testing this.
+            if( !bitmap.isMutable() ) {
+                new_bitmap = bitmap.copy(bitmap.getConfig(), true);
+                bitmap.recycle();
+                bitmap = new_bitmap;
             }
         }
         return bitmap;
@@ -2445,7 +2450,28 @@ public class ImageSaver extends Thread {
                     contentValues.put(MediaStore.Images.Media.IS_PENDING, 1);
                 }
 
-                saveUri = main_activity.getContentResolver().insert(folder, contentValues);
+                // Note, we catch exceptions specific to insert() here and rethrow as IOException,
+                // rather than catching below, to avoid catching things too broadly - e.g.,
+                // IllegalStateException can also be thrown via "new Canvas" (from
+                // postProcessBitmap()) but this is a programming error that we shouldn't catch.
+                // Catching too broadly could mean we miss genuine problems that should be fixed.
+                try {
+                    saveUri = main_activity.getContentResolver().insert(folder, contentValues);
+                }
+                catch(IllegalArgumentException e) {
+                    // can happen for mediastore method if invalid ContentResolver.insert() call
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "IllegalArgumentException inserting to mediastore: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new IOException();
+                }
+                catch(IllegalStateException e) {
+                    // have received Google Play crashes from ContentResolver.insert() call for mediastore method
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "IllegalStateException inserting to mediastore: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new IOException();
+                }
                 if( MyDebug.LOG )
                     Log.d(TAG, "saveUri: " + saveUri);
                 if( saveUri == null ) {
@@ -2606,20 +2632,6 @@ public class ImageSaver extends Thread {
             // update: no longer have copyFileToUri() (as no longer use temporary files for SAF), but might as well keep this
             if( MyDebug.LOG )
                 Log.e(TAG, "security exception writing file: " + e.getMessage());
-            e.printStackTrace();
-            main_activity.getPreview().showToast(null, R.string.failed_to_save_photo);
-        }
-        catch(IllegalArgumentException e) {
-            // can happen for mediastore method if invalid ContentResolver.insert() call
-            if( MyDebug.LOG )
-                Log.e(TAG, "IllegalArgumentException writing file: " + e.getMessage());
-            e.printStackTrace();
-            main_activity.getPreview().showToast(null, R.string.failed_to_save_photo);
-        }
-        catch(IllegalStateException e) {
-            // have received Google Play crashes from ContentResolver.insert() call for mediastore method
-            if( MyDebug.LOG )
-                Log.e(TAG, "IllegalStateException writing file: " + e.getMessage());
             e.printStackTrace();
             main_activity.getPreview().showToast(null, R.string.failed_to_save_photo);
         }
@@ -3122,7 +3134,25 @@ public class ImageSaver extends Thread {
                     contentValues.put(MediaStore.Images.Media.IS_PENDING, 1);
                 }
 
-                saveUri = main_activity.getContentResolver().insert(folder, contentValues);
+                // Note, we catch exceptions specific to insert() here and rethrow as IOException,
+                // rather than catching below, to avoid catching things too broadly.
+                // Catching too broadly could mean we miss genuine problems that should be fixed.
+                try {
+                    saveUri = main_activity.getContentResolver().insert(folder, contentValues);
+                }
+                catch(IllegalArgumentException e) {
+                    // can happen for mediastore method if invalid ContentResolver.insert() call
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "IllegalArgumentException inserting to mediastore: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new IOException();
+                }
+                catch(IllegalStateException e) {
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "IllegalStateException inserting to mediastore: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new IOException();
+                }
                 if( MyDebug.LOG )
                     Log.d(TAG, "saveUri: " + saveUri);
                 if( saveUri == null )
@@ -3195,20 +3225,6 @@ public class ImageSaver extends Thread {
         catch(IOException e) {
             if( MyDebug.LOG )
                 Log.e(TAG, "ioexception writing raw image file");
-            e.printStackTrace();
-            main_activity.getPreview().showToast(null, R.string.failed_to_save_photo_raw);
-        }
-        catch(IllegalArgumentException e) {
-            // can happen for mediastore method if invalid ContentResolver.insert() call
-            if( MyDebug.LOG )
-                Log.e(TAG, "IllegalArgumentException writing raw file: " + e.getMessage());
-            e.printStackTrace();
-            main_activity.getPreview().showToast(null, R.string.failed_to_save_photo_raw);
-        }
-        catch(IllegalStateException e) {
-            // for ContentResolver.insert() call for mediastore method
-            if( MyDebug.LOG )
-                Log.e(TAG, "IllegalStateException writing raw file: " + e.getMessage());
             e.printStackTrace();
             main_activity.getPreview().showToast(null, R.string.failed_to_save_photo_raw);
         }

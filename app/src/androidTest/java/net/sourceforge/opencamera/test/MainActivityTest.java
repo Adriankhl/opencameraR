@@ -9886,6 +9886,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         assertEquals(0, mPreview.count_cameraTakePicture);
 
+        int n_old_files = getNFiles();
+        Log.d(TAG, "n_old_files: " + n_old_files);
+
         View takePhotoButton = mActivity.findViewById(net.sourceforge.opencamera.R.id.take_photo);
         clickView(takePhotoButton);
 
@@ -9895,6 +9898,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
         assertEquals(1, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        int n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(1, n_files);
         testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, false);
 
         // now again with location
@@ -9926,12 +9932,16 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
         assertEquals(2, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(2, n_files);
         testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, true);
 
-        // now again with custom text
+        // now again with location and custom text
         {
             SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
             SharedPreferences.Editor editor = settings.edit();
+            editor.putBoolean(PreferenceKeys.LocationPreferenceKey, true);
             editor.putString(PreferenceKeys.TextStampPreferenceKey, "Test stamp!£$");
             editor.apply();
             updateForSettings();
@@ -9951,6 +9961,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
         assertEquals(3, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(3, n_files);
         testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, true);
 
         // now test with auto-stabilise
@@ -9958,6 +9971,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             assertFalse(mActivity.getApplicationInterface().getDrawPreview().getStoredAutoStabilisePref());
             SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
             SharedPreferences.Editor editor = settings.edit();
+            editor.putString(PreferenceKeys.TextStampPreferenceKey, "");
             editor.putBoolean(PreferenceKeys.AutoStabilisePreferenceKey, true);
             editor.apply();
             updateForSettings();
@@ -9972,9 +9986,30 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
         assertEquals(4, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(4, n_files);
         testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, true);
 
+        // now again with auto-stabilise angle 0
+
+        mActivity.test_have_angle = true;
+        mActivity.test_angle = 0.0f;
+
+        clickView(takePhotoButton);
+
+        Log.d(TAG, "wait until finished taking photo");
+        waitForTakePhoto();
+        this.getInstrumentation().waitForIdleSync();
+        Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
+        assertEquals(5, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(5, n_files);
+        testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, true);
+
+        mActivity.test_have_angle = false;
     }
 
     /* Tests we can stamp date/time and location to photo.
