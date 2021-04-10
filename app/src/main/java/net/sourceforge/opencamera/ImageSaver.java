@@ -1668,7 +1668,7 @@ public class ImageSaver extends Thread {
                         storageUtils.broadcastFile(saveFile, false, false, false);
                     }
                     else {
-                        broadcastSAFFile(saveUri, false);
+                        broadcastSAFFile(saveUri, false, false);
                     }
                 }
                 catch(IOException e) {
@@ -2568,6 +2568,11 @@ public class ImageSaver extends Thread {
                     }
                 }
 
+                if( update_thumbnail ) {
+                    // clear just in case we're unable to update this - don't want an out of date cached uri
+                    storageUtils.clearLastMediaScanned();
+                }
+
                 if( picFile != null && saveUri == null ) {
                     // broadcast for SAF is done later, when we've actually written out the file
                     storageUtils.broadcastFile(picFile, true, false, update_thumbnail);
@@ -2579,10 +2584,6 @@ public class ImageSaver extends Thread {
                         Log.d(TAG, "finish activity due to being called from intent");
                     main_activity.setResult(Activity.RESULT_OK);
                     main_activity.finish();
-                }
-                if( storageUtils.isUsingSAF() ) {
-                    // most Gallery apps don't seem to recognise the SAF-format Uri, so just clear the field
-                    storageUtils.clearLastMediaScanned();
                 }
 
                 if( saveUri != null ) {
@@ -2603,12 +2604,14 @@ public class ImageSaver extends Thread {
                             // and mediastore method is only used on Android 10+, but keep this just in case
                             // announceUri does something in future
                             storageUtils.announceUri(saveUri, true, false);
-                            // we also want to save the uri - we can use the media uri directly, rather than having to scan it
-                            storageUtils.setLastMediaScanned(saveUri);
+                            if( update_thumbnail ) {
+                                // we also want to save the uri - we can use the media uri directly, rather than having to scan it
+                                storageUtils.setLastMediaScanned(saveUri, false);
+                            }
                         }
                     }
                     else {
-                        broadcastSAFFile(saveUri, request.image_capture_intent);
+                        broadcastSAFFile(saveUri, update_thumbnail, request.image_capture_intent);
                     }
 
                     main_activity.test_last_saved_imageuri = saveUri;
@@ -2762,11 +2765,11 @@ public class ImageSaver extends Thread {
         }
     }
 
-    private void broadcastSAFFile(Uri saveUri, boolean image_capture_intent) {
+    private void broadcastSAFFile(Uri saveUri, boolean set_last_scanned, boolean image_capture_intent) {
         if( MyDebug.LOG )
             Log.d(TAG, "broadcastSAFFile");
         StorageUtils storageUtils = main_activity.getStorageUtils();
-        storageUtils.broadcastUri(saveUri, true, false, true, image_capture_intent);
+        storageUtils.broadcastUri(saveUri, true, false, set_last_scanned, image_capture_intent);
     }
 
     /** As setExifFromFile, but can read the Exif tags directly from the jpeg data, and to a file descriptor, rather than a file.
@@ -3195,8 +3198,14 @@ public class ImageSaver extends Thread {
                 applicationInterface.addLastImageMediaStore(saveUri, raw_only);
             }
 
+            // if RAW only, need to update the cached uri
+            if( raw_only ) {
+                // clear just in case we're unable to update this - don't want an out of date cached uri
+                storageUtils.clearLastMediaScanned();
+            }
+
             if( saveUri == null ) {
-                storageUtils.broadcastFile(picFile, true, false, false);
+                storageUtils.broadcastFile(picFile, true, false, raw_only);
             }
             else if( use_media_store ) {
                 if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
@@ -3211,9 +3220,14 @@ public class ImageSaver extends Thread {
                 // and mediastore method is only used on Android 10+, but keep this just in case
                 // announceUri does something in future
                 storageUtils.announceUri(saveUri, true, false);
+
+                if( raw_only ) {
+                    // we also want to save the uri - we can use the media uri directly, rather than having to scan it
+                    storageUtils.setLastMediaScanned(saveUri, true);
+                }
             }
             else {
-                storageUtils.broadcastUri(saveUri, true, false, false, false);
+                storageUtils.broadcastUri(saveUri, true, false, raw_only, false);
             }
         }
         catch(FileNotFoundException e) {

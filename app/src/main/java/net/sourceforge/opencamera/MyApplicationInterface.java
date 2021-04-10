@@ -2454,6 +2454,8 @@ public class MyApplicationInterface extends BasicApplicationInterface {
             Log.d(TAG, "filename " + filename);
         }
         boolean done = false;
+        // clear just in case we're unable to update this - don't want an out of date cached uri
+        storageUtils.clearLastMediaScanned();
         if( video_method == VideoMethod.MEDIASTORE ) {
             // no need to broadcast when using mediastore
 
@@ -2464,7 +2466,7 @@ public class MyApplicationInterface extends BasicApplicationInterface {
                 storageUtils.announceUri(uri, false, true);
 
                 // we also want to save the uri - we can use the media uri directly, rather than having to scan it
-                storageUtils.setLastMediaScanned(uri);
+                storageUtils.setLastMediaScanned(uri, false);
 
                 done = true;
             }

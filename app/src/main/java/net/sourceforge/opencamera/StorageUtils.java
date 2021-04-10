@@ -55,6 +55,7 @@ public class StorageUtils {
     private final Context context;
     private final MyApplicationInterface applicationInterface;
     private Uri last_media_scanned;
+    private boolean last_media_scanned_is_raw;
 
     private final static String RELATIVE_FOLDER_BASE = Environment.DIRECTORY_DCIM;
 
@@ -70,16 +71,24 @@ public class StorageUtils {
         return last_media_scanned;
     }
 
+    boolean getLastMediaScannedIsRaw() {
+        return last_media_scanned_is_raw;
+    }
+
     void clearLastMediaScanned() {
         if( MyDebug.LOG )
             Log.d(TAG, "clearLastMediaScanned");
         last_media_scanned = null;
+        last_media_scanned_is_raw = false;
     }
 
-    void setLastMediaScanned(Uri uri) {
+    void setLastMediaScanned(Uri uri, boolean is_raw) {
         last_media_scanned = uri;
-        if( MyDebug.LOG )
+        last_media_scanned_is_raw = is_raw;
+        if( MyDebug.LOG ) {
             Log.d(TAG, "set last_media_scanned to " + last_media_scanned);
+            Log.d(TAG, "    last_media_scanned_is_raw: " + last_media_scanned_is_raw);
+        }
     }
 
     /** Sends the intents to announce the new file to other Android applications. E.g., cloud storage applications like
@@ -250,7 +259,8 @@ public class StorageUtils {
                                 Log.d(TAG, "-> uri=" + uri);
                             }
                             if( set_last_scanned ) {
-                                setLastMediaScanned(uri);
+                                boolean is_raw = filenameIsRaw(file.getName());
+                                setLastMediaScanned(uri, is_raw);
                             }
                             announceUri(uri, is_new_picture, is_new_video);
                             applicationInterface.scannedFile(file, uri);
@@ -276,7 +286,7 @@ public class StorageUtils {
     public void broadcastUri(final Uri uri, final boolean is_new_picture, final boolean is_new_video, final boolean set_last_scanned, final boolean image_capture_intent) {
         if( MyDebug.LOG )
             Log.d(TAG, "broadcastUri: " + uri);
-        /* We still need to broadcastFile for SAF for two reasons:
+        /* We still need to broadcastFile for SAF for various reasons:
             1. To call storageUtils.announceUri() to broadcast NEW_PICTURE etc.
                Whilst in theory we could do this directly, it seems external apps that use such broadcasts typically
                won't know what to do with a SAF based Uri (e.g, Owncloud crashes!) so better to broadcast the Uri
@@ -284,6 +294,10 @@ public class StorageUtils {
             2. Whilst the new file seems to be known by external apps such as Gallery without having to call media
                scanner, I've had reports this doesn't happen when saving to external SD cards. So better to explicitly
                scan.
+            3. If set_last_scanned==true, it means we get the media uri which can be used to set the thumbnail uri
+               (see setLastMediaScanned()). This is particularly important when using SAF with scoped storage, as
+               getting the latest media via SAF APIs is (if not cached) very slow! N.B., most gallery apps need a
+               mediastore uri, not the SAF uri.
         */
         File real_file = getFileFromDocumentUriSAF(uri, false);
         if( MyDebug.LOG )
@@ -888,7 +902,7 @@ public class StorageUtils {
         }
     }
 
-    private static boolean filenameIsRaw(String filename) {
+    static boolean filenameIsRaw(String filename) {
         return filename.toLowerCase(Locale.US).endsWith(".dng");
     }
 

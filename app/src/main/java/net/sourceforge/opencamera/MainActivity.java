@@ -20,6 +20,9 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import android.Manifest;
 import android.app.Notification;
@@ -41,10 +44,10 @@ import android.hardware.SensorManager;
 import android.hardware.display.DisplayManager;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
@@ -135,6 +138,7 @@ public class MainActivity extends Activity {
     private final Map<Integer, Bitmap> preloaded_bitmap_resources = new Hashtable<>();
     private ValueAnimator gallery_save_anim;
     private boolean last_continuous_fast_burst; // whether the last photo operation was a continuous_fast_burst
+    private Future<?> update_gallery_future;
 
     private TextToSpeech textToSpeech;
     private boolean textToSpeechSuccess;
@@ -1544,6 +1548,10 @@ public class MainActivity extends Activity {
 
         if( applicationInterface.getImageSaver().getNImagesToSave() > 0) {
             createImageSavingNotification();
+        }
+
+        if( update_gallery_future != null ) {
+            update_gallery_future.cancel(true);
         }
 
         // intentionally do this again, just in case something turned location on since - keep this right at the end:
@@ -3576,6 +3584,15 @@ public class MainActivity extends Activity {
     void updateGalleryIcon(Bitmap thumbnail) {
         if( MyDebug.LOG )
             Log.d(TAG, "updateGalleryIcon: " + thumbnail);
+        // If we're currently running the background task to update the gallery (see updateGalleryIcon()), we should cancel that!
+        // Otherwise if user takes a photo whilst the background task is still running, the thumbnail from the latest photo will
+        // be overridden when the background task completes. This is more likely when using SAF on Android 10+ with scoped storage,
+        // due to SAF's poor performance for folders with large number of files.
+        if( update_gallery_future != null ) {
+            if( MyDebug.LOG )
+                Log.d(TAG, "cancel update_gallery_future");
+            update_gallery_future.cancel(true);
+        }
         ImageButton galleryButton = this.findViewById(R.id.gallery);
         galleryButton.setImageBitmap(thumbnail);
         gallery_bitmap = thumbnail;
@@ -3590,17 +3607,27 @@ public class MainActivity extends Activity {
             Log.d(TAG, "updateGalleryIcon");
             debug_time = System.currentTimeMillis();
         }
+        if( update_gallery_future != null ) {
+            Log.d(TAG, "previous updateGalleryIcon task already running");
+            return;
+        }
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String ghost_image_pref = sharedPreferences.getString(PreferenceKeys.GhostImagePreferenceKey, "preference_ghost_image_off");
         final boolean ghost_image_last = ghost_image_pref.equals("preference_ghost_image_last");
-        new AsyncTask<Void, Void, Bitmap>() {
-            private static final String TAG = "MainActivity/AsyncTask";
+
+        final Handler handler = new Handler(Looper.getMainLooper());
+
+        //new AsyncTask<Void, Void, Bitmap>() {
+        Runnable runnable = new Runnable() {
+            private static final String TAG = "updateGalleryIcon";
+            private Uri uri;
+            private boolean is_raw;
             private boolean is_video;
 
-            /** The system calls this to perform work in a worker thread and
-             * delivers it the parameters given to AsyncTask.execute() */
-            protected Bitmap doInBackground(Void... params) {
+            @Override
+            //protected Bitmap doInBackground(Void... params) {
+            public void run() {
                 if( MyDebug.LOG )
                     Log.d(TAG, "doInBackground");
                 StorageUtils.Media media = applicationInterface.getStorageUtils().getLatestMedia();
@@ -3612,6 +3639,8 @@ public class MainActivity extends Activity {
                 if( media != null && getContentResolver() != null && !is_locked ) {
                     // check for getContentResolver() != null, as have had reported Google Play crashes
 
+                    uri = media.getMediaStoreUri(MainActivity.this);
+                    is_raw = media.filename != null && StorageUtils.filenameIsRaw(media.filename);
                     is_video = media.video;
 
                     if( ghost_image_last && !media.video ) {
@@ -3701,16 +3730,37 @@ public class MainActivity extends Activity {
                         }
                     }
                 }
-                return thumbnail;
+                //return thumbnail;
+
+                final Bitmap thumbnail_f = thumbnail;
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        onPostExecute(thumbnail_f);
+                    }
+                });
             }
 
-            /** The system calls this to perform work in the UI thread and delivers
-             * the result from doInBackground() */
+            /** Runs on UI thread, after background work is complete.
+             */
             protected void onPostExecute(Bitmap thumbnail) {
                 if( MyDebug.LOG )
                     Log.d(TAG, "onPostExecute");
+                if( update_gallery_future != null && update_gallery_future.isCancelled() ) {
+                    if( MyDebug.LOG )
+                        Log.d(TAG, "was cancelled");
+                    update_gallery_future = null;
+                    return;
+                }
                 // since we're now setting the thumbnail to the latest media on disk, we need to make sure clicking the Gallery goes to this
                 applicationInterface.getStorageUtils().clearLastMediaScanned();
+                if( uri != null ) {
+                    if( MyDebug.LOG ) {
+                        Log.d(TAG, "found media uri: " + uri);
+                        Log.d(TAG, "    is_raw?: " + is_raw);
+                    }
+                    applicationInterface.getStorageUtils().setLastMediaScanned(uri, is_raw);
+                }
                 if( thumbnail != null ) {
                     if( MyDebug.LOG )
                         Log.d(TAG, "set gallery button to thumbnail");
@@ -3722,8 +3772,15 @@ public class MainActivity extends Activity {
                         Log.d(TAG, "set gallery button to blank");
                     updateGalleryIconToBlank();
                 }
+
+                update_gallery_future = null;
             }
-        }.execute();
+        //}.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        };
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        //executor.execute(runnable);
+        update_gallery_future = executor.submit(runnable);
 
         if( MyDebug.LOG )
             Log.d(TAG, "updateGalleryIcon: total time to update gallery icon: " + (System.currentTimeMillis() - debug_time));
@@ -3823,18 +3880,26 @@ public class MainActivity extends Activity {
             Log.d(TAG, "openGallery");
         //Intent intent = new Intent(Intent.ACTION_VIEW, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         Uri uri = applicationInterface.getStorageUtils().getLastMediaScanned();
-        boolean is_raw = false; // note that getLastMediaScanned() will never return RAW images, as we only record JPEGs
+        boolean is_raw = uri != null && applicationInterface.getStorageUtils().getLastMediaScannedIsRaw();
+        if( MyDebug.LOG && uri != null ) {
+            Log.d(TAG, "found cached most recent uri: " + uri);
+            Log.d(TAG, "    is_raw: " + is_raw);
+        }
         if( uri == null ) {
             if( MyDebug.LOG )
                 Log.d(TAG, "go to latest media");
             StorageUtils.Media media = applicationInterface.getStorageUtils().getLatestMedia();
             if( media != null ) {
-                if( MyDebug.LOG )
+                if( MyDebug.LOG ) {
                     Log.d(TAG, "latest uri:" + media.uri);
+                    Log.d(TAG, "filename: " + media.filename);
+                }
                 uri = media.getMediaStoreUri(this);
                 if( MyDebug.LOG )
                     Log.d(TAG, "media uri:" + uri);
-                is_raw = media.filename != null && media.filename.toLowerCase(Locale.US).endsWith(".dng");
+                is_raw = media.filename != null && StorageUtils.filenameIsRaw(media.filename);
+                if( MyDebug.LOG )
+                    Log.d(TAG, "is_raw:" + is_raw);
             }
         }
 
@@ -3842,10 +3907,6 @@ public class MainActivity extends Activity {
             // check uri exists
             // note, with scoped storage this isn't reliable when using SAF - since we don't actually have permission to access mediastore URIs that
             // were created via Storage Access Framework, even though Open Camera was the application that saved them(!)
-            if( MyDebug.LOG ) {
-                Log.d(TAG, "found most recent uri: " + uri);
-                Log.d(TAG, "is_raw: " + is_raw);
-            }
             try {
                 ContentResolver cr = getContentResolver();
                 ParcelFileDescriptor pfd = cr.openFileDescriptor(uri, "r");
@@ -3877,9 +3938,11 @@ public class MainActivity extends Activity {
             final String REVIEW_ACTION = "com.android.camera.action.REVIEW";
             boolean done = false;
             if( !is_raw ) {
-                // REVIEW_ACTION means we can view video files without autoplaying
-                // however, Google Photos at least has problems with going to a RAW photo (in RAW only mode),
-                // unless we first pause and resume Open Camera
+                // REVIEW_ACTION means we can view video files without autoplaying.
+                // However, Google Photos at least has problems with going to a RAW photo (in RAW only mode),
+                // unless we first pause and resume Open Camera.
+                // Update: on Galaxy S10e with Android 11 at least, no longer seem to have problems, but leave
+                // the check for is_raw just in case for older devices.
                 if( MyDebug.LOG )
                     Log.d(TAG, "try REVIEW_ACTION");
                 try {
