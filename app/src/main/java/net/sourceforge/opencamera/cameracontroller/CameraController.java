@@ -45,7 +45,7 @@ public abstract class CameraController {
     public static final int N_IMAGES_NR_DARK_LOW_LIGHT = 15;
 
     // for testing:
-    volatile int count_camera_parameters_exception;
+    public volatile int count_camera_parameters_exception;
     public volatile int count_precapture_timeout;
     public volatile boolean test_wait_capture_result; // whether to test delayed capture result in Camera2 API
     public volatile boolean test_release_during_photo; // for Camera2 API, will force takePictureAfterPrecapture() to call release() on UI thread

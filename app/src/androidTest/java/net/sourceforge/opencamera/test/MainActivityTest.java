@@ -1658,6 +1658,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         // check face detection not already started
         assertTrue( mPreview.getCameraController().startFaceDetection() );
+
+        assertTrue( mPreview.getCameraController() == null || mPreview.getCameraController().count_camera_parameters_exception == 0 );
     }
 
     private void subTestPopupButtonAvailability(String test_key, String option, boolean expected) {
@@ -3930,6 +3932,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         postTakePhotoChecks(immersive_mode, exposureVisibility, exposureLockVisibility);
 
         assertFalse(mActivity.getApplicationInterface().getImageSaver().test_queue_blocked);
+        assertTrue( mPreview.getCameraController() == null || mPreview.getCameraController().count_camera_parameters_exception == 0 );
     }
 
     public void testTakePhoto() throws InterruptedException {
@@ -6394,6 +6397,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             assertEquals(n_new_files-n_non_video_files, mActivity.getApplicationInterface().test_n_videos_scanned);
         }
 
+        assertTrue( mPreview.getCameraController() == null || mPreview.getCameraController().count_camera_parameters_exception == 0 );
         return n_new_files;
     }
 
