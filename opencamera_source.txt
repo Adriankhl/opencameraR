@@ -39,7 +39,7 @@ The file .idea/inspectionProfiles/Project_Default.xml contains settings for Andr
 The following are enabled, but with modifications:
 
 * UnnecessaryLocalVariable - m_ignoreImmediatelyReturnedVariables is true.
-* unused - parameter="protected", REPORT_PARAMETER_FOR_PUBLIC_METHODS is false (otherwise this complaints about parameters in overriden methods being unused);  method="protected" (in some cases public unused methods may be added for future proofing).
+* unused - parameter="protected", REPORT_PARAMETER_FOR_PUBLIC_METHODS is false (otherwise this complaints about parameters in overridden methods being unused);  method="protected" (in some cases public unused methods may be added for future proofing).
 
 Licence
 =======
