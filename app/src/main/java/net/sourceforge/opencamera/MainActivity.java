@@ -518,12 +518,12 @@ public class MainActivity extends Activity {
         if( MyDebug.LOG )
             Log.d(TAG, "onCreate: time after creating gesture detector: " + (System.currentTimeMillis() - debug_time));
 
-        View decorView = getWindow().getDecorView();
         if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
             // set a window insets listener to find the navigation_gap
             if( MyDebug.LOG )
                 Log.d(TAG, "set a window insets listener");
             this.set_window_insets_listener = true;
+            View decorView = getWindow().getDecorView();
             decorView.getRootView().setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
                 @Override
                 public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
@@ -545,7 +545,7 @@ public class MainActivity extends Activity {
                         if( want_no_limits && navigation_gap != 0 ) {
                             if( MyDebug.LOG )
                                 Log.d(TAG, "set FLAG_LAYOUT_NO_LIMITS");
-                            getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+                            showUnderNavigation(true);
                         }
                     }
                     return getWindow().getDecorView().getRootView().onApplyWindowInsets(insets);
@@ -553,45 +553,7 @@ public class MainActivity extends Activity {
             });
         }
 
-        // set up listener to handle immersive mode options
-        decorView.setOnSystemUiVisibilityChangeListener
-                (new View.OnSystemUiVisibilityChangeListener() {
-                    @Override
-                    public void onSystemUiVisibilityChange(int visibility) {
-                        // Note that system bars will only be "visible" if none of the
-                        // LOW_PROFILE, HIDE_NAVIGATION, or FULLSCREEN flags are set.
-                        if( !usingKitKatImmersiveMode() )
-                            return;
-                        if( MyDebug.LOG )
-                            Log.d(TAG, "onSystemUiVisibilityChange: " + visibility);
-
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
-                        String immersive_mode = sharedPreferences.getString(PreferenceKeys.ImmersiveModePreferenceKey, "immersive_mode_low_profile");
-                        boolean hide_ui = immersive_mode.equals("immersive_mode_gui") || immersive_mode.equals("immersive_mode_everything");
-
-                        // Note that Android example code says to test against SYSTEM_UI_FLAG_FULLSCREEN,
-                        // but this stopped working on Android 11, as when calling setSystemUiVisibility(0)
-                        // to exit immersive mode, when we arrive here the flag SYSTEM_UI_FLAG_FULLSCREEN
-                        // is still set. Fixed by checking for SYSTEM_UI_FLAG_HIDE_NAVIGATION instead -
-                        // which makes some sense since we run in fullscreen mode all the time anyway.
-                        //if( (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0 ) {
-                        if( (visibility & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0 ) {
-                            if( MyDebug.LOG )
-                                Log.d(TAG, "system bars now visible");
-                            // change UI due to having exited immersive mode
-                            if( hide_ui )
-                                mainUI.setImmersiveMode(false);
-                            setImmersiveTimer();
-                        }
-                        else {
-                            if( MyDebug.LOG )
-                                Log.d(TAG, "system bars now NOT visible");
-                            // change UI due to having entered immersive mode
-                            if( hide_ui )
-                                mainUI.setImmersiveMode(true);
-                        }
-                    }
-                });
+        setupImmersiveListener();
         if( MyDebug.LOG )
             Log.d(TAG, "onCreate: time after setting immersive mode listener: " + (System.currentTimeMillis() - debug_time));
 
@@ -741,10 +703,6 @@ public class MainActivity extends Activity {
         //return false;
         //return true;
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
-    }
-
-    public int getNavigationGap() {
-        return want_no_limits ? navigation_gap : 0;
     }
 
     /** Whether this is a multi camera device, and the user preference is set to enable the multi-camera button.
@@ -3105,6 +3063,68 @@ public class MainActivity extends Activity {
         super.onBackPressed();
     }
 
+    /** Whether to allow the application to show under the navigation bar, or not.
+     *  Arguably we could enable this all the time, but in practice we only enable for cases when
+     *  want_no_limits==true and navigation_gap!=0 (if want_no_limits==false, there's no need to
+     *  show under the navigation bar; if navigation_gap==0, there is no navigation bar).
+     */
+    private void showUnderNavigation(boolean enable) {
+        if( enable ) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        }
+        else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        }
+    }
+
+    public int getNavigationGap() {
+        return want_no_limits ? navigation_gap : 0;
+    }
+
+    /** Set up listener to handle immersive mode options.
+      */
+    private void setupImmersiveListener() {
+        View decorView = getWindow().getDecorView();
+        decorView.setOnSystemUiVisibilityChangeListener
+                (new View.OnSystemUiVisibilityChangeListener() {
+                    @Override
+                    public void onSystemUiVisibilityChange(int visibility) {
+                        // Note that system bars will only be "visible" if none of the
+                        // LOW_PROFILE, HIDE_NAVIGATION, or FULLSCREEN flags are set.
+                        if( !usingKitKatImmersiveMode() )
+                            return;
+                        if( MyDebug.LOG )
+                            Log.d(TAG, "onSystemUiVisibilityChange: " + visibility);
+
+                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                        String immersive_mode = sharedPreferences.getString(PreferenceKeys.ImmersiveModePreferenceKey, "immersive_mode_low_profile");
+                        boolean hide_ui = immersive_mode.equals("immersive_mode_gui") || immersive_mode.equals("immersive_mode_everything");
+
+                        // Note that Android example code says to test against SYSTEM_UI_FLAG_FULLSCREEN,
+                        // but this stopped working on Android 11, as when calling setSystemUiVisibility(0)
+                        // to exit immersive mode, when we arrive here the flag SYSTEM_UI_FLAG_FULLSCREEN
+                        // is still set. Fixed by checking for SYSTEM_UI_FLAG_HIDE_NAVIGATION instead -
+                        // which makes some sense since we run in fullscreen mode all the time anyway.
+                        //if( (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0 ) {
+                        if( (visibility & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0 ) {
+                            if( MyDebug.LOG )
+                                Log.d(TAG, "system bars now visible");
+                            // change UI due to having exited immersive mode
+                            if( hide_ui )
+                                mainUI.setImmersiveMode(false);
+                            setImmersiveTimer();
+                        }
+                        else {
+                            if( MyDebug.LOG )
+                                Log.d(TAG, "system bars now NOT visible");
+                            // change UI due to having entered immersive mode
+                            if( hide_ui )
+                                mainUI.setImmersiveMode(true);
+                        }
+                    }
+                });
+    }
+
     public boolean usingKitKatImmersiveMode() {
         // whether we are using a Kit Kat style immersive mode (either hiding GUI, or everything)
         if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ) {
@@ -3115,6 +3135,7 @@ public class MainActivity extends Activity {
         }
         return false;
     }
+
     public boolean usingKitKatImmersiveModeEverything() {
         // whether we are using a Kit Kat style immersive mode for everything
         if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ) {
@@ -3304,7 +3325,7 @@ public class MainActivity extends Activity {
         if( want_no_limits && navigation_gap != 0 ) {
             if( MyDebug.LOG )
                 Log.d(TAG, "set FLAG_LAYOUT_NO_LIMITS");
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            showUnderNavigation(true);
         }
 
         setBrightnessForCamera(false);
@@ -3351,7 +3372,7 @@ public class MainActivity extends Activity {
         if( want_no_limits && navigation_gap != 0 ) {
             if( MyDebug.LOG )
                 Log.d(TAG, "clear FLAG_LAYOUT_NO_LIMITS");
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            showUnderNavigation(false);
         }
         if( set_lock_protect ) {
             // settings should still be protected by screen lock
@@ -4743,7 +4764,7 @@ public class MainActivity extends Activity {
                         // already have navigation gap, can go straight into no limits mode
                         if( MyDebug.LOG )
                             Log.d(TAG, "set FLAG_LAYOUT_NO_LIMITS");
-                        getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+                        showUnderNavigation(true);
                         // need to layout the UI again due to now taking the navigation gap into account
                         mainUI.layoutUI();
                     }
@@ -4756,7 +4777,7 @@ public class MainActivity extends Activity {
             else if( old_want_no_limits && navigation_gap != 0 ) {
                 if( MyDebug.LOG )
                     Log.d(TAG, "clear FLAG_LAYOUT_NO_LIMITS");
-                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+                showUnderNavigation(false);
                 // need to layout the UI again due to no longer taking the navigation gap into account
                 mainUI.layoutUI();
             }
