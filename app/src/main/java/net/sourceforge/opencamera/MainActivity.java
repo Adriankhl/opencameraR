@@ -3126,7 +3126,7 @@ public class MainActivity extends Activity {
     }
 
     public boolean usingKitKatImmersiveMode() {
-        // whether we are using a Kit Kat style immersive mode (either hiding GUI, or everything)
+        // whether we are using a Kit Kat style immersive mode (either hiding navigation bar, GUI, or everything)
         if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ) {
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
             String immersive_mode = sharedPreferences.getString(PreferenceKeys.ImmersiveModePreferenceKey, "immersive_mode_low_profile");
