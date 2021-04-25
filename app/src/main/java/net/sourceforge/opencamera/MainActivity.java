@@ -3083,6 +3083,37 @@ public class MainActivity extends Activity {
         return want_no_limits ? navigation_gap : 0;
     }
 
+    /** The system is now such that we have entered or exited immersive mode. If visible is true,
+     *  system UI is now visible such that we should exit immersive mode. If visible is false, the
+     *  system has entered immersive mode.
+     */
+    private void immersiveModeChanged(boolean visible) {
+        if( MyDebug.LOG )
+            Log.d(TAG, "immersiveModeChanged: " + visible);
+        if( !usingKitKatImmersiveMode() )
+            return;
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        String immersive_mode = sharedPreferences.getString(PreferenceKeys.ImmersiveModePreferenceKey, "immersive_mode_low_profile");
+        boolean hide_ui = immersive_mode.equals("immersive_mode_gui") || immersive_mode.equals("immersive_mode_everything");
+
+        if( visible ) {
+            if( MyDebug.LOG )
+                Log.d(TAG, "system bars now visible");
+            // change UI due to having exited immersive mode
+            if( hide_ui )
+                mainUI.setImmersiveMode(false);
+            setImmersiveTimer();
+        }
+        else {
+            if( MyDebug.LOG )
+                Log.d(TAG, "system bars now NOT visible");
+            // change UI due to having entered immersive mode
+            if( hide_ui )
+                mainUI.setImmersiveMode(true);
+        }
+    }
+
     /** Set up listener to handle immersive mode options.
       */
     private void setupImmersiveListener() {
@@ -3093,14 +3124,9 @@ public class MainActivity extends Activity {
                     public void onSystemUiVisibilityChange(int visibility) {
                         // Note that system bars will only be "visible" if none of the
                         // LOW_PROFILE, HIDE_NAVIGATION, or FULLSCREEN flags are set.
-                        if( !usingKitKatImmersiveMode() )
-                            return;
+
                         if( MyDebug.LOG )
                             Log.d(TAG, "onSystemUiVisibilityChange: " + visibility);
-
-                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
-                        String immersive_mode = sharedPreferences.getString(PreferenceKeys.ImmersiveModePreferenceKey, "immersive_mode_low_profile");
-                        boolean hide_ui = immersive_mode.equals("immersive_mode_gui") || immersive_mode.equals("immersive_mode_everything");
 
                         // Note that Android example code says to test against SYSTEM_UI_FLAG_FULLSCREEN,
                         // but this stopped working on Android 11, as when calling setSystemUiVisibility(0)
@@ -3109,19 +3135,10 @@ public class MainActivity extends Activity {
                         // which makes some sense since we run in fullscreen mode all the time anyway.
                         //if( (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0 ) {
                         if( (visibility & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0 ) {
-                            if( MyDebug.LOG )
-                                Log.d(TAG, "system bars now visible");
-                            // change UI due to having exited immersive mode
-                            if( hide_ui )
-                                mainUI.setImmersiveMode(false);
-                            setImmersiveTimer();
+                            immersiveModeChanged(true);
                         }
                         else {
-                            if( MyDebug.LOG )
-                                Log.d(TAG, "system bars now NOT visible");
-                            // change UI due to having entered immersive mode
-                            if( hide_ui )
-                                mainUI.setImmersiveMode(true);
+                            immersiveModeChanged(false);
                         }
                     }
                 });
