@@ -518,44 +518,9 @@ public class MainActivity extends Activity {
         if( MyDebug.LOG )
             Log.d(TAG, "onCreate: time after creating gesture detector: " + (System.currentTimeMillis() - debug_time));
 
-        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
-            // set a window insets listener to find the navigation_gap
-            if( MyDebug.LOG )
-                Log.d(TAG, "set a window insets listener");
-            this.set_window_insets_listener = true;
-            View decorView = getWindow().getDecorView();
-            decorView.getRootView().setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
-                @Override
-                public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-                    if( MyDebug.LOG ) {
-                        Log.d(TAG, "inset right: " + insets.getSystemWindowInsetRight());
-                        Log.d(TAG, "inset bottom: " + insets.getSystemWindowInsetBottom());
-                    }
-                    if( navigation_gap == 0 ) {
-                        SystemOrientation system_orientation = getSystemOrientation();
-                        boolean system_orientation_portrait = system_orientation == SystemOrientation.PORTRAIT;
-                        navigation_gap = system_orientation_portrait ? insets.getSystemWindowInsetBottom() : insets.getSystemWindowInsetRight();
-                        if( MyDebug.LOG )
-                            Log.d(TAG, "navigation_gap is " + navigation_gap);
-                        // Sometimes when this callback is called, the navigation_gap may still be 0 even if
-                        // the device doesn't have physical navigation buttons - we need to wait
-                        // until we have found a non-zero value before switching to no limits.
-                        // On devices with physical navigation bar, navigation_gap should remain 0
-                        // (and there's no point setting FLAG_LAYOUT_NO_LIMITS)
-                        if( want_no_limits && navigation_gap != 0 ) {
-                            if( MyDebug.LOG )
-                                Log.d(TAG, "set FLAG_LAYOUT_NO_LIMITS");
-                            showUnderNavigation(true);
-                        }
-                    }
-                    return getWindow().getDecorView().getRootView().onApplyWindowInsets(insets);
-                }
-            });
-        }
-
-        setupImmersiveListener();
+        setupSystemUiVisibilityListener();
         if( MyDebug.LOG )
-            Log.d(TAG, "onCreate: time after setting immersive mode listener: " + (System.currentTimeMillis() - debug_time));
+            Log.d(TAG, "onCreate: time after setting system ui visibility listener: " + (System.currentTimeMillis() - debug_time));
 
         // show "about" dialog for first time use; also set some per-device defaults
         boolean has_done_first_time = sharedPreferences.contains(PreferenceKeys.FirstTimePreferenceKey);
@@ -3114,10 +3079,46 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** Set up listener to handle immersive mode options.
+    /** Set up listener to handle listening for system ui changes (for immersive mode), and setting
+      * a WindowsInsetsListener to find the navigation_gap.
       */
-    private void setupImmersiveListener() {
+    private void setupSystemUiVisibilityListener() {
         View decorView = getWindow().getDecorView();
+
+        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
+            // set a window insets listener to find the navigation_gap
+            if( MyDebug.LOG )
+                Log.d(TAG, "set a window insets listener");
+            this.set_window_insets_listener = true;
+            decorView.getRootView().setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+                @Override
+                public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
+                    if( MyDebug.LOG ) {
+                        Log.d(TAG, "inset right: " + insets.getSystemWindowInsetRight());
+                        Log.d(TAG, "inset bottom: " + insets.getSystemWindowInsetBottom());
+                    }
+                    if( navigation_gap == 0 ) {
+                        SystemOrientation system_orientation = getSystemOrientation();
+                        boolean system_orientation_portrait = system_orientation == SystemOrientation.PORTRAIT;
+                        navigation_gap = system_orientation_portrait ? insets.getSystemWindowInsetBottom() : insets.getSystemWindowInsetRight();
+                        if( MyDebug.LOG )
+                            Log.d(TAG, "navigation_gap is " + navigation_gap);
+                        // Sometimes when this callback is called, the navigation_gap may still be 0 even if
+                        // the device doesn't have physical navigation buttons - we need to wait
+                        // until we have found a non-zero value before switching to no limits.
+                        // On devices with physical navigation bar, navigation_gap should remain 0
+                        // (and there's no point setting FLAG_LAYOUT_NO_LIMITS)
+                        if( want_no_limits && navigation_gap != 0 ) {
+                            if( MyDebug.LOG )
+                                Log.d(TAG, "set FLAG_LAYOUT_NO_LIMITS");
+                            showUnderNavigation(true);
+                        }
+                    }
+                    return getWindow().getDecorView().getRootView().onApplyWindowInsets(insets);
+                }
+            });
+        }
+
         decorView.setOnSystemUiVisibilityChangeListener
                 (new View.OnSystemUiVisibilityChangeListener() {
                     @Override
