@@ -3071,6 +3071,8 @@ public class MainActivity extends Activity {
     private void showUnderNavigation(boolean enable) {
         if( enable ) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        if( MyDebug.LOG )
+            Log.d(TAG, "showUnderNavigation: " + enable);
         }
         else {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
