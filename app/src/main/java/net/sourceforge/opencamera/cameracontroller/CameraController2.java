@@ -1,5 +1,6 @@
 package net.sourceforge.opencamera.cameracontroller;
 
+import net.sourceforge.opencamera.HDRProcessor;
 import net.sourceforge.opencamera.MyDebug;
 
 import java.nio.ByteBuffer;
@@ -6546,10 +6547,7 @@ public class CameraController2 extends CameraController {
                     n_burst_taken = 0;
 
                     if( capture_result_has_iso ) {
-                        // For Nexus 6, max reported ISO is 1196, so the limit for dark scenes shouldn't be more than this
-                        // Nokia 8's max reported ISO is 1551
-                        // Note that OnePlus 3T has max reported ISO of 800, but this is a device bug
-                        if( capture_result_iso >= ISO_FOR_DARK ) {
+                        if( HDRProcessor.sceneIsLowLight(capture_result_iso) ) {
                             if( MyDebug.LOG )
                                 Log.d(TAG, "optimise for dark scene");
                             n_burst = noise_reduction_low_light ? N_IMAGES_NR_DARK_LOW_LIGHT : N_IMAGES_NR_DARK;

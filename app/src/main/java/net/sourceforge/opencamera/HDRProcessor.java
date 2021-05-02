@@ -1094,6 +1094,14 @@ public class HDRProcessor {
         }
     }
 
+    public static boolean sceneIsLowLight(int iso) {
+        final int ISO_FOR_DARK = 1100;
+        // For Nexus 6, max reported ISO is 1196, so the limit for dark scenes shouldn't be more than this
+        // Nokia 8's max reported ISO is 1551
+        // Note that OnePlus 3T has max reported ISO of 800, but this is a device bug
+        return iso >= ISO_FOR_DARK;
+    }
+
     private int cached_avg_sample_size = 1;
 
     /** As part of the noise reduction process, the caller should scale the input images down by the factor returned
@@ -1102,7 +1110,7 @@ public class HDRProcessor {
     public int getAvgSampleSize(int capture_result_iso) {
         // If changing this, may also want to change the radius of the spatial filter in avg_brighten.rs ?
         //this.cached_avg_sample_size = (n_images>=8) ? 2 : 1;
-        this.cached_avg_sample_size = (capture_result_iso >= 1100) ? 2 : 1;
+        this.cached_avg_sample_size = sceneIsLowLight(capture_result_iso) ? 2 : 1;
         //this.cached_avg_sample_size = 1;
         //this.cached_avg_sample_size = 2;
         if( MyDebug.LOG )
@@ -1388,7 +1396,7 @@ public class HDRProcessor {
 
             // misalignment more likely in "dark" images with more images and/or longer exposures
             // using max_align_scale=2 needed to prevent misalignment in testAvg51; also helps testAvg14
-            boolean wider = iso >= 1100;
+            boolean wider = sceneIsLowLight(iso);
             autoAlignment(offsets_x, offsets_y, allocations, alignment_width, alignment_height, align_bitmaps, 0, true, null, false, floating_point_align, 1, crop_to_centre, wider ? 2 : 1, full_alignment_width, full_alignment_height, time_s);
 
 			/*

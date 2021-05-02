@@ -12032,7 +12032,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         subTestTakePhoto(false, false, true, true, false, false, false, false);
         Log.d(TAG, "test_capture_results: " + mPreview.getCameraController().test_capture_results);
         assertEquals(mPreview.getCameraController().test_capture_results, n_back_photos + 1);
-        if( mActivity.getPreview().getCameraController().captureResultHasIso() && mActivity.getPreview().getCameraController().captureResultIso() >= CameraController.ISO_FOR_DARK )
+        if( mActivity.getPreview().getCameraController().captureResultHasIso() && HDRProcessor.sceneIsLowLight( mActivity.getPreview().getCameraController().captureResultIso() ) )
             assertEquals(CameraController.N_IMAGES_NR_DARK_LOW_LIGHT, mActivity.getPreview().getCameraController().getBurstTotal());
         // reset
         mActivity.getApplicationInterface().setNRMode("preference_nr_mode_normal");
