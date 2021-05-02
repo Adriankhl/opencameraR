@@ -3037,11 +3037,19 @@ public class MainActivity extends Activity {
         if( MyDebug.LOG )
             Log.d(TAG, "showUnderNavigation: " + enable);
 
+        // We used to use window flag FLAG_LAYOUT_NO_LIMITS, but this didn't work properly on
+        // Android 11 (didn't take effect until orientation changed or application paused/resumed).
+        // Although system ui visibility flags are deprecated on Android 11, this still works better
+        // than the FLAG_LAYOUT_NO_LIMITS flag (which was not well documented anyway).
+        int flags = getWindow().getDecorView().getSystemUiVisibility();
         if( enable ) {
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            getWindow().getDecorView().setSystemUiVisibility(flags | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         }
         else {
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            getWindow().getDecorView().setSystemUiVisibility(flags & ~View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        }
+        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
+            getWindow().setNavigationBarColor(enable ? Color.TRANSPARENT : Color.BLACK);
         }
     }
 
@@ -3202,27 +3210,30 @@ public class MainActivity extends Activity {
         if( MyDebug.LOG )
             Log.d(TAG, "setImmersiveMode: " + on);
         // n.b., preview.setImmersiveMode() is called from onSystemUiVisibilityChange()
+        int saved_flags = getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+        if( MyDebug.LOG )
+            Log.d(TAG, "saved_flags?: " + saved_flags);
         if( on ) {
             if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && usingKitKatImmersiveMode() ) {
                 if( applicationInterface.getPhotoMode() == MyApplicationInterface.PhotoMode.Panorama ) {
                     // don't allow the kitkat-style immersive mode for panorama mode (problem that in "full" immersive mode, the gyro spot can't be seen - we could fix this, but simplest to just disallow)
-                    getWindow().getDecorView().setSystemUiVisibility(0);
+                    getWindow().getDecorView().setSystemUiVisibility(saved_flags);
                 }
                 else {
-                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
+                    getWindow().getDecorView().setSystemUiVisibility(saved_flags | View.SYSTEM_UI_FLAG_IMMERSIVE | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
                 }
             }
             else {
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
                 String immersive_mode = sharedPreferences.getString(PreferenceKeys.ImmersiveModePreferenceKey, "immersive_mode_low_profile");
                 if( immersive_mode.equals("immersive_mode_low_profile") )
-                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
+                    getWindow().getDecorView().setSystemUiVisibility(saved_flags | View.SYSTEM_UI_FLAG_LOW_PROFILE);
                 else
-                    getWindow().getDecorView().setSystemUiVisibility(0);
+                    getWindow().getDecorView().setSystemUiVisibility(saved_flags);
             }
         }
         else
-            getWindow().getDecorView().setSystemUiVisibility(0);
+            getWindow().getDecorView().setSystemUiVisibility(saved_flags);
     }
 
     /** Sets the brightness level for normal operation (when camera preview is visible).

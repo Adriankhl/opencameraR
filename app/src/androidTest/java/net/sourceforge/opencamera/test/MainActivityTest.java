@@ -5260,6 +5260,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     /** Tests the use of the FLAG_LAYOUT_NO_LIMITS flag introduced in 1.48.
+     *  In 1.49 this was replaced with View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION.
      */
     public void testLayoutNoLimits() throws InterruptedException {
         Log.d(TAG, "testLayoutNoLimits");
@@ -5278,21 +5279,27 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         Thread.sleep(1000);
         assertEquals(0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(0, mActivity.getMainUI().test_navigation_gap);
 
         // test changing resolution
         MainActivity.test_preview_want_no_limits_value = true;
         updateForSettings();
         Thread.sleep(1000);
-        boolean supports_no_limits = mActivity.getNavigationGap() != 0;
+        //final boolean supports_no_limits = mActivity.getNavigationGap() != 0;
+        final boolean supports_no_limits = false;
+        final boolean supports_hide_navigation = mActivity.getNavigationGap() != 0;
         Log.d(TAG, "supports_no_limits: " + supports_no_limits);
+        Log.d(TAG, "supports_hide_navigation: " + supports_hide_navigation);
 
         assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
         MainActivity.test_preview_want_no_limits_value = false;
         updateForSettings();
         Thread.sleep(1000);
         assertEquals(0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(0, mActivity.getMainUI().test_navigation_gap);
 
         if( mPreview.getCameraControllerManager().getNumberOfCameras() > 1 ) {
@@ -5301,11 +5308,13 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             switchToCamera(1);
             Thread.sleep(1000);
             assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
             assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
             MainActivity.test_preview_want_no_limits_value = false;
             switchToCamera(0);
             Thread.sleep(1000);
             assertEquals(0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            assertEquals(0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
             assertEquals(0, mActivity.getMainUI().test_navigation_gap);
         }
 
@@ -5317,6 +5326,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertTrue(mPreview.isVideo());
         Thread.sleep(1000);
         assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
         MainActivity.test_preview_want_no_limits_value = false;
         clickView(switchVideoButton);
@@ -5324,6 +5334,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertFalse(mPreview.isVideo());
         Thread.sleep(1000);
         assertEquals(0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(0, mActivity.getMainUI().test_navigation_gap);
 
         // test after restart
@@ -5331,10 +5342,12 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         restart();
         Thread.sleep(1000);
         assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
     }
 
     /** Tests the use of the FLAG_LAYOUT_NO_LIMITS flag introduced in 1.48, with the mode set from startup.
+     *  In 1.49 this was replaced with View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION.
      */
     public void testLayoutNoLimitsStartup() throws InterruptedException {
         Log.d(TAG, "testLayoutNoLimitsStartup");
@@ -5352,12 +5365,16 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         setToDefault();
 
         Thread.sleep(1000);
-        boolean supports_no_limits = mActivity.getNavigationGap() != 0;
+        //boolean supports_no_limits = mActivity.getNavigationGap() != 0;
+        final boolean supports_no_limits = false;
+        final boolean supports_hide_navigation = mActivity.getNavigationGap() != 0;
         Log.d(TAG, "supports_no_limits: " + supports_no_limits);
+        Log.d(TAG, "supports_hide_navigation: " + supports_hide_navigation);
 
         Log.d(TAG, "check FLAG_LAYOUT_NO_LIMITS");
         Log.d(TAG, "test_navigation_gap: " + mActivity.getMainUI().test_navigation_gap);
         assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
     }
 
