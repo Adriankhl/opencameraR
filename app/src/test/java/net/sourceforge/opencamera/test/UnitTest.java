@@ -984,4 +984,33 @@ public class UnitTest {
         roundTripWhiteBalanceTemperature(12000);
         roundTripWhiteBalanceTemperature(15000);
     }
+
+    @Test
+    public void testNRSceneIsLowLight() {
+        Log.d(TAG, "testNRSceneIsLowLight");
+
+        // Galaxy S10e:
+        assertFalse(HDRProcessor.sceneIsLowLight(1000, 1000000000L/25));
+        assertFalse(HDRProcessor.sceneIsLowLight(1600, 1000000000L/25));
+        assertTrue(HDRProcessor.sceneIsLowLight(3200, 1000000000L/17));
+        assertTrue(HDRProcessor.sceneIsLowLight(800, 1000000000L/5));
+        assertTrue(HDRProcessor.sceneIsLowLight(400, 1000000000L/5));
+
+        // Nokia 8:
+        assertFalse(HDRProcessor.sceneIsLowLight(800, 1000000000L/14));
+        assertFalse(HDRProcessor.sceneIsLowLight(752, 1000000000L/10)); // see testAvg36
+        assertFalse(HDRProcessor.sceneIsLowLight(1044, 1000000000L/10)); // see testAvg23
+        assertTrue(HDRProcessor.sceneIsLowLight(1505, 1000000000L/10)); // see testAvg49
+        assertTrue(HDRProcessor.sceneIsLowLight(1551, 1000000000L/10));
+        assertTrue(HDRProcessor.sceneIsLowLight(1600, 1000000000L/3)); // see testAvg51
+        assertTrue(HDRProcessor.sceneIsLowLight(1600, 1000000000L/11)); // see testHDR51
+
+        // Nexus 6:
+        assertFalse(HDRProcessor.sceneIsLowLight(749, 1000000000L/12)); // see testAvg47
+        assertFalse(HDRProcessor.sceneIsLowLight(1000, 1000000000L/12));
+        assertTrue(HDRProcessor.sceneIsLowLight(1196, 1000000000L/12));
+
+        // misc:
+        assertTrue(HDRProcessor.sceneIsLowLight(1600, 1000000000L/17)); // see testAvg1
+    }
 }
