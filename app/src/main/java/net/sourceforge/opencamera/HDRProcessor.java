@@ -1094,12 +1094,21 @@ public class HDRProcessor {
         }
     }
 
-    public static boolean sceneIsLowLight(int iso) {
+    public static boolean sceneIsLowLight(int iso, long exposure_time) {
         final int ISO_FOR_DARK = 1100;
         // For Nexus 6, max reported ISO is 1196, so the limit for dark scenes shouldn't be more than this
         // Nokia 8's max reported ISO is 1551
         // Note that OnePlus 3T has max reported ISO of 800, but this is a device bug
-        return iso >= ISO_FOR_DARK;
+        // The addition of the iso*exposure_time helps behaviour on Galaxy S10e which uses ISO >= 1600
+        // far more often, even for non-dark scenes. Potentially we could drop the requirement for
+        // "iso >= ISO_FOR_DARK" and instead have iso*exposure_time >= 91 to 115, but we need the
+        // dedicated iso check for Nexus 6 (iso 1196 exposure time 1/12s should be dark) and
+        // Nokia 8 testAvg23 (iso 1044 exposure time 0.1s shouldn't be dark).
+        // We also assume dark for long exposure times (which in practice is probably set in
+        // manual mode) - since long exposure times will give lower ISOs (e.g., on Galaxy S10e)
+        // (also useful for cameras where max ISO isn't as high as ISO_FOR_DARK)
+        //return iso >= ISO_FOR_DARK;
+        return ( iso >= ISO_FOR_DARK && iso*exposure_time >= 69*1000000000L ) || exposure_time >= (1000000000L/5-10000L);
     }
 
     private int cached_avg_sample_size = 1;
@@ -1107,10 +1116,10 @@ public class HDRProcessor {
     /** As part of the noise reduction process, the caller should scale the input images down by the factor returned
      *  by this method. This both provides a spatial smoothing, as well as improving performance and memory usage.
      */
-    public int getAvgSampleSize(int capture_result_iso) {
+    public int getAvgSampleSize(int capture_result_iso, long capture_result_exposure_tim) {
         // If changing this, may also want to change the radius of the spatial filter in avg_brighten.rs ?
         //this.cached_avg_sample_size = (n_images>=8) ? 2 : 1;
-        this.cached_avg_sample_size = sceneIsLowLight(capture_result_iso) ? 2 : 1;
+        this.cached_avg_sample_size = sceneIsLowLight(capture_result_iso, capture_result_exposure_tim) ? 2 : 1;
         //this.cached_avg_sample_size = 1;
         //this.cached_avg_sample_size = 2;
         if( MyDebug.LOG )
@@ -1169,10 +1178,11 @@ public class HDRProcessor {
      * @param bitmap_new     The other input image. The bitmap is recycled.
      * @param avg_factor     The weighting factor for bitmap_avg.
      * @param iso            The ISO used to take the photos.
+     * @param exposure_time  The exposure time used to take the photos.
      * @param zoom_factor    The digital zoom factor used to take the photos.
      */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public AvgData processAvg(Bitmap bitmap_avg, Bitmap bitmap_new, float avg_factor, int iso, float zoom_factor) throws HDRProcessorException {
+    public AvgData processAvg(Bitmap bitmap_avg, Bitmap bitmap_new, float avg_factor, int iso, long exposure_time, float zoom_factor) throws HDRProcessorException {
         if( MyDebug.LOG ) {
             Log.d(TAG, "processAvg");
             Log.d(TAG, "avg_factor: " + avg_factor);
@@ -1227,7 +1237,7 @@ public class HDRProcessor {
 		if( MyDebug.LOG )
 			Log.d(TAG, "median: " + luminanceInfo.median_value);*/
 
-        AvgData avg_data = processAvgCore(null, null, bitmap_avg, bitmap_new, width, height, avg_factor, iso, zoom_factor, null, null, null, time_s);
+        AvgData avg_data = processAvgCore(null, null, bitmap_avg, bitmap_new, width, height, avg_factor, iso, exposure_time, zoom_factor, null, null, null, time_s);
 
         //allocation_avg.copyTo(bitmap_avg);
 
@@ -1244,10 +1254,11 @@ public class HDRProcessor {
      * @param bitmap_new     The new input image. The bitmap is recycled.
      * @param avg_factor     The weighting factor for bitmap_avg.
      * @param iso            The ISO used to take the photos.
+     * @param exposure_time  The exposure time used to take the photos.
      * @param zoom_factor    The digital zoom factor used to take the photos.
      */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public void updateAvg(AvgData avg_data, int width, int height, Bitmap bitmap_new, float avg_factor, int iso, float zoom_factor) throws HDRProcessorException {
+    public void updateAvg(AvgData avg_data, int width, int height, Bitmap bitmap_new, float avg_factor, int iso, long exposure_time, float zoom_factor) throws HDRProcessorException {
         if( MyDebug.LOG ) {
             Log.d(TAG, "updateAvg");
             Log.d(TAG, "avg_factor: " + avg_factor);
@@ -1267,7 +1278,7 @@ public class HDRProcessor {
 		if( MyDebug.LOG )
 			Log.d(TAG, "### time after creating allocations from bitmaps: " + (System.currentTimeMillis() - time_s));*/
 
-        processAvgCore(avg_data.allocation_out, avg_data.allocation_out, null, bitmap_new, width, height, avg_factor, iso, zoom_factor, avg_data.allocation_avg_align, avg_data.bitmap_avg_align, avg_data.allocation_orig, time_s);
+        processAvgCore(avg_data.allocation_out, avg_data.allocation_out, null, bitmap_new, width, height, avg_factor, iso, exposure_time, zoom_factor, avg_data.allocation_avg_align, avg_data.bitmap_avg_align, avg_data.allocation_orig, time_s);
 
         if( MyDebug.LOG )
             Log.d(TAG, "### time for updateAvg: " + (System.currentTimeMillis() - time_s));
@@ -1294,7 +1305,7 @@ public class HDRProcessor {
      * @param time_s         Time, for debugging.
      */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    private AvgData processAvgCore(Allocation allocation_out, Allocation allocation_avg, Bitmap bitmap_avg, Bitmap bitmap_new, int width, int height, float avg_factor, int iso, float zoom_factor, Allocation allocation_avg_align, Bitmap bitmap_avg_align, Allocation allocation_orig, long time_s) {
+    private AvgData processAvgCore(Allocation allocation_out, Allocation allocation_avg, Bitmap bitmap_avg, Bitmap bitmap_new, int width, int height, float avg_factor, int iso, long exposure_time, float zoom_factor, Allocation allocation_avg_align, Bitmap bitmap_avg_align, Allocation allocation_orig, long time_s) {
         if( MyDebug.LOG ) {
             Log.d(TAG, "processAvgCore");
             Log.d(TAG, "iso: " + iso);
@@ -1328,7 +1339,7 @@ public class HDRProcessor {
             //final int scale_align_size = Math.max(4 / this.cached_avg_sample_size, 1);
             final int scale_align_size = (zoom_factor > 3.9f) ?
                     1 :
-                    Math.max(4 / this.getAvgSampleSize(iso), 1);
+                    Math.max(4 / this.getAvgSampleSize(iso, exposure_time), 1);
             if( MyDebug.LOG )
                 Log.d(TAG, "scale_align_size: " + scale_align_size);
             boolean crop_to_centre = true;
@@ -1396,7 +1407,7 @@ public class HDRProcessor {
 
             // misalignment more likely in "dark" images with more images and/or longer exposures
             // using max_align_scale=2 needed to prevent misalignment in testAvg51; also helps testAvg14
-            boolean wider = sceneIsLowLight(iso);
+            boolean wider = sceneIsLowLight(iso, exposure_time);
             autoAlignment(offsets_x, offsets_y, allocations, alignment_width, alignment_height, align_bitmaps, 0, true, null, false, floating_point_align, 1, crop_to_centre, wider ? 2 : 1, full_alignment_width, full_alignment_height, time_s);
 
 			/*

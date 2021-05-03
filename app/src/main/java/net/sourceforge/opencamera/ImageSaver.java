@@ -1354,7 +1354,7 @@ public class ImageSaver extends Thread {
                     long time_s = System.currentTimeMillis();
                     // initialise allocation from first two bitmaps
                     //int inSampleSize = hdrProcessor.getAvgSampleSize(request.jpeg_images.size());
-                    int inSampleSize = hdrProcessor.getAvgSampleSize(request.iso);
+                    int inSampleSize = hdrProcessor.getAvgSampleSize(request.iso, request.exposure_time);
                     //final boolean use_smp = false;
                     final boolean use_smp = true;
                     // n_smp_images is how many bitmaps to decompress at once if use_smp==true. Beware of setting too high -
@@ -1399,7 +1399,7 @@ public class ImageSaver extends Thread {
                     int height = bitmap0.getHeight();
                     float avg_factor = 1.0f;
                     this_time_s = System.currentTimeMillis();
-                    HDRProcessor.AvgData avg_data = hdrProcessor.processAvg(bitmap0, bitmap1, avg_factor, request.iso, request.zoom_factor);
+                    HDRProcessor.AvgData avg_data = hdrProcessor.processAvg(bitmap0, bitmap1, avg_factor, request.iso, request.exposure_time, request.zoom_factor);
                     if( bitmaps != null ) {
                         bitmaps.set(0, null);
                         bitmaps.set(1, null);
@@ -1451,7 +1451,7 @@ public class ImageSaver extends Thread {
                         }
                         avg_factor = (float)i;
                         this_time_s = System.currentTimeMillis();
-                        hdrProcessor.updateAvg(avg_data, width, height, new_bitmap, avg_factor, request.iso, request.zoom_factor);
+                        hdrProcessor.updateAvg(avg_data, width, height, new_bitmap, avg_factor, request.iso, request.exposure_time, request.zoom_factor);
                         // updateAvg recycles new_bitmap
                         if( bitmaps != null ) {
                             bitmaps.set(i, null);

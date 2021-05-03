@@ -12032,7 +12032,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         subTestTakePhoto(false, false, true, true, false, false, false, false);
         Log.d(TAG, "test_capture_results: " + mPreview.getCameraController().test_capture_results);
         assertEquals(mPreview.getCameraController().test_capture_results, n_back_photos + 1);
-        if( mActivity.getPreview().getCameraController().captureResultHasIso() && HDRProcessor.sceneIsLowLight( mActivity.getPreview().getCameraController().captureResultIso() ) )
+        if( mActivity.getPreview().getCameraController().captureResultHasIso() && HDRProcessor.sceneIsLowLight( mActivity.getPreview().getCameraController().captureResultIso(), mActivity.getPreview().getCameraController().captureResultExposureTime() ) )
             assertEquals(CameraController.N_IMAGES_NR_DARK_LOW_LIGHT, mActivity.getPreview().getCameraController().getBurstTotal());
         // reset
         mActivity.getApplicationInterface().setNRMode("preference_nr_mode_normal");
@@ -14722,7 +14722,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         try {
             // initialise allocation from first two bitmaps
             //int inSampleSize = mActivity.getApplicationInterface().getHDRProcessor().getAvgSampleSize(inputs.size());
-            int inSampleSize = mActivity.getApplicationInterface().getHDRProcessor().getAvgSampleSize(iso);
+            int inSampleSize = mActivity.getApplicationInterface().getHDRProcessor().getAvgSampleSize(iso, exposure_time);
             Bitmap bitmap0 = getBitmapFromFile(inputs.get(0), inSampleSize);
             Bitmap bitmap1 = getBitmapFromFile(inputs.get(1), inSampleSize);
             int width = bitmap0.getWidth();
@@ -14731,7 +14731,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             float avg_factor = 1.0f;
             List<Long> times = new ArrayList<>();
             long time_s = System.currentTimeMillis();
-            HDRProcessor.AvgData avg_data = mActivity.getApplicationInterface().getHDRProcessor().processAvg(bitmap0, bitmap1, avg_factor, iso, zoom_factor);
+            HDRProcessor.AvgData avg_data = mActivity.getApplicationInterface().getHDRProcessor().processAvg(bitmap0, bitmap1, avg_factor, iso, exposure_time, zoom_factor);
             Allocation allocation = avg_data.allocation_out;
             times.add(System.currentTimeMillis() - time_s);
             // processAvg recycles both bitmaps
@@ -14745,7 +14745,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 Bitmap new_bitmap = getBitmapFromFile(inputs.get(i), inSampleSize);
                 avg_factor = (float)i;
                 time_s = System.currentTimeMillis();
-                mActivity.getApplicationInterface().getHDRProcessor().updateAvg(avg_data, width, height, new_bitmap, avg_factor, iso, zoom_factor);
+                mActivity.getApplicationInterface().getHDRProcessor().updateAvg(avg_data, width, height, new_bitmap, avg_factor, iso, exposure_time, zoom_factor);
                 times.add(System.currentTimeMillis() - time_s);
                 // updateAvg recycles new_bitmap
                 if( cb != null ) {

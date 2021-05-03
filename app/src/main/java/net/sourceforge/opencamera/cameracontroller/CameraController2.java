@@ -6546,8 +6546,8 @@ public class CameraController2 extends CameraController {
                     n_burst = 4;
                     n_burst_taken = 0;
 
-                    if( capture_result_has_iso ) {
-                        if( HDRProcessor.sceneIsLowLight(capture_result_iso) ) {
+                    if( capture_result_has_iso && capture_result_has_exposure_time ) {
+                        if( HDRProcessor.sceneIsLowLight(capture_result_iso, capture_result_exposure_time) ) {
                             if( MyDebug.LOG )
                                 Log.d(TAG, "optimise for dark scene");
                             n_burst = noise_reduction_low_light ? N_IMAGES_NR_DARK_LOW_LIGHT : N_IMAGES_NR_DARK;
@@ -6555,14 +6555,14 @@ public class CameraController2 extends CameraController {
                             // so no point enabling this code, which is meant to brighten the scene, not make it darker!
                             if( !camera_settings.has_iso && !is_oneplus ) {
                                 long exposure_time = noise_reduction_low_light ? 1000000000L/3 : 1000000000L/10;
-                                if( !capture_result_has_exposure_time || capture_result_exposure_time < exposure_time ) {
+                                if(  capture_result_exposure_time < exposure_time ) {
                                     if( MyDebug.LOG )
                                         Log.d(TAG, "also set long exposure time");
                                     modified_from_camera_settings = true;
 
                                     boolean set_new_iso = false;
                                     int new_iso = 0;
-                                    if( capture_result_has_exposure_time ) {
+                                    {
                                         // ISO*exposure should be a constant
                                         set_new_iso = true;
                                         new_iso = (int)((capture_result_iso * capture_result_exposure_time)/exposure_time);
