@@ -1776,7 +1776,7 @@ public class MainUI {
         int step = previous ? -1 : 1;
         boolean found = false;
         for(int i = 0; i < count; i++) {
-            Button button= (Button) iso_buttons.get(i);
+            Button button = (Button)iso_buttons.get(i);
             String button_text = "" + button.getText();
             if( button_text.contains(current_iso) ) {
                 found = true;
@@ -1784,14 +1784,14 @@ public class MainUI {
                 // it's not practical in remote mode.
                 Button nextButton = (Button) iso_buttons.get((i + count + step)%count);
                 String nextButton_text = "" + nextButton.getText();
-                if (nextButton_text.contains("m")) {
+                if( nextButton_text.contains("m") ) {
                     nextButton = (Button) iso_buttons.get((i+count+ 2*step)%count);
                 }
                 nextButton.callOnClick();
                 break;
             }
         }
-        if (!found) {
+        if( !found ) {
             // For instance, we are in ISO manual mode and "M" is selected. default
             // back to "Auto" to avoid being stuck since we're with a remote control
             iso_buttons.get(0).callOnClick();
@@ -1809,11 +1809,11 @@ public class MainUI {
     private void selectExposureUILine() {
         if( MyDebug.LOG )
             Log.d(TAG, "selectExposureUILine");
-        if (!isExposureUIOpen()) { // Safety check
+        if( !isExposureUIOpen() ) { // Safety check
             return;
         }
 
-        if (mExposureLine == 0) { // ISO presets
+        if( mExposureLine == 0 ) { // ISO presets
             ViewGroup iso_buttons_container = main_activity.findViewById(R.id.iso_buttons);
             iso_buttons_container.setBackgroundColor(highlightColorExposureUIElement);
             //iso_buttons_container.setAlpha(1f);
@@ -1832,39 +1832,43 @@ public class MainUI {
                     found = true;
                 }
                 else {
-                    if (button_text.contains("m")) {
+                    if( button_text.contains("m") ) {
                         manualButton = button;
                     }
                     PopupView.setButtonSelected(button, false);
                     button.setBackgroundColor(Color.TRANSPARENT);
                 }
             }
-            if (!found && manualButton != null) {
+            if( !found && manualButton != null ) {
                 // We are in manual ISO, highlight the "M" button
                 PopupView.setButtonSelected(manualButton, true);
                 manualButton.setBackgroundColor(highlightColorExposureUIElement);
                 //manualButton.setAlpha(0.3f);
             }
             mSelectingExposureUIElement = true;
-        } else if (mExposureLine == 1) {
+        }
+        else if( mExposureLine == 1 ) {
             // ISO seek bar - change color
             View seek_bar = main_activity.findViewById(R.id.iso_seekbar);
             //seek_bar.setAlpha(0.1f);
             seek_bar.setBackgroundColor(highlightColorExposureUIElement);
             mSelectingExposureUIElement = true;
-        } else if (mExposureLine == 2) {
+        }
+        else if( mExposureLine == 2 ) {
             // ISO seek bar - change color
             View seek_bar = main_activity.findViewById(R.id.exposure_time_seekbar);
             //seek_bar.setAlpha(0.1f);
             seek_bar.setBackgroundColor(highlightColorExposureUIElement);
             mSelectingExposureUIElement = true;
-        } else if (mExposureLine == 3) {
+        }
+        else if ( mExposureLine == 3 ) {
             // Exposure compensation
             View container = main_activity.findViewById(R.id.exposure_container);
             //container.setAlpha(0.1f);
             container.setBackgroundColor(highlightColorExposureUIElement);
             mSelectingExposureUIElement = true;
-        } else if (mExposureLine == 4) {
+        }
+        else if( mExposureLine == 4 ) {
             // Manual white balance
             View container = main_activity.findViewById(R.id.white_balance_seekbar);
             //container.setAlpha(0.1f);
