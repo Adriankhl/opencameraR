@@ -1778,7 +1778,7 @@ public class MainUI {
         for(int i = 0; i < count; i++) {
             Button button = (Button)iso_buttons.get(i);
             String button_text = "" + button.getText();
-            if( button_text.contains(current_iso) ) {
+            if( ISOTextEquals(button_text, current_iso) ) {
                 found = true;
                 // Select next one, unless it's "Manual", which we skip since
                 // it's not practical in remote mode.
@@ -1825,7 +1825,7 @@ public class MainUI {
             for(View view : iso_buttons) {
                 Button button = (Button)view;
                 String button_text = "" + button.getText();
-                if( button_text.contains(current_iso) ) {
+                if( ISOTextEquals(button_text, current_iso) ) {
                     PopupView.setButtonSelected(button, true);
                     //button.setBackgroundColor(highlightColorExposureUIElement);
                     //button.setAlpha(0.3f);
@@ -1993,13 +1993,13 @@ public class MainUI {
             values.add(manual_iso_value);
             iso_button_manual_index = 1; // must match where we place the manual button!
             int [] iso_values = {50, 100, 200, 400, 800, 1600, 3200, 6400};
-            values.add("" + min_iso);
+            values.add(ISOToButtonText(min_iso));
             for(int iso_value : iso_values) {
                 if( iso_value > min_iso && iso_value < max_iso ) {
-                    values.add("" + iso_value);
+                    values.add(ISOToButtonText(iso_value));
                 }
             }
-            values.add("" + max_iso);
+            values.add(ISOToButtonText(max_iso));
             supported_isos = values;
         }
         else {
@@ -2169,6 +2169,22 @@ public class MainUI {
         //layoutUI(); // needed to update alignment of exposure UI
     }
 
+    /** Returns whether the ISO button with the supplied text is a match for the supplied iso.
+     *  Should only be used for Preview.supportsISORange()==true (i.e., full manual ISO).
+     */
+    public static boolean ISOTextEquals(String button_text, String iso) {
+        return button_text.contains(iso);
+    }
+
+    /** Returns the ISO button text for the supplied iso.
+     *  Should only be used for Preview.supportsISORange()==true (i.e., full manual ISO).
+     */
+    public static String ISOToButtonText(int iso) {
+        // n.b., if we change how the ISO is converted to a string for the button, will also need
+        // to update updateSelectedISOButton()
+        return "" + iso;
+    }
+
     /** If the exposure panel is open, updates the selected ISO button to match the current ISO value,
      *  if a continuous range of ISO values are supported by the camera.
      */
@@ -2188,7 +2204,7 @@ public class MainUI {
                 if( MyDebug.LOG )
                     Log.d(TAG, "button: " + button.getText());
                 String button_text = "" + button.getText();
-                if( button_text.contains(current_iso) ) {
+                if( ISOTextEquals(button_text, current_iso) ) {
                     PopupView.setButtonSelected(button, true);
                     found = true;
                 }
