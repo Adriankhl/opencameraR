@@ -2173,7 +2173,13 @@ public class MainUI {
      *  Should only be used for Preview.supportsISORange()==true (i.e., full manual ISO).
      */
     public static boolean ISOTextEquals(String button_text, String iso) {
-        return button_text.contains(iso);
+        // Can't use equals(), due to the \n that Popupview.getButtonOptionString() inserts, and
+        // also good to make this general in case in future we support other text formats.
+        // We really want to check that iso is the last word in button_text.
+        if( button_text.endsWith(iso) ) {
+            return button_text.length()==iso.length() || Character.isWhitespace( button_text.charAt(button_text.length()-iso.length()-1) );
+        }
+        return false;
     }
 
     /** Returns the ISO button text for the supplied iso.
