@@ -1226,6 +1226,10 @@ public class PopupView extends LinearLayout {
         createButtonOptions(this, this.getContext(), total_width_dp, main_activity.getMainUI().getTestUIButtonsMap(), supported_options, icons_id, values_id, prefix_string, true, current_value, max_buttons_per_row, test_key, listener);
     }
 
+    public static String getButtonOptionString(boolean include_prefix, String prefix_string, String supported_option) {
+        return (include_prefix ? prefix_string : "") + "\n" + supported_option;
+    }
+
     static List<View> createButtonOptions(ViewGroup parent, Context context, int total_width_dp, Map<String, View> test_ui_buttons, List<String> supported_options, int icons_id, int values_id, String prefix_string, boolean include_prefix, String current_value, int max_buttons_per_row, String test_key, final ButtonOptionsPopupListener listener) {
         if( MyDebug.LOG )
             Log.d(TAG, "createButtonOptions");
@@ -1329,13 +1333,13 @@ public class PopupView extends LinearLayout {
                     button_string = supported_option;
                 }
                 else if( prefix_string.equalsIgnoreCase("ISO") && supported_option.length() >= 4 && supported_option.substring(0, 4).equalsIgnoreCase("ISO_") ) {
-                    button_string = (include_prefix ? prefix_string : "") + "\n" + supported_option.substring(4);
+                    button_string = getButtonOptionString(include_prefix, prefix_string, supported_option.substring(4));
                 }
                 else if( prefix_string.equalsIgnoreCase("ISO") && supported_option.length() >= 3 && supported_option.substring(0, 3).equalsIgnoreCase("ISO") ) {
-                    button_string = (include_prefix ? prefix_string : "") + "\n" + supported_option.substring(3);
+                    button_string = getButtonOptionString(include_prefix, prefix_string, supported_option.substring(3));
                 }
                 else {
-                    button_string = (include_prefix ? prefix_string : "") + "\n" + supported_option;
+                    button_string = getButtonOptionString(include_prefix, prefix_string, supported_option);
                 }
                 if( MyDebug.LOG )
                     Log.d(TAG, "button_string: " + button_string);
