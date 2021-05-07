@@ -13,6 +13,8 @@ import net.sourceforge.opencamera.preview.Preview;
 import net.sourceforge.opencamera.preview.VideoQualityHandler;
 import net.sourceforge.opencamera.TextFormatter;
 import net.sourceforge.opencamera.ui.DrawPreview;
+import net.sourceforge.opencamera.ui.MainUI;
+import net.sourceforge.opencamera.ui.PopupView;
 
 import org.junit.Test;
 
@@ -1012,5 +1014,27 @@ public class UnitTest {
 
         // misc:
         assertTrue(HDRProcessor.sceneIsLowLight(1600, 1000000000L/17)); // see testAvg1
+    }
+
+    @Test
+    public void testISOButtonStrings() {
+        Log.d(TAG, "testISOButtonStrings");
+
+        int [] iso_button_values = {50, 100, 200, 400, 800, 1600, 3200, 6400};
+        for(int current_iso=1;current_iso<=10000;current_iso++) {
+            //Log.d(TAG, "current_iso: " + current_iso);
+            int index = -1;
+            for(int i=0;i<iso_button_values.length && index==-1;i++) {
+                if( iso_button_values[i] == current_iso ) {
+                    index = i;
+                }
+            }
+            // should only match the same button!
+            for(int i=0;i<iso_button_values.length;i++) {
+                String button_text = PopupView.getButtonOptionString(false, "ISO", MainUI.ISOToButtonText(iso_button_values[i]));
+                //Log.d(TAG, "    i = " + i + " iso: " + iso_button_values[i] + " : " + button_text);
+                assertEquals(i==index, MainUI.ISOTextEquals(button_text, ""+current_iso));
+            }
+        }
     }
 }
