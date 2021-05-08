@@ -12921,7 +12921,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         //checkHistogramDetails(hdrHistogramDetails, 1, 39, 253);
         //checkHistogramDetails(hdrHistogramDetails, 1, 44, 253);
         //checkHistogramDetails(hdrHistogramDetails, 1, 42, 253);
-        checkHistogramDetails(hdrHistogramDetails, 1, 24, 254);
+        //checkHistogramDetails(hdrHistogramDetails, 1, 24, 254);
+        checkHistogramDetails(hdrHistogramDetails, 2, 30, 254);
     }
 
     /** Tests HDR algorithm on test samples "saintpaul", but with 5 images.
@@ -14297,7 +14298,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         // ISO 100, exposure time 1/417s, but pass in -1 since these are HDRNTests
         HistogramDetails hdrHistogramDetails = subTestHDR(inputs, "testHDR49_output.jpg", false, -1, -1);
 
-        checkHistogramDetails(hdrHistogramDetails, 0, 75, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 75, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 81, 254);
     }
 
     /** Tests HDR algorithm on test samples "testHDR49".
@@ -14337,7 +14339,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         HistogramDetails hdrHistogramDetails = subTestHDR(inputs, "testHDR49_exp5_output.jpg", false, -1, -1);
 
-        checkHistogramDetails(hdrHistogramDetails, 0, 72, 244);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 72, 244);
+        checkHistogramDetails(hdrHistogramDetails, 0, 78, 243);
     }
 
     /** Tests HDR algorithm on test samples "testHDR50".
@@ -14409,7 +14412,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         HistogramDetails hdrHistogramDetails = subTestHDR(inputs, "testHDR53_output.jpg", false, 103, 1000000000L/5381);
 
-        checkHistogramDetails(hdrHistogramDetails, 0, 55, 254);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 55, 254);
+        checkHistogramDetails(hdrHistogramDetails, 0, 64, 255);
     }
 
     /** Tests HDR algorithm on test samples "testHDR54".
@@ -15191,7 +15195,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         //checkHistogramDetails(hdrHistogramDetails, 12, 46, 205);
         //checkHistogramDetails(hdrHistogramDetails, 12, 44, 209);
         //checkHistogramDetails(hdrHistogramDetails, 12, 44, 202);
-        checkHistogramDetails(hdrHistogramDetails, 5, 16, 190);
+        //checkHistogramDetails(hdrHistogramDetails, 5, 16, 190);
+        checkHistogramDetails(hdrHistogramDetails, 5, 19, 199);
     }
 
     /** Tests Avg algorithm on test samples "testAvg7".
@@ -15515,7 +15520,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         //checkHistogramDetails(hdrHistogramDetails, 0, 30, 254);
         //checkHistogramDetails(hdrHistogramDetails, 0, 27, 255);
         //checkHistogramDetails(hdrHistogramDetails, 0, 20, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 17, 254);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 17, 254);
+        checkHistogramDetails(hdrHistogramDetails, 0, 31, 255);
     }
 
     /** Tests Avg algorithm on test samples "testAvg13".
@@ -15583,7 +15589,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             }
         });
 
-        //checkHistogramDetails(hdrHistogramDetails, 1, 39, 253);
+        checkHistogramDetails(hdrHistogramDetails, 0, 25, 245);
     }
 
     /** Tests Avg algorithm on test samples "testAvg15".
@@ -15608,7 +15614,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             }
         });
 
-        //checkHistogramDetails(hdrHistogramDetails, 1, 39, 253);
+        checkHistogramDetails(hdrHistogramDetails, 0, 38, 254);
     }
 
     /** Tests Avg algorithm on test samples "testAvg16".
@@ -16033,7 +16039,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 21, 255);
         //checkHistogramDetails(hdrHistogramDetails, 0, 18, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 8, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 8, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 13, 255);
     }
 
     /** Tests Avg algorithm on test samples "testAvg29".
@@ -16146,7 +16153,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         });
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 24, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 9, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 9, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 13, 255);
     }
 
     /** Tests Avg algorithm on test samples "testAvg32".
@@ -16178,7 +16186,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 34, 255);
         //checkHistogramDetails(hdrHistogramDetails, 0, 13, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 36, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 36, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 61, 254);
     }
 
     /** Tests Avg algorithm on test samples "testAvg33".
@@ -16425,7 +16434,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 50, 255);
         //checkHistogramDetails(hdrHistogramDetails, 0, 19, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 50, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 50, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 67, 255);
     }
 
     /** Tests Avg algorithm on test samples "testAvg41".
@@ -16459,7 +16469,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         });
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 49, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 37, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 37, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 59, 254);
     }
 
     /** Tests Avg algorithm on test samples "testAvg42".

@@ -2809,6 +2809,26 @@ public class HDRProcessor {
     }
 
     private static int getBrightnessTarget(int brightness, float max_gain_factor, int ideal_brightness) {
+        if( brightness > 0 ) {
+            // At least try to achieve a minimum brightness.
+            // Increasing max_gain_factor helps the following tests significantly: testAvg12, testAvg14, testAvg15,
+            // testAvg28, testAvg31, testAvg32.
+            // Other tests also helped to a lesser degree are: testAvg1, testAvg5, testAvg6, testAvg40, testAvg41,
+            // testAvg42, testHDR1, testHDR1_exp5, testHDR11 (DRO example), testHDR20 (DRO example), testHDR28 (DRO example),
+            // testHDR48, testHDR49, testHDR49_exp5, testHDR53.
+            // We need to be careful of increasing max_gain_factor too high in some cases - for AvgTests, see comment in
+            // computeBrightenFactors() for examples of tests that would be affected.
+
+            final float min_brightness_c = 42.0f;
+            float min_max_gain_factor = min_brightness_c / brightness;
+            max_gain_factor = Math.max(max_gain_factor, min_max_gain_factor);
+
+            // still set some maximum max_gain_factor - highest max_gain_factor in tests is
+            // testAvg14 with max_gain_factor=14.0, which benefits from this, but some parts starting
+            // to look overblown
+            max_gain_factor = Math.min(max_gain_factor, 15.0f);
+        }
+
         if( brightness <= 0 )
             brightness = 1;
         if( MyDebug.LOG ) {
@@ -2837,11 +2857,13 @@ public class HDRProcessor {
     /** Computes various factors used in the avg_brighten.rs script.
      */
     public static BrightenFactors computeBrightenFactors(boolean has_iso_exposure, int iso, long exposure_time, int brightness, int max_brightness) {
-        // for outdoor/bright images, don't want max_gain_factor 4, otherwise we lose variation in grass colour in testAvg42
+        // For outdoor/bright images, don't want max_gain_factor 4, otherwise we lose variation in grass colour in testAvg42
         // and having max_gain_factor at 1.5 prevents testAvg43, testAvg44 being too bright and oversaturated
         // for other images, we also don't want max_gain_factor 4, as makes cases too bright and overblown if it would
         // take the max_possible_value over 255. Especially testAvg46, but also testAvg25, testAvg31, testAvg38,
-        // testAvg39
+        // testAvg39.
+        // Note however that we now do allow increasing the max_gain_factor in getBrightnessTarget(), depending on
+        // brightness levels.
         float max_gain_factor = 1.5f;
         int ideal_brightness = 119;
         if( has_iso_exposure && iso < 1100 && exposure_time < 1000000000L/59 ) {
@@ -2852,6 +2874,9 @@ public class HDRProcessor {
         int brightness_target = getBrightnessTarget(brightness, max_gain_factor, ideal_brightness);
         //int max_target = Math.min(255, (int)((max_brightness*brightness_target)/(float)brightness + 0.5f) );
         if( MyDebug.LOG ) {
+            Log.d(TAG, "brightness: " + brightness);
+            Log.d(TAG, "max_brightness: " + max_brightness);
+            Log.d(TAG, "ideal_brightness: " + ideal_brightness);
             Log.d(TAG, "brightness target: " + brightness_target);
             //Log.d(TAG, "max target: " + max_target);
         }
