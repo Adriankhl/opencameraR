@@ -293,7 +293,6 @@
     <string name="photo_mode_hdr">HDR</string>
     <string name="photo_mode_expo_bracketing">{} osvet.</string> <!-- keep short, as this shows in the popup menu -->
     <string name="photo_mode_expo_bracketing_full">Stopnjevanje osvetlitve</string>
-	<string name="photo_mode_fast_burst" translatable="false">[]]]</string> <!-- keep short, as this shows in the popup menu; shouldn't be translated -->
     <string name="photo_mode_fast_burst_full">Hitro zaporedje</string>
     <string name="photo_mode_noise_reduction">NR</string> <!-- keep short, as this shows in the popup menu; probably shouldn't be translated? -->
 	<string name="photo_mode_noise_reduction_full">Zmanjševanje šuma</string>
@@ -741,7 +740,7 @@
     <string name="preference_image_format_png">PNG</string>
 
     <!-- beware of these strings for preference_nr_mode* being too long, otherwise too wide for popup menu -->
-    <string name="preference_nr_mode">Način zmanj. šuma</string>
+    <string name="preference_nr_mode">NR Način</string>
     <string name="preference_nr_mode_normal">Običajni</string>
     <string name="preference_nr_mode_low_light">Nizka svetloba</string>
 
@@ -922,9 +921,6 @@
     <string name="preference_video_rec709">REC709</string>
     <string name="preference_video_srgb">sRGB</string>
     <string name="preference_video_gamma">Gamma</string>
-    <string name="preference_video_jtvideo" translatable="false">JTVideo</string>
-    <string name="preference_video_jtlog" translatable="false">JTLog</string>
-    <string name="preference_video_jtlog2" translatable="false">JTLog2</string>
     <string name="preference_video_profile_gamma">Vrednost gama videoposnetkov</string>
     <string name="preference_video_profile_gamma_summary">Vrednost gama, k naj se uporabi v videoposnetkih, če je profil slike videoposnetkov nastavljen na Gama\n%s</string>
     <string name="preference_video_profile_gamma_1_6">1,6</string>
