@@ -30,6 +30,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.DngCreator;
 import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.Capability;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.RggbChannelVector;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -2318,6 +2319,32 @@ public class CameraController2 extends CameraController {
             else {
                 for(int i=0;i<nr_modes.length;i++) {
                     Log.d(TAG, "    " + i + ": " + nr_modes[i]);
+                }
+
+            }
+
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ) {
+                Capability [] capabilities = characteristics.get(CameraCharacteristics.CONTROL_AVAILABLE_EXTENDED_SCENE_MODE_CAPABILITIES);
+                Log.d(TAG, "capabilities:");
+                if( capabilities == null ) {
+                    Log.d(TAG, "    none");
+                }
+                else {
+                    for(int i=0;i<capabilities.length;i++) {
+                        Log.d(TAG, "    " + i + ": " + capabilities[i].getMode());
+                    }
+                }
+            }
+
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ) {
+                Range<Float> zoom_ratio_range = characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+                Log.d(TAG, "zoom_ratio_range:");
+                if( zoom_ratio_range == null ) {
+                    Log.d(TAG, "    not supported");
+                }
+                else {
+                    Log.d(TAG, "    min zoom ratio: " + zoom_ratio_range.getLower());
+                    Log.d(TAG, "    max zoom ratio: " + zoom_ratio_range.getUpper());
                 }
             }
         }
@@ -6318,6 +6345,7 @@ public class CameraController2 extends CameraController {
                     }
                     for(int i=0;i<focus_distances.size();i++) {
                         stillBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, focus_distances.get(i));
+                        //stillBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, focus_distances.get(focus_distances.size()-1));
                         if( i == focus_distances.size()-1 ) {
                             stillBuilder.setTag(new RequestTagObject(RequestTagType.CAPTURE)); // set capture tag for last only
                         }
@@ -6407,6 +6435,7 @@ public class CameraController2 extends CameraController {
                 }
                 try {
                     modified_from_camera_settings = true;
+                    //setRepeatingRequest(requests.get(0));
                     if( use_expo_fast_burst && burst_type == BurstType.BURSTTYPE_EXPO ) { // alway use slow burst for focus bracketing
                         if( MyDebug.LOG )
                             Log.d(TAG, "using fast burst");
