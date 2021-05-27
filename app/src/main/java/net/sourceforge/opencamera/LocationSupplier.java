@@ -184,22 +184,33 @@ public class LocationSupplier {
             // the user. However on Galaxy Nexus Android 4.3 and Nexus 7 (2013) Android 5.1.1, ACCESS_COARSE_LOCATION returns
             // PERMISSION_DENIED! So we keep the checks to Android Marshmallow or later (where we need them), and avoid
             // checking behaviour for earlier devices.
+            boolean has_coarse_location_permission;
+            boolean has_fine_location_permission;
             if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {
                 if( MyDebug.LOG )
                     Log.d(TAG, "check for location permissions");
-                boolean has_coarse_location_permission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                boolean has_fine_location_permission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                has_coarse_location_permission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                has_fine_location_permission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
                 if( MyDebug.LOG ) {
                     Log.d(TAG, "has_coarse_location_permission? " + has_coarse_location_permission);
                     Log.d(TAG, "has_fine_location_permission? " + has_fine_location_permission);
                 }
-                // require both permissions to be present
-                if( !has_coarse_location_permission || !has_fine_location_permission ) {
+                //has_coarse_location_permission = false; // test
+                //has_fine_location_permission = false; // test
+                // require at least one permission to be present
+                // will be important for Android 12+ where user can grant only coarse permission - we still
+                // want to support geotagging in such cases
+                if( !has_coarse_location_permission && !has_fine_location_permission ) {
                     if( MyDebug.LOG )
                         Log.d(TAG, "location permission not available");
                     // return false, which tells caller to request permission - we'll call this function again if permission is granted
                     return false;
                 }
+            }
+            else {
+                // permissions always available pre-Android 6
+                has_coarse_location_permission = true;
+                has_fine_location_permission = true;
             }
 
             locationListeners = new MyLocationListener[2];
@@ -209,23 +220,23 @@ public class LocationSupplier {
             // location listeners should be stored in order best to worst
             // also see https://sourceforge.net/p/opencamera/tickets/1/ - need to check provider is available
             // now also need to check for permissions - need to support devices that might have one but not both of fine and coarse permissions supplied
-            if( locationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER) ) {
+            if( has_coarse_location_permission && locationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER) ) {
                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0, locationListeners[1]);
                 if( MyDebug.LOG )
                     Log.d(TAG, "created coarse (network) location listener");
             }
             else {
                 if( MyDebug.LOG )
-                    Log.e(TAG, "don't have a NETWORK_PROVIDER");
+                    Log.d(TAG, "don't have a NETWORK_PROVIDER");
             }
-            if( locationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER) ) {
+            if( has_fine_location_permission && locationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER) ) {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListeners[0]);
                 if( MyDebug.LOG )
                     Log.d(TAG, "created fine (gps) location listener");
             }
             else {
                 if( MyDebug.LOG )
-                    Log.e(TAG, "don't have a GPS_PROVIDER");
+                    Log.d(TAG, "don't have a GPS_PROVIDER");
             }
         }
         else if( !store_location ) {
