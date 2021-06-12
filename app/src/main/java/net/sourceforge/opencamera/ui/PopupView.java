@@ -1369,7 +1369,7 @@ public class PopupView extends LinearLayout {
                         Log.d(TAG, "addButtonOptionsToPopup time 2.13: " + (System.nanoTime() - debug_time));
                     image_button.setScaleType(ScaleType.FIT_CENTER);
                     image_button.setBackgroundColor(Color.TRANSPARENT);
-                    final int padding = (int) (7 * scale + 0.5f); // convert dps to pixels
+                    final int padding = (int) (10 * scale + 0.5f); // convert dps to pixels
                     view.setPadding(padding, padding, padding, padding);
                 }
                 else {
