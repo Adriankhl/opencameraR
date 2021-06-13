@@ -165,7 +165,8 @@ public class DrawPreview {
     private Bitmap hdr_bitmap;
     private Bitmap panorama_bitmap;
     private Bitmap expo_bitmap;
-    private Bitmap focus_bracket_bitmap;
+    //private Bitmap focus_bracket_bitmap;
+        // no longer bother with a focus bracketing icon - hard to come up with a clear icon, and should be obvious from the two on-screen seekbars
     private Bitmap burst_bitmap;
     private Bitmap nr_bitmap;
     private Bitmap photostamp_bitmap;
@@ -258,7 +259,7 @@ public class DrawPreview {
         hdr_bitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.ic_hdr_on_white_48dp);
         panorama_bitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.baseline_panorama_horizontal_white_48);
         expo_bitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.expo_icon);
-        focus_bracket_bitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.focus_bracket_icon);
+        //focus_bracket_bitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.focus_bracket_icon);
         burst_bitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.ic_burst_mode_white_48dp);
         nr_bitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.nr_icon);
         photostamp_bitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.ic_text_format_white_48dp);
@@ -314,10 +315,10 @@ public class DrawPreview {
             expo_bitmap.recycle();
             expo_bitmap = null;
         }
-        if( focus_bracket_bitmap != null ) {
+        /*if( focus_bracket_bitmap != null ) {
             focus_bracket_bitmap.recycle();
             focus_bracket_bitmap = null;
-        }
+        }*/
         if( burst_bitmap != null ) {
             burst_bitmap.recycle();
             burst_bitmap = null;
@@ -1359,7 +1360,7 @@ public class DrawPreview {
                             photoMode == MyApplicationInterface.PhotoMode.HDR ||
                             photoMode == MyApplicationInterface.PhotoMode.Panorama ||
                             photoMode == MyApplicationInterface.PhotoMode.ExpoBracketing ||
-                            photoMode == MyApplicationInterface.PhotoMode.FocusBracketing ||
+                            //photoMode == MyApplicationInterface.PhotoMode.FocusBracketing ||
                             photoMode == MyApplicationInterface.PhotoMode.FastBurst ||
                             photoMode == MyApplicationInterface.PhotoMode.NoiseReduction
             ) &&
@@ -1374,7 +1375,7 @@ public class DrawPreview {
                         photoMode == MyApplicationInterface.PhotoMode.HDR ? hdr_bitmap :
                                 photoMode == MyApplicationInterface.PhotoMode.Panorama ? panorama_bitmap :
                                     photoMode == MyApplicationInterface.PhotoMode.ExpoBracketing ? expo_bitmap :
-                                            photoMode == MyApplicationInterface.PhotoMode.FocusBracketing ? focus_bracket_bitmap :
+                                            //photoMode == MyApplicationInterface.PhotoMode.FocusBracketing ? focus_bracket_bitmap :
                                                     photoMode == MyApplicationInterface.PhotoMode.FastBurst ? burst_bitmap :
                                                             photoMode == MyApplicationInterface.PhotoMode.NoiseReduction ? nr_bitmap :
                                                                     null;
@@ -1393,6 +1394,7 @@ public class DrawPreview {
                     }
                 }
             }
+
 
             // photo-stamp is supported for photos taken in video mode
             // but it isn't supported in RAW-only mode
