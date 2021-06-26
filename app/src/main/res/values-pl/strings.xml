@@ -712,8 +712,6 @@
     <string name="preference_water_type_summary">W przypadku obudów podwodnych poprawia dokładność, jeśli zostanie wybrany właściwy rodzaj wody.</string>
     <string name="remote_connected">Połączono zdalnie</string>
 
-    <string name="preference_remote_type_kraken">Inteligentna obudowa Kraken</string>
-
     <string name="preference_stamp_geo_address">Użyj adresów</string>
     <!-- preference_stamp_geo_address_summary defined below -->
     <string name="preference_stamp_geo_address_both">Wyświetlaj adres jeśli to możliwe oprócz współrzędnych GPS</string>

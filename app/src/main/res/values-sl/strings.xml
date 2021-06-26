@@ -801,8 +801,6 @@
     <string name="preference_water_type_summary">Izboljša natančnost pri vodotesnih ohišjih, če je izbrana pravilna vrsta vode.</string>
     <string name="remote_connected">Oddaljena naprava je povezana.</string>
 
-    <string name="preference_remote_type_kraken">Pametno ohišje Kraken</string>
-
     <string name="preference_stamp_geo_address">Uporabi naslove</string>
     <!-- preference_stamp_geo_address_summary defined below -->
     <string name="preference_stamp_geo_address_both">Poleg koordinat GPS prikaži naslove, če jo možno</string>
