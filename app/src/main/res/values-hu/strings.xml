@@ -298,9 +298,6 @@
     <string name="no_permission">ENGEDÉLY NEM ELÉRHETŐ</string>
     <string name="permission_rationale_title">Engedély szükséges</string>
     <string name="permission_rationale_camera">A kamera eléréséhez „kamera engedély” szükséges</string>
-    <string name="permission_rationale_storage">A fotók mentéséhez írási/olvasási engedély szükséges</string>
-    <string name="permission_rationale_record_audio">Hangos videofelvétel készítéséhez mikrofon engedély szükséges</string>
-    <string name="permission_rationale_location">Geotaggeléshez helymeghatározás engedély szükséges</string>
 
     <string name="preference_category_photo_debugging">Hibakeresési lehetőségek</string>
     <string name="preference_category_video_debugging">Hibakeresési lehetőségek</string>

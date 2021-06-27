@@ -300,9 +300,6 @@
     <string name="no_permission">TILLATELSER ER IKKE TILGJENGELIGE</string>
     <string name="permission_rationale_title">Tillatelse er påkrevd</string>
     <string name="permission_rationale_camera">Kameratillatelse er påkrevd for å kunne bruke kameraet.</string>
-    <string name="permission_rationale_storage">Skrive-/lese-lagringstillatelse er påkrevd for å kunne lagre bilder.</string>
-    <string name="permission_rationale_record_audio">Mikrofontillatelse er påkrevd for å kunne ta opp videoer med lyd.</string>
-    <string name="permission_rationale_location">Posisjonstillatelse er påkrevd for geotagging.</string>
 
     <string name="preference_category_photo_debugging">Avlusingsinnstillinger</string>
     <string name="preference_category_video_debugging">Avlusingsinnstillinger</string>

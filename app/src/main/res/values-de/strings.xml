@@ -303,8 +303,6 @@
     <string name="no_permission">BERECHTIGUNGEN NICHT VERFÜGBAR</string>
     <string name="permission_rationale_title">Berechtigung benötigt</string>
     <string name="permission_rationale_camera">Kamera Berechtigung wird benötigt um die Kamera zu aktivieren</string>
-    <string name="permission_rationale_storage">Speicher-Berechtiung benötigt zum Speichern von Fotos</string>
-    <string name="permission_rationale_record_audio">Mikrofon-Berechtigung benötigt um Audio mit dem Video aufzuzeichnen</string>
     <string name="permission_rationale_location">Location-Berechtigung für das Geotagging benötigt (Speicherung der Standortdaten in
         Fotos und Videos). Location-Berechtigung wird auch benötigt, um eine Verbindung zu Bluetooth LE Fernbedienungen herzustellen.</string>
 
