@@ -138,7 +138,7 @@
     <string name="preference_show_zoom_slider_controls">Mostra slider per lo zoom</string>
     <string name="preference_show_zoom_slider_controls_summary">Mostra slider per il controllo dello zoom</string>
     <string name="preference_show_iso">Mostra ISO</string>
-    <string name="preference_show_iso_summary">Mostra l\'attuale livello ISO. Nella modalità flash automatico, il simbolo del flash indicherà quando si avvierà. (Richiede l\'API Camera2.)</string>
+    <string name="preference_show_iso_summary">Mostra l\'attuale livello ISO. (Richiede l\'API Camera2.)</string>
     <string name="preference_free_memory">Mostra memoria disponibile</string>
     <string name="preference_free_memory_summary">Mostra la memoria disponibile del dispositivo sullo schermo</string>
     <string name="preference_show_angle">Mostra angolazione</string>

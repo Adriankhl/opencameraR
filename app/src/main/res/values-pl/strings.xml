@@ -137,7 +137,7 @@
     <string name="preference_show_zoom_slider_controls">Pokaż suwak przybliżenia</string>
     <string name="preference_show_zoom_slider_controls_summary">Wyświetla suwak do zmiany wartości przybliżenia</string>
     <string name="preference_show_iso">Pokaż ISO</string>
-    <string name="preference_show_iso_summary">Wyświetla aktualną czułość ISO. W trybie automatycznej lampy błyskowej pojawi się symbol lampy błyskowej, jeśli będzie wymagane jej użycie. (Wymaga Camera2 API)</string>
+    <string name="preference_show_iso_summary">Wyświetla aktualną czułość ISO. (Wymaga Camera2 API)</string>
     <string name="preference_free_memory">Pokaż dostępną pamięć</string>
     <string name="preference_free_memory_summary">Wyświetla na ekranie dostępną ilość pamięci w urządzeniu</string>
     <string name="preference_show_angle">Pokaż kąt</string>

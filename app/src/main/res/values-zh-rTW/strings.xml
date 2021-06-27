@@ -138,7 +138,7 @@
     <string name="preference_show_zoom_slider_controls">顯示縮放滑桿控制</string>
     <string name="preference_show_zoom_slider_controls_summary">顯示縮放控制的滑桿</string>
     <string name="preference_show_iso">顯示 ISO</string>
-    <string name="preference_show_iso_summary">顯示目前的 ISO 等級。在自動閃光模式，閃光符號也會指示閃光燈何時閃光。（需要 Camera2 API。）</string>
+    <string name="preference_show_iso_summary">顯示目前的 ISO 等級。（需要 Camera2 API。）</string>
     <string name="preference_free_memory">顯示可用記憶體</string>
     <string name="preference_free_memory_summary">在螢幕上顯示剩餘的裝置儲存空間</string>
     <string name="preference_show_angle">顯示角度</string>
