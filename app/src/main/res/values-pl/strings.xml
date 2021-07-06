@@ -4,9 +4,9 @@
     <string name="action_settings">Ustawienia</string>
     <string name="action_popup">Ustawienia wyskakujących okienek</string>
     <string name="intro_ok">OK (Ta wiadomość nie pokaże się ponownie)</string>
-    <string name="on">Włączone</string>
+    <string name="on">Włączono</string>
     <!-- whether a setting is turned on, e.g., "Auto-level: On" -->
-    <string name="off">Wyłączone</string>
+    <string name="off">Wyłączono</string>
     <!-- whether a setting is turned off, e.g., "Auto-level: Off" -->
     <string name="choose_save_location">Wybierz miejsce zapisywania:</string>
     <string name="clear_folder_history">Wyczyść historię folderów</string>
@@ -35,7 +35,7 @@
     <string name="exposure_locked">Ekspozycja zablokowana</string>
     <string name="exposure_unlocked">Ekspozycja odblokowana</string>
     <string name="cancelled_timer">Anulowano samowyzwalacz</string>
-    <string name="cancelled_repeat_mode">Anulowano tryb seryjny</string>
+    <string name="cancelled_repeat_mode">Anulowano serię</string>
     <string name="started_timer">Włączono timer</string>
     <string name="failed_to_save_video">Nie udało się zapisać pliku wideo</string>
     <string name="failed_to_record_video">Nie udało się nagrać wideo</string>
@@ -74,7 +74,7 @@
 
     <string name="preference_category_camera_effects">Efekty aparatu</string>
     <string name="preference_auto_stabilise">Autopoziomowanie</string>
-    <string name="preference_auto_stabilise_summary">Zdjęcia będą obracane i wyrównane do poziomu (wolniejszy zapis zdjęcia, może się nie udać na urządzeniach z małą ilością pamięci)</string>
+    <string name="preference_auto_stabilise_summary">Zdjęcia będą obracane i wyrównywane do poziomu (wolniejszy zapis zdjęcia, może się nie udać na urządzeniach z małą ilością pamięci)</string>
     <string name="preference_color_effect">Nałóż efekt kolorystyczny</string>
     <string name="preference_color_effect_summary">Nakłada efekt kolorystyczny na zdjęcie</string>
     <string name="preference_scene_mode">Zastosuj tryb scenerii</string>
@@ -97,7 +97,7 @@
     <string name="preference_timer_speak">Głosowe odliczanie</string>
     <string name="preference_timer_speak_summary">Głosowe odliczanie dla wyzwalacza lub zdjęć seryjnych (od 60 sekund)</string>
     <string name="preference_burst_mode">Seria</string> <!-- also used in popup menu, so shouldn't be too long a string -->
-    <string name="preference_burst_interval">Interwał trybu seryjnego</string>
+    <string name="preference_burst_interval">Interwał Serii</string>
     <string name="preference_screen_camera_controls_more">Więcej ustawień aparatu…</string>
     <string name="preference_touch_capture">Dotknij, aby zrobić zdjęcie</string>
     <string name="preference_touch_capture_summary">Zrób zdjęcie poprzez pojedyncze lub podwójne dotknięcie</string>
@@ -120,7 +120,7 @@
     <string name="preference_save_zulu_time">Format czasu w nazwie pliku</string>
     <string name="preference_show_when_locked">Pokaż aparat gdy zablokowany</string>
     <string name="preference_show_when_locked_summary">Jeśli włączone, aplikacja Open Camera będzie widoczna ponad ekranem blokady (dostęp do opcji, galerii itp. wymaga odblokowania)</string>
-    <string name="preference_startup_focus">Automatycznie ustawiaj ostrość podczas uruchamiania</string>
+    <string name="preference_startup_focus">Automatyczna ostrość podczas uruchamiania</string>
     <string name="preference_startup_focus_summary">Autofokus będzie uruchamiany podczas włączania aplikacji. Jeśli występuje problem z włączaniem lampy błyskowej podczas uruchamiania, wyłącz tę opcję</string>
     <string name="preference_lock_video">Blokuj ekranu podczas nagrywania filmu</string>
     <string name="preference_lock_video_summary">Podczas nagrywania filmu interfejs będzie zablokowany, aby zapobiec przypadkowemu zatrzymaniu nagrania. Przesuń palcem po ekranie, aby odblokować. Pamiętaj, że nagrywanie zostanie przerwane jeśli aplikacja zacznie działać w tle lub ekran zostanie wygaszony.</string>
@@ -130,38 +130,38 @@
     <string name="preference_preview_size">Rozmiar podglądu</string>
     <string name="preference_ui_placement">Położenie interfejsu</string>
     <string name="preference_immersive_mode">Tryb pełnoekranowy</string>
-    <string name="preference_show_zoom">Pokaż przybliżenie</string>
+    <string name="preference_show_zoom">Przybliżenie</string>
     <string name="preference_show_zoom_summary">Wyświetla aktualną wartość przybliżenia na ekranie (jeśli przybliżenie zostanie użyte)</string>
-    <string name="preference_show_zoom_controls">Pokaż przyciski -/+ przybliżenia</string>
+    <string name="preference_show_zoom_controls">Przyciski przybliżenia</string>
     <string name="preference_show_zoom_controls_summary">Wyświetla przyciski -/+ do kontroli wartości przybliżenia</string>
-    <string name="preference_show_zoom_slider_controls">Pokaż suwak przybliżenia</string>
+    <string name="preference_show_zoom_slider_controls">Suwak przybliżenia</string>
     <string name="preference_show_zoom_slider_controls_summary">Wyświetla suwak do zmiany wartości przybliżenia</string>
-    <string name="preference_show_iso">Pokaż ISO</string>
+    <string name="preference_show_iso">ISO</string>
     <string name="preference_show_iso_summary">Wyświetla aktualną czułość ISO. (Wymaga Camera2 API)</string>
-    <string name="preference_free_memory">Pokaż dostępną pamięć</string>
+    <string name="preference_free_memory">Dostępna pamięć</string>
     <string name="preference_free_memory_summary">Wyświetla na ekranie dostępną ilość pamięci w urządzeniu</string>
-    <string name="preference_show_angle">Pokaż kąt</string>
+    <string name="preference_show_angle">Kąt</string>
     <string name="preference_show_angle_summary">Wyświetla na ekranie aktualny kąt odchylenia urządzenia od poziomu</string>
-    <string name="preference_show_angle_line">Pokaż linię poziomu</string>
+    <string name="preference_show_angle_line">Linia poziomu</string>
     <string name="preference_show_angle_line_summary">Wyświetla poziomą linię</string>
     <string name="preference_angle_highlight_color">Kolor wyróżnienia kąta/wysokości</string>
     <string name="preference_angle_highlight_color_summary">Wybrany kolor pokaże się, gdy kąt nachylenia aparatu będzie bliski poziomu</string>
-    <string name="preference_show_geo_direction">Pokaż kompas</string>
+    <string name="preference_show_geo_direction">Kompas</string>
     <string name="preference_show_geo_direction_summary">Wyświetla kompas na ekranie</string>
-    <string name="preference_show_time">Pokaż czas</string>
+    <string name="preference_show_time">Czas</string>
     <string name="preference_show_time_summary">Wyświetla na ekranie aktualny czas</string>
-    <string name="preference_show_battery">Pokaż baterię</string>
+    <string name="preference_show_battery">Bateria</string>
     <string name="preference_show_battery_summary">Wyświetla na ekranie aktualny poziom baterii</string>
     <string name="preference_grid">Pokaż siatkę</string>
     <string name="grid">Siatka</string>
     <!-- short form of Show a grid -->
-    <string name="preference_crop_guide">Pokaż prowadnice kadrowania</string>
+    <string name="preference_crop_guide">Prowadnice kadrowania</string>
     <string name="preference_crop_guide_summary">Prowadnice pokazują jak wyglądają wybrane proporcje obrazu. Jest to przydatne gdy chcemy później przyciąć zdjęcie do innych proporcji niż plik z aparatu. Wymaga trybu WYSIWYG lub trybu filmowania\n%s</string>
-    <string name="preference_show_toasts">Pokaż wyskakujące powiadomienia</string>
+    <string name="preference_show_toasts">Wyskakujące powiadomienia</string>
     <string name="preference_show_toasts_summary">Pokazuje wyskakujące powiadomienia</string>
-    <string name="preference_thumbnail_animation">Pokaż animację miniaturki</string>
+    <string name="preference_thumbnail_animation">Animacja miniaturki</string>
     <string name="preference_thumbnail_animation_summary">Wyświetla animowaną miniaturkę po zrobieniu zdjęcia</string>
-    <string name="preference_take_photo_border">Pokaż ramkę</string>
+    <string name="preference_take_photo_border">Ramka</string>
     <string name="preference_take_photo_border_summary">Wyświetla ramkę wokół ekranu po wykonaniu zdjęcia</string>
     <string name="preference_keep_display_on">Utrzymuj ekran włączony</string>
     <string name="preference_keep_display_on_summary">Ekran nie wyłączy się jeśli główny ekran aplikacji Open Camera będzie aktywny</string>
@@ -200,7 +200,7 @@
     <string name="video_quality">Rozdzielczość Wideo</string>
     <string name="preference_force_video_4k">Wymuś nagrywanie filmów 4K UHD (działa tylko na niektórych urządzeniach)</string>
     <string name="preference_force_video_4k_summary">Włącza rozdzielczość 3840x2160 przy nagrywaniu filmów z tylnego aparatu. Ta opcja to hack, który pozwala urządzeniom z obsługą 4K na nagrywanie filmów w 4K, mimo zablokowania takiej możliwości dla niefirmowych aplikacji nagrywających. Nie ma gwarancji, że to zadziała, proszę przetestować.</string>
-    <string name="preference_video_stabilization">Włącz cyfrową stabilizację obrazu</string>
+    <string name="preference_video_stabilization">Cyfrowa stabilizacja obrazu</string>
     <string name="preference_video_stabilization_summary">Stabilizacja redukuje wstrząsy wywołane ruchem urządzenia. Działa podczas podglądu oraz nagrywania filmów. Ta funkcja może być zbędna, jeżeli urządzenie zostało wyposażone w optyczną stabilizację obrazu (OIS)</string>
     <string name="preference_video_bitrate">Bitrate filmów (przybliżony)</string>
     <string name="preference_video_bitrate_summary">Ustawia przybliżone bitrate filmów (wyższa wartość oznacza lepszą jakość, ale zabiera więcej pamięci; ustawienie nieobsługiwanego bitrate może spowodować błąd zapisu)\n%s</string>
@@ -227,7 +227,7 @@
     <string name="preference_online_help_summary">Otwiera stronę aplikacji Open Camera w przeglądarce internetowej</string>
     <string name="preference_donate">Przekaż darowiznę</string>
     <string name="preference_donate_summary">Jeśli spodobała Ci się ta aplikacja rozważ przekazanie darowizny, która wesprze rozwój aplikacji. Możesz to zrobić poprzez zakup specjalnej aplikacji - dotknij tutaj aby otworzyć stronę. Dzięki!</string>
-    <string name="preference_use_camera2">Używaj Camera2 API</string>
+    <string name="preference_use_camera2">Camera2 API</string>
     <string name="preference_use_camera2_summary">Włącza interfejs Camera2 API, który oferuje wiele dodatkowych funkcji, ale może działać niepoprawnie na niektórych urządzeniach (powoduje restart aplikacji)</string>
     <string name="preference_about">O aplikacji</string>
     <string name="preference_about_summary">Informacje o aplikacji i debugowanie</string>
@@ -275,7 +275,7 @@
     <string name="audio_listener_started">Wydaj głośny dźwięk</string>
     <string name="auto_stabilise_info">Autopoziomowanie obraca zdjęcia tak jakby były zrobione przy poziomicy.\n\nObrócone zdjęcia będą w nieco mniejszej rozdzielczości, gdyż po obróceniu konieczne jest ich wykadrowanie.</string>
     <string name="raw_info">Pliki DNG zawierają nieskompresowane i nieprzetworzone dane z aparatu.\n\nWiększość aplikacji nie obsługuje formatu DNG dlatego najlepiej używać do ich edycji specjalnych aplikacji.\n\nOpcje takie jak stemplowanie lub autopoziomowanie nie mają zastosowania do plików DNG.\n\nPliki w formacie DNG zajmują dużo miejsca. Do przenoszenia lub kasowania ich można użyć menedżera plików.\n\nFormat DNG jest dostępny tylko w trybie standardowym i DRO.</string>
-    <string name="hdr_info">Tryb HDR jest przydatny w ujęciach z obszarami o dużych różnicach w jasności. Polega on na wykonaniu kilku zdjęć o różnej ekspozycji i połączeniu w jeden obraz.\n\nZauważ, że tryb HDR jest nieodpowiedni do fotografowania poruszających się obiektów, może to skutkować w mniej dokładną reprodukcję kolorów.\n\nWykonanie zdjęcia w HDR jest wolniejsze.</string>
+    <string name="hdr_info">Tryb HDR jest przydatny w ujęciach z obszarami o dużych różnicach w jasności. Polega on na wykonaniu kilku zdjęć o różnej ekspozycji i połączeniu w jeden obraz.\n\nZauważ, że tryb HDR jest nieodpowiedni do fotografowania poruszających się obiektów, może to skutkować w mniej dokładną reprodukcją kolorów.\n\nWykonanie zdjęcia w HDR jest wolniejsze.</string>
     <string name="dont_show_again">Nie pokazuj ponownie</string>
     <string name="photo_mode">Tryb fotografowania</string>
     <string name="photo_mode_standard">Sta</string> <!-- keep short, as this shows in the popup menu -->
@@ -305,7 +305,7 @@
     <string name="bright">Jaśniej</string>     <!-- exposure compensation bright -->
     <string name="exposure_shutter_speed">Czas migawki</string>
     <string name="camera_error">Poważny błąd aparatu</string>
-    <string name="preference_camera2_fast_burst">Włącz szybką serię (HDR/bracketing)</string>
+    <string name="preference_camera2_fast_burst">Szybka seria (HDR/bracketing)</string>
     <string name="preference_camera2_fast_burst_summary">Pozwala na szybsze wykonywanie zdjęć HDR lub bracketing. Wyłącz, jeśli na Twoim urządzeniu powoduje błędy.</string>
     <string name="camera">Aparat</string>
     <string name="record_video">Nagraj film</string>
@@ -314,15 +314,15 @@
     <string name="preference_front_camera_mirror_summary">Włącza efekt lutrzanego odbicia dla przedniego aparatu\n%s</string>
     <string name="preference_calibrate_level">Kalibracja kąta nachylenia</string>
     <string name="preference_calibrate_level_summary">Ta opcja pozwala skalibrować akcelerometr urządzenia, aby autopoziomowanie działało poprawnie.</string>
-    <string name="preference_calibrate_level_dialog">Umieść urządzenie na płaskiej poziomej powierzchni (w orientacji pionowej lub poziomej), następnie stuknij "Kalibruj".\n\n Stukając "Resetuj", dane kalibracyjne zostaną usunięte.\n\nStuknij wstecz, aby anulować.</string>
+    <string name="preference_calibrate_level_dialog">Umieść urządzenie na płaskiej poziomej powierzchni (w orientacji pionowej lub poziomej), następnie dotknij "Kalibruj".\n\n Dotykając "Resetuj", dane kalibracyjne zostaną usunięte.\n\nDotknij wstecz, aby anulować.</string>
     <string name="preference_calibrate_level_calibrate">Kalibruj</string>
     <string name="preference_calibrate_level_reset">Resetuj</string>
     <string name="preference_calibrate_level_calibrated">Poziom skalibrowany</string>
     <string name="preference_calibrate_level_calibration_reset">Reset kalibracji poziomu</string>
     <string name="photo_mode_dro">DRO</string>
-    <string name="preference_show_pitch_lines">Pokaż linie pochylenia</string>
+    <string name="preference_show_pitch_lines">Linie pochylenia</string>
     <string name="preference_show_pitch_lines_summary">Wyświetla poziome linie przechylenia</string>
-    <string name="preference_show_geo_direction_lines">Pokaż linie kompasu</string>
+    <string name="preference_show_geo_direction_lines">Linie kompasu</string>
     <string name="preference_show_geo_direction_lines_summary">Wyświetla linie kierunkowe kompasu</string>
     <string name="preference_video_subtitle">Napisy</string>
     <string name="preference_video_subtitle_summary">Tworzy napisy (w formacie SRT), w których zostaną zapisane: data, czas i dane GPS (jeśli włączone)\n%s</string>
@@ -350,7 +350,7 @@
     <string name="duration_30m">30 minut</string>
     <string name="duration_45m">45 minut</string>
     <string name="duration_1h">1 godzina</string>
-    <string name="preference_show_take_photo">Pokaż ikonę "Zrób zdjęcie"</string>
+    <string name="preference_show_take_photo">Przycisk "Zrób zdjęcie"</string>
     <string name="preference_show_take_photo_summary">Pokazuje przycisk do robienia zdjęć i nagrywania filmów. Można go wyłączyć na urządzeniach, które posiadają fizyczny przycisk aparatu.</string>
     <string name="video_pause">Film wstrzymany</string>
     <string name="video_resume">Film wznowiony</string>
@@ -361,8 +361,14 @@
     <string name="failed_to_process_hdr">Tworzenie obrazu HDR nie powiodło się</string>
     <string name="preference_video_fps_default">Domyślnie</string>
 
-    <string name="preference_raw_no">tylko JPEG</string>
+    <string name="preference_exif_artist">Artysta</string>
+    <string name="preference_exif_artist_summary">Tekst do zapisania w metadanych obrazu dla znacznika artysty (tylko format JPEG). (Pozostaw puste dla żadnego)</string>
+    <string name="preference_exif_copyright">Prawa autorskie</string>
+    <string name="preference_exif_copyright_summary">Tekst do przechowywania w metadanych obrazu dla znacznika praw autorskich (tylko format JPEG). (Pozostaw puste dla żadnego)</string>
+
+    <string name="preference_raw_no">Tylko JPEG</string>
     <string name="preference_raw_yes">JPEG i DNG (RAW)</string>
+    <string name="preference_raw_only">Tylko DNG (RAW)</string>
 
     <string name="preference_stamp_dateformat_default">Domyślnie</string>
     <string name="preference_stamp_dateformat_yyyymmdd">rrrr-mm-dd</string>
@@ -405,7 +411,7 @@
     <string name="preference_video_bitrate_150000000">150Mbps</string>
     <string name="preference_video_bitrate_200000000">200Mbps</string>
 
-    <string name="preference_burst_mode_off">Wyłączone</string>
+    <string name="preference_burst_mode_off">Wyłączono</string>
     <string name="preference_burst_mode_2x">2x</string>
     <string name="preference_burst_mode_3x">3x</string>
     <string name="preference_burst_mode_4x">4x</string>
@@ -561,7 +567,7 @@
 
     <string name="no_burst">Bez serii</string> <!-- string for burst mode not being supported for a resolution -->
 
-    <string name="preference_show_video_max_amp">Pokaż miernik poziomu dźwięku</string>
+    <string name="preference_show_video_max_amp">Miernik poziomu dźwięku</string>
     <string name="preference_show_video_max_amp_summary">Pokazuje poziom dźwięku na ekranie podczas nagrywania filmu</string>
 
     <string name="photo_mode_focus_bracketing">Ostr. {}</string> <!-- keep short, as this shows in the popup menu -->
@@ -587,7 +593,7 @@
     <string name="preference_units_distance_ft">Stopy</string>
     <string name="feet_abbreviation">ft</string> <!-- symbol short for feet -->
 
-    <string name="preference_show_whats_new">Pokaż okno "Co nowego"</string>
+    <string name="preference_show_whats_new">Okno "Co nowego"</string>
     <string name="preference_show_whats_new_summary">Wyświetla informacje o nowych funkcjach i ulepszeniach po zaktualizowaniu aplikacji</string>
 
     <string name="preference_edge_mode">Algorytm trybu krawędziowego</string>
@@ -605,7 +611,7 @@
 
     <string name="preference_focus_assist">Wspomaganie ostrości</string>
     <string name="preference_focus_assist_summary">Powiększa podczas ustawiania ręcznej odległości ogniskowej\n%s</string>
-    <string name="preference_focus_assist_off">Wyłączone</string>
+    <string name="preference_focus_assist_off">Wyłączono</string>
     <string name="preference_focus_assist_2x">2x</string>
     <string name="preference_focus_assist_4x">4x</string>
 
@@ -656,36 +662,36 @@
     <string name="preference_nr_mode_normal">Normalny</string>
     <string name="preference_nr_mode_low_light">Słabe oświetlenie</string>
 
-       <string name="preference_show_face_detection">Pokaż ikonę wykrywania twarzy</string>
+       <string name="preference_show_face_detection">Wykrywanie twarzy</string>
     <string name="preference_show_face_detection_summary">Wyświetla ikonę na ekranie do włączania lub wyłączania wykrywania twarzy</string>
     <string name="face_detection_enable">Włącz wykrywanie twarzy</string> <!-- for "ContentDescription" (used for accessibility, e.g., Google Talkback) -->
     <string name="face_detection_disable">Wyłącz wykrywanie twarzy</string> <!-- for "ContentDescription" (used for accessibility, e.g., Google Talkback) -->
     <string name="face_detection_enabled">Wykrywanie twarzy włączone</string>
     <string name="face_detection_disabled">Wykrywanie twarzy wyłączone</string>
 
-    <string name="preference_show_auto_level">Pokaż ikonę automatycznego poziomowania</string>
+    <string name="preference_show_auto_level">Automatyczne poziomowanie</string>
     <string name="preference_show_auto_level_summary">Wyświetla ikonę na ekranie do włączania lub wyłączania automatycznego poziomowania. Gdy automatyczne poziomowanie jest włączone, zdjęcia będą obracane, tak aby były automatycznie wyrównane z horyzontem.</string>
     <string name="auto_level_enable">Włącz automatyczne poziomowanie</string> <!-- for "ContentDescription" (used for accessibility, e.g., Google Talkback) -->
     <string name="auto_level_disable">Wyłącz automatyczne poziomowanie</string> <!-- for "ContentDescription" (used for accessibility, e.g., Google Talkback) -->
 
-    <string name="preference_show_stamp">Pokaż ikonę stempla</string>
+    <string name="preference_show_stamp">Stempel</string>
     <string name="preference_show_stamp_summary">Wyświetla ikonę na ekranie do włączania lub wyłączania stempla fotograficznego</string>
     <string name="stamp_enable">Włącz stemplowanie zdjęć</string> <!-- for "ContentDescription" (used for accessibility, e.g., Google Talkback) -->
     <string name="stamp_disable">Wyłącz stemplowanie zdjęć</string> <!-- for "ContentDescription" (used for accessibility, e.g., Google Talkback) -->
     <string name="stamp_enabled">Stemplowanie zdjęć włączone</string>
     <string name="stamp_disabled">Stemplowanie zdjęć wyłączone</string>
 
-    <string name="preference_show_textstamp">Pokaż ikonę własnego stempla tekstowego</string>
+    <string name="preference_show_textstamp">Własny stempel tekstowy</string>
     <string name="preference_show_textstamp_summary">Pokazuje ikonę na ekranie do określenia własnego tekstu, który ma zostać umieszczony na zdjęciu</string>
 
-    <string name="preference_show_white_balance_lock">Pokaż ikonę blokady automatycznego balansu bieli</string>
+    <string name="preference_show_white_balance_lock">Blokada automatycznego balansu bieli</string>
     <string name="preference_show_white_balance_lock_summary">Wyświetla na ekranie ikonę do blokowania lub odblokowywania automatycznego balansu bieli</string>
     <string name="white_balance_lock">Zablokuj balans bieli</string>
     <string name="white_balance_unlock">Odblokuj balans bieli</string>
     <string name="white_balance_locked">Balans bieli zablokowany</string>
     <string name="white_balance_unlocked">Balans bieli odblokowany</string>
 
-    <string name="preference_show_exposure_lock">Pokaż ikonę blokady automatycznej ekspozycji</string>
+    <string name="preference_show_exposure_lock">Blokada automatycznej ekspozycji</string>
     <string name="preference_show_exposure_lock_summary">Wyświetla ikonę na ekranie do blokowania lub odblokowywania ekspozycji</string>
     <string name="exposure_unlock">Odblokuj ekspozycję</string>
 
@@ -705,7 +711,7 @@
     <string name="unknown_device">Nieznane urządzenie</string>
     <string name="preference_remote_disconnect_screen_dim">Przyciemnij ekran, jeśli nastąpi rozłączenie</string>
     <string name="preference_remote_disconnect_screen_dim_summary">Wskazówka: ustaw domyślną jasność na minimalny poziom przed uruchomieniem aplikacji Open Camera.</string>
-    <string name="preference_water_type">Użyj Słonej wody do obliczeń głębokości</string>
+    <string name="preference_water_type">Użyj słonej wody do obliczeń głębokości</string>
     <string name="preference_water_type_summary">W przypadku obudów podwodnych poprawia dokładność, jeśli zostanie wybrany właściwy rodzaj wody.</string>
     <string name="remote_connected">Połączono zdalnie</string>
 
@@ -715,12 +721,12 @@
     <string name="preference_stamp_geo_address_prefer">Preferuj adres aniżeli współrzędne GPS</string>
     <string name="preference_stamp_geo_address_no">Nie wyświetlaj adresu</string>
 
-    <string name="preference_show_store_location">Pokaż ikonę danych lokalizacji</string>
+    <string name="preference_show_store_location">Dane lokalizacji</string>
     <string name="preference_show_store_location_summary">Wyświetla ikonę na ekranie do włączania lub wyłączania danych lokalizacji (geotagowanie)</string>
     <string name="preference_location_enable">Przechowuj dane o lokalizacji</string>
     <string name="preference_location_disable">Przestań przechowywać dane o lokalizacji</string>
 
-    <string name="preference_histogram">Pokaż histogram</string>
+    <string name="preference_histogram">Histogram</string>
     <string name="preference_histogram_summary">Wyświetla histogram kolorów pokazanych na ekranie\n%s</string>
     <string name="preference_histogram_off">Wyłącz</string>
     <string name="preference_histogram_rgb">Kolory RGB</string>
@@ -729,7 +735,7 @@
     <string name="preference_histogram_intensity">Intensywność (średnia)</string>
     <string name="preference_histogram_lightness">Jasność (średnia z min-maks)</string>
 
-    <string name="preference_zebra_stripes">Pokaż paski zebry</string>
+    <string name="preference_zebra_stripes">Paski zebry</string>
     <string name="preference_zebra_stripes_summary">Jeśli ta opcja jest włączona, na ekranie zostaną narysowane paski zebry, pokazujące miejsca, w których podgląd kamery jest prześwietlony.\n%s</string>
     <string name="preference_zebra_stripes_off">Wyłącz</string>
     <string name="preference_zebra_stripes_70pc">70%</string> <!-- shouldn't escape %, not needed when shown in ListPreference -->
@@ -745,8 +751,8 @@
     
     <string name="preference_focus_peaking">Uwydatnienie ostrości</string>
     <string name="preference_focus_peaking_summary">Jeśli ta opcja jest włączona, na ostrych krawędziach (konturach) zostaną pokazane podświetlenia. Jest to przydatne przede wszystkim przy ręcznym ustawianiu ostrości i może pomóc w określeniu, które obszary obrazu są ostre.\n%s</string>
-    <string name="preference_focus_peaking_off">Wyłączone</string>
-    <string name="preference_focus_peaking_on">Włączone</string>
+    <string name="preference_focus_peaking_off">Wyłączono</string>
+    <string name="preference_focus_peaking_on">Włączono</string>
     <string name="preference_focus_peaking_color">Kolor uwydatnienia ostrości</string>
     <string name="preference_focus_peaking_color_summary">Określa kolor, który będzie używany do podkreślenia ostrych krawędzi\n%s</string>
 
@@ -755,17 +761,17 @@
     <string name="preference_preview">Podgląd aparatu…</string>
 
     <string name="cycle_flash">Tryby flashowania</string>
-    <string name="preference_show_cycle_flash">Pokaż ikonę lampy błyskowej</string>
+    <string name="preference_show_cycle_flash">Lampa błyskowa</string>
     <string name="preference_show_cycle_flash_summary">Wyświetla ikonę na ekranie do przełączania opcji flash, zamiast wyświetlać opcje flash w menu podręcznym. Pamiętaj, że latarka nie jest dostępna, jeśli używasz tej ikony.</string>
 
     <string name="preference_raw_expo_bracketing">Zezwalaj na format RAW dla braketingu ekspozycji</string>
-    <string name="preference_raw_expo_bracketing_summary">Określa, czy opcja RAW powinna mieć zastosowanie również w trybie zdjęć z braketingiem ekspozycji (lub w trybie HDR, gdy włączona jest opcja „Zapisz wszystkie obrazy w trybie HDR”). Jeśli ta opcja jest wyłączona, w tych trybach zdjęć będą zapisywane tylko pliki JPEG.</string>
+    <string name="preference_raw_expo_bracketing_summary">Określa, czy opcja RAW powinna mieć zastosowanie również w trybie zdjęć z braketingiem ekspozycji (lub w trybie HDR, gdy włączona jest opcja „Zapisz wszystkie obrazy w trybie HDR”). Jeśli ta opcja jest wyłączona w tych trybach zdjęć, będą zapisywane tylko pliki JPEG.</string>
 
     <string name="preference_raw_focus_bracketing">Zezwalaj na format RAW dla braketingu ostrości</string>
     <string name="preference_raw_focus_bracketing_summary">Określa, czy opcja RAW powinna mieć zastosowanie również w trybie zdjęć z braketingiem ostrości. Jeśli ta opcja jest wyłączona, tylko pliki JPEG będą zapisywane w trybach zdjęć z braketingiem ostrości.</string>
 
     <string name="cycle_raw">Tryby RAW</string>
-    <string name="preference_show_cycle_raw">Pokaż ikonę RAW</string>
+    <string name="preference_show_cycle_raw">Ikona RAW</string>
     <string name="preference_show_cycle_raw_summary">Wyświetla ikonę na ekranie umożliwiającą przełączanie między trybami RAW</string>
 
     <string name="bluetooth_current_remote">Obecnie zdalny:</string>
@@ -785,7 +791,7 @@
     <string name="preference_panorama_crop">Automatyczne kadrowanie panoramy</string>
     <string name="preference_panorama_crop_summary">W trybie panoramy: Usuwa faliste granice\n%s</string>
 
-    <string name="panorama_info">Aby zrobić zdjęcie panoramiczne, trzymaj urządzenie pionowo i puknij w przycisk "Zrób zdjęcie", aby rozpocząć panoramę. Następnie skieruj urządzenie w lewo lub w prawo, tak aby białe kółko (na śroku ekrany) pokryło się z niebieską kropką. Po przechwyceniu każdego nowego zdjęcia kieruj urządzenie, aby zakryć po kolei każdą nową niebieską kropkę.\n\nStuknij w ikonę "fajki", aby zapisać panoramę, lub ikonę "krzyżyka", aby anulować.\n\nPamiętaj, że przetwarzanie i zapisywanie zdjęć panoramicznych może zająć trochę czasu.</string>
+    <string name="panorama_info">Aby zrobić zdjęcie panoramiczne, trzymaj urządzenie pionowo i puknij w przycisk "Zrób zdjęcie", aby rozpocząć panoramę. Następnie skieruj urządzenie w lewo lub w prawo, tak aby białe kółko (na środku ekranu) pokryło się z niebieską kropką. Po przechwyceniu każdego nowego zdjęcia kieruj urządzenie, aby zakryć po kolei każdą nową niebieską kropkę.\n\nDotknij ikonkę "fajki", aby zapisać panoramę, lub ikonę "krzyżyka", aby anulować.\n\nPamiętaj, że przetwarzanie i zapisywanie zdjęć panoramicznych może zająć trochę czasu.</string>
 
     <string name="preference_panorama_save">Oryginalne zdjęcia w trybie panoramy</string>
     <string name="preference_panorama_save_summary">Zapisuje oryginalne obrazy w trybie panoramy. Pamiętaj, że spowolni to zapisywanie zdjęć panoramicznych. Daje także możliwość zapisania pliku XML, co może być przydatne przy zgłaszaniu problemów z panoramą.\n%s</string>
@@ -806,18 +812,18 @@
     <string name="preference_camera_api_camera2">Camera2 API</string>
 
     <string name="preference_audio_control_summary">Rób zdjęcia/nagrywaj filmy po wykryciu hałasu lub na polecenie głosowe.
-        Po włączeniu użyj przycisku mikrofonu na ekranie, aby rozpocząć / zatrzymać nasłuchiwanie.
+        Po włączeniu użyj przycisku mikrofonu na ekranie, aby rozpocząć/zatrzymać nasłuchiwanie.
         Zwróć uwagę, że opcja polecenia głosowego korzysta z usługi rozpoznawania mowy systemu Android: podczas korzystania z tej opcji dane dźwiękowe prawdopodobnie będą
         wysyłane do zdalnych serwerów w celu wykonania rozpoznawania mowy.
         \n%s</string>
 
     <string name="preference_stamp_geo_address_summary">Jeśli to możliwe, uzyskaj adres z lokalizacji GPS (do stempla fotograficznego lub napisów do filmów).
         Ta opcja wymaga połączenia z Internetem.
-        Pamiętaj, że jeśli jest włączona, wymaga to, aby Twoje urządzenie przesyłało dane o lokalizacji przez Internet do strony trzeciej
+        Pamiętaj, że jeśli jest włączona, Twoje urządzenie będzie przesyłało dane o lokalizacji przez Internet do strony trzeciej
         w celu konwersji współrzędnych GPS na adres. Zobacz stronę https://developer.android.com/reference/android/location/Geocoder .
         \n%s</string>
 
-    <string name="intro_text">Dotknij, aby ustawić ostrość, i naciśnij niebieski przycisk aparatu, aby robić zdjęcia.
+    <string name="intro_text">Dotknij, aby ustawić ostrość, i dotknij niebieski przycisk aparatu, aby robić zdjęcia.
         \n\nWyłącza maksymalną jasność ekranu, zobacz Ustawienia -> "Interfejs fotografowania" -> "Wymuś maksymalną jasność".
         Aby zapisać na kartach SD w Androidzie 5+, zobacz Ustawienia -> "Więcej ustawień aparatu" -> "Używaj SAF(systemowa obsługa dostępu do pamięci)".
         Więcej na temat w Ustawieniach, w sekcji "Pomoc on-line".
@@ -840,14 +846,14 @@
     <string name="preference_video_profile_gamma_2_6">2.6</string>
     <string name="preference_video_profile_gamma_2_8">2.8</string>
 
-    <string name="preference_immersive_mode_off">Wyłączony</string>
+    <string name="preference_immersive_mode_off">Wyłączono</string>
     <string name="preference_immersive_mode_low_profile">Tylko przyciemnione wirtualne przyciski nawigacyjne na ekranie</string>
     <string name="preference_immersive_mode_navigation">Ukryj wirtualne przyciski nawigacyjne na ekranie</string>
     <string name="preference_immersive_mode_gui">Ukryj graficzny interfejs użytkownika</string>
     <string name="preference_immersive_mode_everything">Ukryj wszystko</string>
 
     <string name="preference_ghost_image_alpha">Przezroczystość efektu "ducha"</string>
-    <string name="preference_ghost_image_alpha_summary">Wartość alfa używana dla efektu "ducha. Niższa wartość oznacza większą przezroczystość, wyższa oznacza niższą przezroczystość.\n%s</string>
+    <string name="preference_ghost_image_alpha_summary">Wartość alfa używana dla efektu "ducha". Niższa wartość oznacza większą przezroczystość, wyższa oznacza niższą przezroczystość.\n%s</string>
 
     <string name="preference_zebra_stripes_foreground_color">Kolor pierwszego planu w paski zebry</string>
     <string name="preference_zebra_stripes_foreground_color_summary">Kolor paska pierwszego planu podczas wyświetlania pasków zebry.\n%s</string>
@@ -907,11 +913,11 @@
     <string name="scene_mode_night_portrait">Portret w nocy</string>
     <string name="scene_mode_party">Impreza</string>
     <string name="scene_mode_portrait">Portret</string>
-    <string name="scene_mode_snow">Snow</string>
+    <string name="scene_mode_snow">Śnieg</string>
     <string name="scene_mode_sports">Sporty</string>
     <string name="scene_mode_steady_photo">Stateczne zdjęcie</string>
     <string name="scene_mode_sunset">Zachód słońca</string>
-    <string name="scene_mode_theatre">Theatre</string>
+    <string name="scene_mode_theatre">Teatr</string>
 
     <string name="color_effect_aqua">Woda</string>
     <string name="color_effect_blackboard">Tablica</string>
