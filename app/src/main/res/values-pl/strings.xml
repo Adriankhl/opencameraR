@@ -203,7 +203,7 @@
     <string name="preference_video_stabilization">Cyfrowa stabilizacja obrazu</string>
     <string name="preference_video_stabilization_summary">Stabilizacja redukuje wstrząsy wywołane ruchem urządzenia. Działa podczas podglądu oraz nagrywania filmów. Ta funkcja może być zbędna, jeżeli urządzenie zostało wyposażone w optyczną stabilizację obrazu (OIS)</string>
     <string name="preference_video_bitrate">Bitrate filmów (przybliżony)</string>
-    <string name="preference_video_bitrate_summary">Ustawia przybliżone bitrate filmów (wyższa wartość oznacza lepszą jakość, ale zabiera więcej pamięci; ustawienie nieobsługiwanego bitrate może spowodować błąd zapisu)\n%s</string>
+    <string name="preference_video_bitrate_summary">Ustawia przybliżony bitrate filmów (wyższa wartość oznacza lepszą jakość, ale zabiera więcej pamięci; ustawienie nieobsługiwanego bitrate może spowodować błąd zapisu)\n%s</string>
     <string name="preference_video_fps">Częstotliwość klatek (przybliżona)</string>
     <string name="preference_video_fps_summary">Ustawia częstotliwość klatek (kl/s) filmów (wartość przybliżona, może nie zadziałać, dodatkowo ustawienie nieobsługiwanej wartości może spowodować błąd zapisu)\n%s</string>
     <string name="preference_video_max_duration">Określ czas nagrywania filmu</string>
@@ -350,7 +350,7 @@
     <string name="duration_30m">30 minut</string>
     <string name="duration_45m">45 minut</string>
     <string name="duration_1h">1 godzina</string>
-    <string name="preference_show_take_photo">Przycisk "Zrób zdjęcie"</string>
+    <string name="preference_show_take_photo">Zrób zdjęcie</string>
     <string name="preference_show_take_photo_summary">Pokazuje przycisk do robienia zdjęć i nagrywania filmów. Można go wyłączyć na urządzeniach, które posiadają fizyczny przycisk aparatu.</string>
     <string name="video_pause">Film wstrzymany</string>
     <string name="video_resume">Film wznowiony</string>
@@ -361,6 +361,7 @@
     <string name="failed_to_process_hdr">Tworzenie obrazu HDR nie powiodło się</string>
     <string name="preference_video_fps_default">Domyślnie</string>
 
+    <string name="preference_category_exif_tags">Własne znaczniki EXIF</string>
     <string name="preference_exif_artist">Artysta</string>
     <string name="preference_exif_artist_summary">Tekst do zapisania w metadanych obrazu dla znacznika artysty (tylko format JPEG). (Pozostaw puste dla żadnego)</string>
     <string name="preference_exif_copyright">Prawa autorskie</string>
@@ -593,7 +594,7 @@
     <string name="preference_units_distance_ft">Stopy</string>
     <string name="feet_abbreviation">ft</string> <!-- symbol short for feet -->
 
-    <string name="preference_show_whats_new">Okno "Co nowego"</string>
+    <string name="preference_show_whats_new">Co nowego</string>
     <string name="preference_show_whats_new_summary">Wyświetla informacje o nowych funkcjach i ulepszeniach po zaktualizowaniu aplikacji</string>
 
     <string name="preference_edge_mode">Algorytm trybu krawędziowego</string>
@@ -791,7 +792,7 @@
     <string name="preference_panorama_crop">Automatyczne kadrowanie panoramy</string>
     <string name="preference_panorama_crop_summary">W trybie panoramy: Usuwa faliste granice\n%s</string>
 
-    <string name="panorama_info">Aby zrobić zdjęcie panoramiczne, trzymaj urządzenie pionowo i puknij w przycisk "Zrób zdjęcie", aby rozpocząć panoramę. Następnie skieruj urządzenie w lewo lub w prawo, tak aby białe kółko (na środku ekranu) pokryło się z niebieską kropką. Po przechwyceniu każdego nowego zdjęcia kieruj urządzenie, aby zakryć po kolei każdą nową niebieską kropkę.\n\nDotknij ikonkę "fajki", aby zapisać panoramę, lub ikonę "krzyżyka", aby anulować.\n\nPamiętaj, że przetwarzanie i zapisywanie zdjęć panoramicznych może zająć trochę czasu.</string>
+    <string name="panorama_info">Aby zrobić zdjęcie panoramiczne, trzymając urządzenie pionowo dotknij przycisk "Zrób zdjęcie". Następnie skieruj urządzenie w lewo lub w prawo, tak aby białe kółko (na środku ekranu) pokryło się z niebieską kropką. Po przechwyceniu każdego nowego zdjęcia kieruj urządzenie, aby zakryć po kolei każdą nową niebieską kropkę.\n\nDotknij ikonkę "fajki", aby zapisać panoramę, lub ikonę "krzyżyka", aby anulować.\n\nPamiętaj, że przetwarzanie i zapisywanie zdjęć panoramicznych może zająć trochę czasu.</string>
 
     <string name="preference_panorama_save">Oryginalne zdjęcia w trybie panoramy</string>
     <string name="preference_panorama_save_summary">Zapisuje oryginalne obrazy w trybie panoramy. Pamiętaj, że spowolni to zapisywanie zdjęć panoramicznych. Daje także możliwość zapisania pliku XML, co może być przydatne przy zgłaszaniu problemów z panoramą.\n%s</string>
