@@ -8536,7 +8536,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
      *  is enabled). The face.temp rect will store the face rectangle in screen coordinates.
      */
     public CameraController.Face [] getFacesDetected() {
-        if( faces_detected != null ) {
+        if( faces_detected != null && faces_detected.length > 0 ) {
             // note, we don't store the screen coordinates, as they may become out of date in the
             // screen orientation changes (if MainActivity.lock_to_landscape==false)
             final Matrix matrix = getCameraToPreviewMatrix();
