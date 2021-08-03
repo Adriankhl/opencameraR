@@ -91,7 +91,6 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
 import android.view.View.MeasureSpec;
-import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -325,7 +324,6 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     private boolean using_face_detection;
     private CameraController.Face [] faces_detected;
     private final RectF face_rect = new RectF();
-    private final AccessibilityManager accessibility_manager;
     private boolean supports_optical_stabilization;
     private boolean supports_video_stabilization;
     private boolean supports_photo_video_recording;
@@ -447,7 +445,6 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         gestureDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener());
         gestureDetector.setOnDoubleTapListener(new DoubleTapListener());
         scaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
-        accessibility_manager = (AccessibilityManager)activity.getSystemService(Activity.ACCESSIBILITY_SERVICE);
 
         parent.addView(cameraSurface.getView());
         if( canvasView != null ) {
@@ -2269,7 +2266,6 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                     private void reportFaces(CameraController.Face[] local_faces) {
                         // View.announceForAccessibility requires JELLY_BEAN
                         if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN
-                                && accessibility_manager.isEnabled() && accessibility_manager.isTouchExplorationEnabled()
                             ) {
                             int n_faces = local_faces.length;
                             FaceLocation face_location = FaceLocation.FACELOCATION_UNKNOWN;
