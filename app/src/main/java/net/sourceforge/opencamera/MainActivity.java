@@ -1323,19 +1323,6 @@ public class MainActivity extends Activity {
         }
     };
 
-    /* To support https://play.google.com/store/apps/details?id=com.miband2.mibandselfie .
-     * Allows using the Mi Band 2 as a Bluetooth remote for Open Camera to take photos or start/stop
-     * videos.
-     */
-    private final BroadcastReceiver cameraReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if( MyDebug.LOG )
-                Log.d(TAG, "cameraReceiver.onReceive");
-            MainActivity.this.takePicture(false);
-        }
-    };
-
     public float getWaterDensity() {
         return this.mWaterDensity;
     }
@@ -1361,8 +1348,6 @@ public class MainActivity extends Activity {
         mSensorManager.registerListener(accelerometerListener, mSensorAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         magneticSensor.registerMagneticListener(mSensorManager);
         orientationEventListener.enable();
-
-        registerReceiver(cameraReceiver, new IntentFilter("com.miband2.action.CAMERA"));
 
         // if BLE remote control is enabled, then start the background BLE service
         bluetoothRemoteControl.startRemoteControl();
@@ -1450,13 +1435,6 @@ public class MainActivity extends Activity {
         mSensorManager.unregisterListener(accelerometerListener);
         magneticSensor.unregisterMagneticListener(mSensorManager);
         orientationEventListener.disable();
-        try {
-            unregisterReceiver(cameraReceiver);
-        }
-        catch(IllegalArgumentException e) {
-            // this can happen if not registered - simplest to just catch the exception
-            e.printStackTrace();
-        }
         bluetoothRemoteControl.stopRemoteControl();
         freeAudioListener(false);
         speechControl.stopSpeechRecognizer();
