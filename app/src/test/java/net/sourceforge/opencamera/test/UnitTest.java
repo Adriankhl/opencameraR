@@ -125,21 +125,22 @@ public class UnitTest {
     public void testTimeString() throws ParseException {
         Log.d(TAG, "testTimeString");
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.US);
+        // n.b., do case insensitive checks as at one point I saw the text formatter change from upper case to lower case for AM/PM
         Date time1 = sdf.parse("00:00:00");
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_none", time1), "" );
-        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time1), "12:00:00 AM" );
+        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time1).toLowerCase(Locale.US), "12:00:00 am" );
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_24hour", time1), "00:00:00" );
         Date time2 = sdf.parse("08:15:43");
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_none", time2), "" );
-        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time2), "08:15:43 AM" );
+        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time2).toLowerCase(Locale.US), "08:15:43 am" );
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_24hour", time2), "08:15:43" );
         Date time3 = sdf.parse("12:00:00");
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_none", time3), "" );
-        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time3), "12:00:00 PM" );
+        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time3).toLowerCase(Locale.US), "12:00:00 pm" );
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_24hour", time3), "12:00:00" );
         Date time4 = sdf.parse("13:53:06");
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_none", time4), "" );
-        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time4), "01:53:06 PM" );
+        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time4).toLowerCase(Locale.US), "01:53:06 pm" );
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_24hour", time4), "13:53:06" );
     }
 
