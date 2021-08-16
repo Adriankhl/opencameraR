@@ -1123,7 +1123,10 @@ public class MainUI {
 
     }
 
-    public void onOrientationChanged(int orientation) {
+    // ParameterCanBeLocal warning suppressed as it's incorrect here! (Or
+    // possibly it's due to effect of MainActivity.lock_to_landscape always
+    // being false.)
+    public void onOrientationChanged(@SuppressWarnings("ParameterCanBeLocal") int orientation) {
 		/*if( MyDebug.LOG ) {
 			Log.d(TAG, "onOrientationChanged()");
 			Log.d(TAG, "orientation: " + orientation);

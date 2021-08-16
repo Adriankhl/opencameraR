@@ -1891,6 +1891,7 @@ public class MyApplicationInterface extends BasicApplicationInterface {
         if( MyDebug.LOG )
             Log.d(TAG, "setNextPanoramaPoint : " + x + " , " + y + " , " + z);
 
+        @SuppressWarnings("PointlessArithmeticExpression")
         final float target_angle = 1.0f * 0.01745329252f;
         //final float target_angle = 0.5f * 0.01745329252f;
         final float upright_angle_tol = 2.0f * 0.017452406437f;

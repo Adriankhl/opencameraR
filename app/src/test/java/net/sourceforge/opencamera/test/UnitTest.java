@@ -884,6 +884,7 @@ public class UnitTest {
         List<HDRProcessor.LuminanceInfo> luminanceInfos = new ArrayList<>();
         List<HDRProcessor.LuminanceInfo> luminanceInfosSorted;
 
+        //noinspection RedundantOperationOnEmptyContainer
         luminanceInfos.clear();
         luminanceInfos.add(new HDRProcessor.LuminanceInfo(0, 64, 255, false));
         luminanceInfos.add(new HDRProcessor.LuminanceInfo(16, 80, 255, false));

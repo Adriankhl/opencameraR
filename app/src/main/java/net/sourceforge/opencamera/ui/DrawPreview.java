@@ -247,6 +247,7 @@ public class DrawPreview {
         p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         p.setStrokeCap(Paint.Cap.ROUND);
         scale = getContext().getResources().getDisplayMetrics().density;
+        //noinspection PointlessArithmeticExpression
         this.stroke_width = (1.0f * scale + 0.5f); // convert dps to pixels
         p.setStrokeWidth(this.stroke_width);
 
