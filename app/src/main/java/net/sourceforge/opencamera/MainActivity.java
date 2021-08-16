@@ -3015,16 +3015,18 @@ public class MainActivity extends Activity {
         if( MyDebug.LOG )
             Log.d(TAG, "showUnderNavigation: " + enable);
 
-        // We used to use window flag FLAG_LAYOUT_NO_LIMITS, but this didn't work properly on
-        // Android 11 (didn't take effect until orientation changed or application paused/resumed).
-        // Although system ui visibility flags are deprecated on Android 11, this still works better
-        // than the FLAG_LAYOUT_NO_LIMITS flag (which was not well documented anyway).
-        int flags = getWindow().getDecorView().getSystemUiVisibility();
-        if( enable ) {
-            getWindow().getDecorView().setSystemUiVisibility(flags | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        }
-        else {
-            getWindow().getDecorView().setSystemUiVisibility(flags & ~View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN ) {
+            // We used to use window flag FLAG_LAYOUT_NO_LIMITS, but this didn't work properly on
+            // Android 11 (didn't take effect until orientation changed or application paused/resumed).
+            // Although system ui visibility flags are deprecated on Android 11, this still works better
+            // than the FLAG_LAYOUT_NO_LIMITS flag (which was not well documented anyway).
+            int flags = getWindow().getDecorView().getSystemUiVisibility();
+            if( enable ) {
+                getWindow().getDecorView().setSystemUiVisibility(flags | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+            }
+            else {
+                getWindow().getDecorView().setSystemUiVisibility(flags & ~View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+            }
         }
         if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
             getWindow().setNavigationBarColor(enable ? Color.TRANSPARENT : Color.BLACK);
@@ -3188,7 +3190,11 @@ public class MainActivity extends Activity {
         if( MyDebug.LOG )
             Log.d(TAG, "setImmersiveMode: " + on);
         // n.b., preview.setImmersiveMode() is called from onSystemUiVisibilityChange()
-        int saved_flags = getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+        int saved_flags = 0;
+        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN ) {
+            // save whether we set SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            saved_flags = getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+        }
         if( MyDebug.LOG )
             Log.d(TAG, "saved_flags?: " + saved_flags);
         if( on ) {
@@ -4089,7 +4095,7 @@ public class MainActivity extends Activity {
                     Uri treeUri = resultData.getData();
                     if( MyDebug.LOG )
                         Log.d(TAG, "returned treeUri: " + treeUri);
-                    // see https://developer.android.com/guide/topics/providers/document-provider.html#permissions :
+                    // see https://developer.android.com/training/data-storage/shared/documents-files#persist-permissions :
                     final int takeFlags = resultData.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     try {
 					/*if( true )
