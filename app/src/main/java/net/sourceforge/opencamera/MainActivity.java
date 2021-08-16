@@ -28,8 +28,6 @@ import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.BroadcastReceiver;
-import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -349,7 +347,7 @@ public class MainActivity extends Activity {
         mainUI.closeExposureUI();
 
         // set up the camera and its preview
-        preview = new Preview(applicationInterface, ((ViewGroup) this.findViewById(R.id.preview)));
+        preview = new Preview(applicationInterface, (this.findViewById(R.id.preview)));
         if( MyDebug.LOG )
             Log.d(TAG, "onCreate: time after creating preview: " + (System.currentTimeMillis() - debug_time));
 

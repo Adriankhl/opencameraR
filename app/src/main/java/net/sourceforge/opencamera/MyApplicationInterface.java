@@ -915,7 +915,7 @@ public class MyApplicationInterface extends BasicApplicationInterface {
                 int intent_duration_limit = main_activity.getIntent().getIntExtra(MediaStore.EXTRA_DURATION_LIMIT, 0);
                 if( MyDebug.LOG )
                     Log.d(TAG, "intent_duration_limit: " + intent_duration_limit);
-                return intent_duration_limit * 1000;
+                return intent_duration_limit * 1000L;
             }
         }
 

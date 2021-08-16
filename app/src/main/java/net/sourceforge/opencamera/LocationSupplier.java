@@ -11,6 +11,8 @@ import android.location.LocationProvider;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import android.util.Log;
 
@@ -119,7 +121,7 @@ public class LocationSupplier {
             return location;
         }
 
-        public void onLocationChanged(Location location) {
+        public void onLocationChanged(@NonNull Location location) {
             if( MyDebug.LOG )
                 Log.d(TAG, "onLocationChanged");
             this.test_has_received_location = true;
@@ -156,10 +158,10 @@ public class LocationSupplier {
             }
         }
 
-        public void onProviderEnabled(String provider) {
+        public void onProviderEnabled(@NonNull String provider) {
         }
 
-        public void onProviderDisabled(String provider) {
+        public void onProviderDisabled(@NonNull String provider) {
             if( MyDebug.LOG )
                 Log.d(TAG, "onProviderDisabled");
             this.location = null;

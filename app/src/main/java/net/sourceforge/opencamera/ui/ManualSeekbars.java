@@ -177,21 +177,21 @@ public class ManualSeekbars {
 
         // 1/10,000 to 1/1,000
         for(int i=10;i>=1;i--) {
-            long exposure = 1000000000L/(i*1000);
+            long exposure = 1000000000L/(i* 1000L);
             if( exposure > min_exposure_time && exposure < max_exposure_time )
                 seekbar_values.add(exposure);
         }
 
         // 1/900 to 1/100
         for(int i=9;i>=1;i--) {
-            long exposure = 1000000000L/(i*100);
+            long exposure = 1000000000L/(i* 100L);
             if( exposure > min_exposure_time && exposure < max_exposure_time )
                 seekbar_values.add(exposure);
         }
 
         // 1/90 to 1/60 (steps of 10)
         for(int i=9;i>=6;i--) {
-            long exposure = 1000000000L/(i*10);
+            long exposure = 1000000000L/(i* 10L);
             if( exposure > min_exposure_time && exposure < max_exposure_time )
                 seekbar_values.add(exposure);
         }

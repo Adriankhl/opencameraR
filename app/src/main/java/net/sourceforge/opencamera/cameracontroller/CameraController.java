@@ -175,7 +175,7 @@ public abstract class CameraController {
         }
 
         public Size(int width, int height) {
-            this(width, height, new ArrayList<int[]>(), false);
+            this(width, height, new ArrayList<>(), false);
         }
 
         boolean supportsFrameRate(double fps) {

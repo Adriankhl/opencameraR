@@ -74,6 +74,8 @@ import android.renderscript.Element;
 import android.renderscript.RSInvalidStateException;
 import android.renderscript.RenderScript;
 import android.renderscript.Type;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import android.util.Log;
@@ -868,7 +870,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void surfaceCreated(SurfaceHolder holder) {
+    public void surfaceCreated(@NonNull SurfaceHolder holder) {
         if( MyDebug.LOG )
             Log.d(TAG, "surfaceCreated()");
         // The Surface has been created, acquire the camera and tell it where
@@ -878,7 +880,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
+    public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
         if( MyDebug.LOG )
             Log.d(TAG, "surfaceDestroyed()");
         // Surface will be destroyed when we return, so stop the preview.
@@ -888,7 +890,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
+    public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
         if( MyDebug.LOG )
             Log.d(TAG, "surfaceChanged " + w + ", " + h);
         if( holder.getSurface() == null ) {
@@ -899,7 +901,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void onSurfaceTextureAvailable(SurfaceTexture arg0, int width, int height) {
+    public void onSurfaceTextureAvailable(@NonNull SurfaceTexture arg0, int width, int height) {
         if( MyDebug.LOG )
             Log.d(TAG, "onSurfaceTextureAvailable()");
         this.set_textureview_size = true;
@@ -909,7 +911,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public boolean onSurfaceTextureDestroyed(SurfaceTexture arg0) {
+    public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture arg0) {
         if( MyDebug.LOG )
             Log.d(TAG, "onSurfaceTextureDestroyed()");
         this.set_textureview_size = false;
@@ -920,7 +922,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
+    public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture texture, int width, int height) {
         if( MyDebug.LOG ) {
             Log.d(TAG, "onSurfaceTextureSizeChanged " + width + ", " + height);
             //Log.d(TAG, "surface texture is now: " + ((TextureView)cameraSurface).getSurfaceTexture());
@@ -955,7 +957,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void onSurfaceTextureUpdated(SurfaceTexture arg0) {
+    public void onSurfaceTextureUpdated(@NonNull SurfaceTexture arg0) {
         refreshPreviewBitmap();
     }
 

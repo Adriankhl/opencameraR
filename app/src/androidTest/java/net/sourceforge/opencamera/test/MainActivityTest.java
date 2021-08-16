@@ -3703,7 +3703,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             // allow for possibility that the time has passed since taking the photo
             boolean matched = false;
             for(int i=0;i<=max_time_s && !matched;i++) {
-                Date test_date = new Date(date.getTime() - 1000*i);
+                Date test_date = new Date(date.getTime() - 1000L *i);
                 String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(test_date);
                 String expected_filename = "IMG_" + timeStamp + suffix + ".jpg";
                 Log.d(TAG, "expected name: " + expected_filename);
@@ -12464,7 +12464,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         // now need to take exif orientation into account, as some devices or camera apps store the orientation in the exif tag,
         // which getBitmap() doesn't account for
         ParcelFileDescriptor parcelFileDescriptor = null;
-        FileDescriptor fileDescriptor = null;
+        FileDescriptor fileDescriptor;
         try {
             ExifInterface exif = null;
             if( uri != null ) {
