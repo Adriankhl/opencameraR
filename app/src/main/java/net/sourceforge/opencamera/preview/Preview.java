@@ -667,8 +667,11 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         }
         cancelAutoFocus();
 
+        boolean touch_capture = applicationInterface.getTouchCapturePref();
+
         // don't set focus areas on touch if the user is touching to unpause!
-        if( camera_controller != null && !this.using_face_detection && !was_paused ) {
+        // similarly if doing single touch to capture (we go straight to taking a photo)
+        if( camera_controller != null && !this.using_face_detection && !was_paused && !touch_capture ) {
             this.has_focus_area = false;
 
             if( MyDebug.LOG ) {
@@ -696,7 +699,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         }
 
         // don't take a photo on touch if the user is touching to unpause!
-        if( !this.is_video && !was_paused && applicationInterface.getTouchCapturePref() ) {
+        if( !this.is_video && !was_paused && touch_capture ) {
             if( MyDebug.LOG )
                 Log.d(TAG, "touch to capture");
             // Interpret as if user had clicked take photo/video button, except that we set the focus/metering areas.

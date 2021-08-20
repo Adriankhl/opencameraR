@@ -3325,6 +3325,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Thread.sleep(2000);
         int saved_count = mPreview.count_cameraAutoFocus;
         Log.d(TAG, "saved count_cameraAutoFocus: " + saved_count);
+        Log.d(TAG, "has focus area?: " + mPreview.hasFocusArea());
         Log.d(TAG, "about to click preview for autofocus");
         if( double_tap_photo ) {
             TouchUtils.tapView(MainActivityTest.this, mPreview.getView());
@@ -3335,14 +3336,21 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         this.getInstrumentation().waitForIdleSync();
         Log.d(TAG, "1 count_cameraAutoFocus: " + mPreview.count_cameraAutoFocus);
         assertEquals((manual_can_auto_focus ? saved_count + 1 : saved_count), mPreview.count_cameraAutoFocus);
-        assertEquals(mPreview.hasFocusArea(), can_focus_area);
-        if( can_focus_area ) {
+        Log.d(TAG, "has focus area?: " + mPreview.hasFocusArea());
+        if( single_tap_photo || double_tap_photo ) {
+            assertFalse(mPreview.hasFocusArea());
+            assertNull(mPreview.getCameraController().getFocusAreas());
+            assertNull(mPreview.getCameraController().getMeteringAreas());
+        }
+        else if( can_focus_area ) {
+            assertTrue(mPreview.hasFocusArea());
             assertNotNull(mPreview.getCameraController().getFocusAreas());
             assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
             assertNotNull(mPreview.getCameraController().getMeteringAreas());
             assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
         }
         else {
+            assertFalse(mPreview.hasFocusArea());
             assertNull(mPreview.getCameraController().getFocusAreas());
             // we still set metering areas
             assertNotNull(mPreview.getCameraController().getMeteringAreas());
@@ -3351,7 +3359,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         String new_focus_value_ui = mPreview.getCurrentFocusValue();
         //noinspection StringEquality
         assertTrue(new_focus_value_ui == focus_value_ui || new_focus_value_ui.equals(focus_value_ui)); // also need to do == check, as strings may be null if focus not supported
-        if( focus_value.equals("focus_mode_continuous_picture") && !single_tap_photo && mPreview.supportsFocus() && mPreview.getSupportedFocusValues().contains("focus_mode_auto") )
+        if( focus_value.equals("focus_mode_continuous_picture") && !single_tap_photo && !double_tap_photo && mPreview.supportsFocus() && mPreview.getSupportedFocusValues().contains("focus_mode_auto") )
             assertEquals("focus_mode_auto", mPreview.getCameraController().getFocusValue()); // continuous focus mode switches to auto focus on touch (unless single_tap_photo, or auto focus not supported)
         else
             assertEquals(mPreview.getCameraController().getFocusValue(), focus_value);
@@ -3394,7 +3402,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         }
     }
 
-    private void checkFocusAfterTakePhoto2(final boolean touch_to_focus, final boolean test_wait_capture_result, final boolean locked_focus, final boolean can_auto_focus, final boolean can_focus_area, final int saved_count) {
+    private void checkFocusAfterTakePhoto2(final boolean touch_to_focus, final boolean single_tap_photo, final boolean double_tap_photo, final boolean test_wait_capture_result, final boolean locked_focus, final boolean can_auto_focus, final boolean can_focus_area, final int saved_count) {
         // in locked focus mode, taking photo should never redo an auto-focus
         // if photo mode, we may do a refocus if the previous auto-focus failed, but not if it succeeded
         Log.d(TAG, "2 count_cameraAutoFocus: " + mPreview.count_cameraAutoFocus);
@@ -3407,14 +3415,20 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         else if( touch_to_focus ) {
             Log.d(TAG, "can_focus_area?: " + can_focus_area);
             Log.d(TAG, "hasFocusArea?: " + mPreview.hasFocusArea());
-            assertEquals(mPreview.hasFocusArea(), can_focus_area);
-            if( can_focus_area ) {
+            if( single_tap_photo || double_tap_photo ) {
+                assertFalse(mPreview.hasFocusArea());
+                assertNull(mPreview.getCameraController().getFocusAreas());
+                assertNull(mPreview.getCameraController().getMeteringAreas());
+            }
+            else if( can_focus_area ) {
+                assertTrue(mPreview.hasFocusArea());
                 assertNotNull(mPreview.getCameraController().getFocusAreas());
                 assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
                 assertNotNull(mPreview.getCameraController().getMeteringAreas());
                 assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
             }
             else {
+                assertFalse(mPreview.hasFocusArea());
                 assertNull(mPreview.getCameraController().getFocusAreas());
                 // we still set metering areas
                 assertNotNull(mPreview.getCameraController().getMeteringAreas());
@@ -3821,8 +3835,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         if( focus_value.equals("focus_mode_auto") || focus_value.equals("focus_mode_macro") ) {
             manual_can_auto_focus = true;
         }
-        else if( focus_value.equals("focus_mode_continuous_picture") && !single_tap_photo ) {
-            // if single_tap_photo and continuous mode, we go straight to taking a photo rather than doing a touch to focus
+        else if( focus_value.equals("focus_mode_continuous_picture") && !single_tap_photo && !double_tap_photo ) {
+            // if single_tap_photo or double_tap_photo, and continuous mode, we go straight to taking a photo rather than doing a touch to focus
             manual_can_auto_focus = true;
         }
 
@@ -3927,7 +3941,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         checkFilesAfterTakePhoto(is_raw, test_wait_capture_result, files, suffix, max_time_s, date);
 
-        checkFocusAfterTakePhoto2(touch_to_focus, test_wait_capture_result, locked_focus, can_auto_focus, can_focus_area, saved_count);
+        checkFocusAfterTakePhoto2(touch_to_focus, single_tap_photo, double_tap_photo, test_wait_capture_result, locked_focus, can_auto_focus, can_focus_area, saved_count);
 
         postTakePhotoChecks(immersive_mode, exposureVisibility, exposureLockVisibility);
 
