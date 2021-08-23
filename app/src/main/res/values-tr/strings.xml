@@ -108,7 +108,6 @@
 
     <string name="preference_save_location">Kaydetme yeri</string>
     <string name="preference_save_location_summary">Fotoğraf/vidyo dosyaları için kayıt klasörü</string>
-    <string name="preference_using_saf">Storage Access Framework kullan</string>
     <string name="preference_using_saf_summary">Fotoğraf ve vidyoları kaydetmek için Storage Access Framework kullan</string>
     <string name="preference_save_photo_prefix">Fotoğraf adlandırma öneki kaydet</string>
     <string name="preference_save_photo_prefix_summary">Fotoğraflarda dosya adlarını kaydetmede kullanılacak önek</string>

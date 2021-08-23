@@ -110,7 +110,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Επίπεδο θορύβου ευαισθησίας για τον ήχο</string>
     <string name="preference_save_location">Χώρος αποθήκευσης</string>
     <string name="preference_save_location_summary">Φάκελος για αποθήκευση φωτογραφίας/βίντεο</string>
-    <string name="preference_using_saf">Χρήση αποθήκευσης πρόσβασης πλαισίου</string>
     <string name="preference_using_saf_summary">Αν θέλετε χρησιμοποιήστε την Πρόσβαση αποθήκευσης πλαισίου για την αποθήκευση φωτογραφιών και βίντεο</string>
     <string name="preference_save_photo_prefix">Αποθήκευση προθέματος φωτογραφιών</string>
     <string name="preference_save_photo_prefix_summary">Πρόθεμα για την αποθήκευση αρχείων φωτογραφιών</string>

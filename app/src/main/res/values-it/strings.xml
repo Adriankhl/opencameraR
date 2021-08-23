@@ -112,7 +112,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Opzione per sensibilità del livello di rumore per il controllo audio (forte rumore)</string>
     <string name="preference_save_location">Posizione di salvataggio</string>
     <string name="preference_save_location_summary">Cartella in cui salvare foto e video</string>
-    <string name="preference_using_saf">Usa Storage Access Framework</string>
     <string name="preference_using_saf_summary">Utilizza Storage Access Framework per il salvataggio di foto e video</string>
     <string name="preference_save_photo_prefix">Salva prefisso per foto</string>
     <string name="preference_save_photo_prefix_summary">Prefisso da usare per il nome file di salvataggio delle foto</string>

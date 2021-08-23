@@ -108,7 +108,6 @@
 
     <string name="preference_save_location">Uložit polohu</string>
     <string name="preference_save_location_summary">Složka pro uložení fotek/videa</string>
-    <string name="preference_using_saf">Použít Storage Access Framework</string>
     <string name="preference_using_saf_summary">Zdali použít Storage Access Framework pro uložení fotek a videí</string>
     <string name="preference_save_photo_prefix">Uložit předponu pro fotografie</string>
     <string name="preference_save_photo_prefix_summary">Předpona používaná při ukládání fotografií</string>

@@ -112,7 +112,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Чувствительность уровня шума для управления звуком (опция \"громкий шум\")</string>
     <string name="preference_save_location">Папка сохранения</string>
     <string name="preference_save_location_summary">Имя папки для сохранения фото и видео (также может быть полный путь)</string>
-    <string name="preference_using_saf">Использовать Storage Access Framework</string>
     <string name="preference_using_saf_summary">Использовать Storage Access Framework для сохранения фото и видео</string>
     <string name="preference_save_photo_prefix">Префикс для фото</string>
     <string name="preference_save_photo_prefix_summary">Префикс имен файлов для сохраняемых фото</string>

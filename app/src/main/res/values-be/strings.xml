@@ -107,7 +107,6 @@
     <string name="preference_volume_keys">Клавішы рэгулявання гучнасці</string>
     <string name="preference_save_location">Захаваць месца</string>
     <string name="preference_save_location_summary">Тэчка для захавання фота / відэа файлаў</string>
-    <string name="preference_using_saf">Выкарыстоўваць сховішча Access Framework</string>
     <string name="preference_using_saf_summary">Ці варта выкарыстоўваць сховішча Access Framework для захавання фотаздымкаў і відэазапісаў</string>
     <string name="preference_save_photo_prefix">Захаваць фотапрэфікс</string>
     <string name="preference_save_photo_prefix_summary">Выкарыстоўваць прэфікс для захавання фотаздымкаў</string>

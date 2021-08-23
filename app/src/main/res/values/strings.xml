@@ -112,7 +112,7 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Noise level sensitivity for audio (loud noise) option</string>
     <string name="preference_save_location">Save location</string>
     <string name="preference_save_location_summary">Folder to save the photo/video files in</string>
-    <string name="preference_using_saf">Use Storage Access Framework</string>
+    <string name="preference_using_saf" translatable="false">Storage Access Framework</string> <!-- not translated as it's referenced in the privacy policy, and unclear how this term should be translated -->
     <string name="preference_using_saf_summary">Whether to use Storage Access Framework for saving photos and videos. This should be enabled to allow saving to external SD cards. On Android 10+ this option must be enabled if you want to save in a folder outside of DCIM.</string>
     <string name="preference_save_photo_prefix">Save photo prefix</string>
     <string name="preference_save_photo_prefix_summary">The prefix to use for the save filenames for photos</string>
@@ -1005,9 +1005,10 @@
         Location permission is also requested in order to connect to Bluetooth remote control devices.
         &lt;br/&gt;Resultant data such as photos or videos can be shared with
         other apps if you use the share option in Open Camera, or when Open Camera is called by
-        another app on your device.
-        &lt;br/&gt;Since Open Camera does not transmit personal or sensitive information to me, I do not have
-        data handling procedures, data retention or deletion policies.
+        another app on your device, or when you use the Storage Access Framework option to save
+        to another app or service.
+        &lt;br/&gt;Data handling procedures, data retention and deletion policies: Open Camera
+        does not transmit personal or sensitive information to me.
         &lt;br/&gt;Since Open Camera also uses operating system APIs, you should review relevant privacy policies
         such as for your device, manufacturer, operating system and/or Google accounts. For example:
         &lt;br/&gt;*The optional voice control option uses the Android speech recognition service. When enabled,

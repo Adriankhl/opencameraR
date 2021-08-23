@@ -112,7 +112,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">音訊（大的聲音）選項的聲音等級敏感度</string>
     <string name="preference_save_location">儲存位置</string>
     <string name="preference_save_location_summary">用來儲存照片/影片檔的資料夾</string>
-    <string name="preference_using_saf">使用 Storage Access Framework</string>
     <string name="preference_using_saf_summary">是否使用 Storage Access Framework 來儲存照片和影片。這個選項應該被啟用來允許儲存到外部 SD 卡。</string>
     <string name="preference_save_photo_prefix">照片檔名前綴</string>
     <string name="preference_save_photo_prefix_summary">用於儲存照片檔名的前置字串</string>

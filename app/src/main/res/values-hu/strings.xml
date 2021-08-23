@@ -111,7 +111,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Hangvezérlés zajszintérzékenysége</string>
     <string name="preference_save_location">Mentés helye</string>
     <string name="preference_save_location_summary">Fotók, videofájlok mentésének könyvtára</string>
-    <string name="preference_using_saf">Storage Access Framework használata</string>
     <string name="preference_using_saf_summary">Használja-e az Storage Access Frameworkjét a fotók és videók mentéséhez</string>
     <string name="preference_save_photo_prefix">Fotó fájlnév előtag</string>
     <string name="preference_save_photo_prefix_summary">A fényképek mentésekor használt fájlnév előtag</string>

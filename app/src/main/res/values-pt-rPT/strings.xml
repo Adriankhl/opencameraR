@@ -111,7 +111,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Definir a sensibilidade do nível de ruído do áudio (ruído alto)</string>
     <string name="preference_save_location">Local de armazenamento</string>
     <string name="preference_save_location_summary">Pasta para guardar os ficheiros das fotografias/vídeos</string>
-    <string name="preference_using_saf">Usar Storage Access Framework</string>
     <string name="preference_using_saf_summary">Optar por usar o Storage Access Framework para guardar fotografias e vídeos</string>
     <string name="preference_save_photo_prefix">Prefixo das fotografias guardadas</string>
     <string name="preference_save_photo_prefix_summary">O prefixo usado para guardar o nome dos ficheiros das fotografias</string>

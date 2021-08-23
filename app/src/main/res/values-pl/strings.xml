@@ -111,7 +111,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Poziom wrażliwości na głośne dźwięki aktywujące aparat</string>
     <string name="preference_save_location">Lokalizacja zapisu</string>
     <string name="preference_save_location_summary">Folder, do którego będą zapisywane pliki</string>
-    <string name="preference_using_saf">Używaj SAF (systemowa obsługa dostępu do pamięci)</string>
     <string name="preference_using_saf_summary">Używa Storage Access Framework do zapisu plików zdjęć i filmów</string>
     <string name="preference_save_photo_prefix">Przedrostek nazw zdjęć</string>
     <string name="preference_save_photo_prefix_summary">Przedrostek używany w nazwach plików zdjęć</string>

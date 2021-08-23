@@ -111,7 +111,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Sensibilidad al nivel de ruido para la opción de audio (ruido fuerte)</string>
     <string name="preference_save_location">Carpeta de almacenamiento</string>
     <string name="preference_save_location_summary">Carpeta para guardar los archivos de foto/video</string>
-    <string name="preference_using_saf">Utilizar el Framework de Acceso del Almacenamiento</string>
     <string name="preference_using_saf_summary">Utilice el Framework de Acceso del Almacenamiento para guardar fotos y videos</string>
     <string name="preference_save_photo_prefix">Prefijo de foto</string>
     <string name="preference_save_photo_prefix_summary">Prefijo utilizado para el nombre de las fotos</string>

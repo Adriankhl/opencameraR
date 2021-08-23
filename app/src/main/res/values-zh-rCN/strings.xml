@@ -110,7 +110,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">使用语音识别时麦克风过滤噪声的阈值</string>
     <string name="preference_save_location">保存位置</string>
     <string name="preference_save_location_summary">用来保存照片/视频文件的文件夹</string>
-    <string name="preference_using_saf">使用存储访问架构</string>
     <string name="preference_using_saf_summary">是否使用存储访问架构保存照片和视频</string>
     <string name="preference_save_photo_prefix">保存照片前缀</string>
     <string name="preference_save_photo_prefix_summary">用于保存照片文件名的前缀</string>

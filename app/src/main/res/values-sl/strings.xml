@@ -112,7 +112,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Občutljivost ravni za možnost zvoka (glasen zvok)</string>
     <string name="preference_save_location">Mesto za shranjevanje</string>
     <string name="preference_save_location_summary">Mapa za shranjevanje datotek fotografij/videoposnetkov</string>
-    <string name="preference_using_saf">Uporabi ogrodje za dostop do pom. naprave</string>
     <string name="preference_using_saf_summary">Ali naj se za shranjevanje fotografij in videoposnetkov uporabi ogrodje za dostop do pomnilniške naprave.  Omogočite to, da dovolite shranjevanje na zunanje kartice SD.  Na Androidih 10+ morate to možnost omogočiti, če želite shranjevati v mapo zunaj mape DCIM.</string>
     <string name="preference_save_photo_prefix">Predpona shranjenih fotografij</string>
     <string name="preference_save_photo_prefix_summary">Predpona imena datotek fotografij</string>

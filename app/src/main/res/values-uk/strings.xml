@@ -112,7 +112,6 @@
 
     <string name="preference_save_location">Тека збереження</string>
     <string name="preference_save_location_summary">"Ім'я теки для збереження фото та відео (також може бути повний шлях)"</string>
-    <string name="preference_using_saf">Використовувати Storage Access Framework</string>
     <string name="preference_using_saf_summary">Використовувати Storage Access Framework для збереження фото та відео</string>
     <string name="preference_save_photo_prefix">Префікс для фото</string>
     <string name="preference_save_photo_prefix_summary">Префікс імен файлів для знімків</string>
