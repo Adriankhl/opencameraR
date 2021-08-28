@@ -1013,6 +1013,8 @@
         such as for your device, manufacturer, operating system and/or Google accounts. For example:
         &lt;br/&gt;*The optional voice control option uses the Android speech recognition service. When enabled,
         audio data is likely to be sent to remote servers by Android to perform speech recognition.
+        This is subject to the Data Processing Addendum for Products where Google is a Data Processor,
+        located at https://privacy.google.com/businesses/gdprprocessorterms/ , as updated from time to time.
         &lt;br/&gt;*The \"addresses\" option for photo stamp or video subtitles uses the Android Geocoder API.
         When this option is enabled, in order to deliver this functionality the API transmits your device location data across the Internet to a
         third party (which may depend on what "backend services" are installed on your device).
