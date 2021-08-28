@@ -936,5 +936,5 @@
     <string name="preference_comment_ypr">保存三轴运动信息</string>
     <string name="preference_comment_ypr_summary">在照片的 Exit 用户备注字段保存设备的三轴运动信息(仅适用于JPEG格式)</string>
     <string name="preference_audio_control_summary">根据噪音或者语音指令拍照。当启用后，使用屏幕上的麦克风按钮来启动监听。注意语音指令选项使用 Android 语音识别服务：当使用该选项的时候，语音数据将极有可能被发送至远程服务来实现指令识别。\n%s</string>
-    <string name="intro_text">点击来对焦，然后按下蓝色相机按钮以拍照。要禁用最大屏幕亮度，查阅设置/屏幕GUI/\"强制最大亮度\"选项。要在 Android 5 之后的设备上保存至 SD 卡，查阅设置/更多相机控制/\"使用存储访问架构\"。如需更多帮助，在设置中点击“在线帮助”。</string>
+    <string name="intro_text">点击来对焦，然后按下蓝色相机按钮以拍照。要禁用最大屏幕亮度，查阅设置/屏幕GUI/\"强制最大亮度\"选项。要在 Android 5 之后的设备上保存至 SD 卡，查阅设置/更多相机控制/\"Storage Access Framework\"。如需更多帮助，在设置中点击“在线帮助”。</string>
 </resources>

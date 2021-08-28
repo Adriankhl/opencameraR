@@ -825,7 +825,7 @@
 
     <string name="intro_text">Dotknij, aby ustawić ostrość, i dotknij niebieski przycisk aparatu, aby robić zdjęcia.
         \n\nWyłącza maksymalną jasność ekranu, zobacz Ustawienia -> "Interfejs fotografowania" -> "Wymuś maksymalną jasność".
-        Aby zapisać na kartach SD w Androidzie 5+, zobacz Ustawienia -> "Więcej ustawień aparatu" -> "Używaj SAF(systemowa obsługa dostępu do pamięci)".
+        Aby zapisać na kartach SD w Androidzie 5+, zobacz Ustawienia -> "Więcej ustawień aparatu" -> "Storage Access Framework".
         Więcej na temat w Ustawieniach, w sekcji "Pomoc on-line".
     </string>
 

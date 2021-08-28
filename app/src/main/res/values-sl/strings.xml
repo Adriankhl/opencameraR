@@ -908,7 +908,7 @@
 
     <string name="intro_text">Dotaknite se za izostritev in pritisnite moder gumb za fotoaparat, da posnamete fotografijo.
         \n\nZa onemogočanje največje svetlosti zaslona glejte Nastavitve/Gr. up. vmesnik na zaslonu/\"Vsili največjo svetlost\".
-        Za shranjevanje na kartico SD na Androidih 5+ glejte Nastavitve/Več nastavitev fotoaparata/\"Uporabi ogrodje za dostop do pom. naprave\".
+        Za shranjevanje na kartico SD na Androidih 5+ glejte Nastavitve/Več nastavitev fotoaparata/\"Storage Access Framework\".
         Za pomoč kliknite \"Spletna pomoč\" v nastavitvah.
     </string>
 

@@ -907,7 +907,7 @@
 
     <string name="intro_text">點擊以對焦，按下藍色相機按鈕來拍照。
         \n\n要停用最大螢幕亮度，請到設定/螢幕 GUI/「強制最大亮度」。
-        要在 Android 5+ 儲存到 SD 卡，請到設定/更多相機控制/「使用 Storage Access Framework」。
+        要在 Android 5+ 儲存到 SD 卡，請到設定/更多相機控制/Storage Access Framework」。
         請從設定點選「線上說明」取得更多說明。</string>
 
     <string name="preference_select_remote">選擇遠端裝置</string>

@@ -906,7 +906,7 @@
 
     <string name="intro_text">Tocca per mettere a fuoco e premi il pulsante blu della fotocamera per scattare foto.
         \n\nPer disabilitare la massima luminosità dello schermo, vedi Impostazioni/Interfaccia schermo/\"Forza la massima luminosità\".
-        Per salvare su schede SD su Android 5+, vedi Impostazioni/Altri controlli fotocamera/\"Usa Storage Access Framework\".
+        Per salvare su schede SD su Android 5+, vedi Impostazioni/Altri controlli fotocamera/\"Storage Access Framework\".
         Per ulteriore aiuto, clicca su \"Aiuto online\" da Impostazioni.
     </string>
 

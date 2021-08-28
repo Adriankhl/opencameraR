@@ -903,7 +903,7 @@
 
     <string name="intro_text">Zum Fokussieren berühren und blaue Kamerataste drücken, um Bilder aufzunehmen.
         \n\nUm die maximale Bildschirmhelligkeit zu deaktivieren, siehe Einstellungen/Benutzeroberfläche/\"Maximale Helligkeit erzwingen\".
-        Zur Speicherung auf der SD-Karte auf Android 5+, siehe Einstellungen/Mehr Kamera-Einstellungen…/\"Benutze Storage Access Framework\".
+        Zur Speicherung auf der SD-Karte auf Android 5+, siehe Einstellungen/Mehr Kamera-Einstellungen…/\"Storage Access Framework\".
         Für weitere Hilfe, klicke auf  \"Online-Hilfe\" in den Einstellungen.
     </string>
 

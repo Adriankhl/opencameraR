@@ -364,7 +364,7 @@
     <string name="preference_show_geo_direction_lines">Show compass direction lines</string>
     <string name="preference_show_geo_direction_lines_summary">Display compass direction lines</string>
     <string name="preference_video_subtitle">Video subtitles</string>
-    <string name="preference_video_subtitle_summary">Create a subtitles (.SRT) file storing date and time; and also GPS info if location/direction data is enabled. (On Android 11+, this option requires More camera controls/Use Storage Access Framework to be enabled.)\n%s</string>
+    <string name="preference_video_subtitle_summary">Create a subtitles (.SRT) file storing date and time; and also GPS info if location/direction data is enabled. (On Android 11+, this option requires More camera controls/Storage Access Framework to be enabled.)\n%s</string>
 
     <string name="duration_unlimited">Unlimited</string>
     <string name="duration_3s">3 seconds</string>
@@ -913,7 +913,7 @@
 
     <string name="intro_text">Touch to focus, and press the blue camera button to take photos.
         \n\nTo disable maximum screen brightness, see Settings/On screen GUI/\"Force maximum brightness\".
-        To save to SD cards on Android 5+, see Settings/More camera controls/\"Use Storage Access Framework\".
+        To save to SD cards on Android 5+, see Settings/More camera controls/\"Storage Access Framework\".
         For more help, click \"Online help\" from Settings.
     </string>
 
@@ -1050,7 +1050,7 @@
         <ul>
             <li>Support for portrait and landscape system orientations.\n</li>
             <li>Minor improvements for NR, DRO and HDR photo modes.\n</li>
-            <li>Video subtitles option now requires Settings/More camera controls/\"Use Storage Access Framework\" on Android 11, this is due to changes on Android 11.\n</li>
+            <li>Video subtitles option now requires Settings/More camera controls/\"Storage Access Framework\" on Android 11, this is due to changes on Android 11.\n</li>
             <li>Fixed manual white balance.\n</li>
             <li>Fixes for Android 11.\n</li>
             <li>Bug fixes and other improvements.\n</li>
