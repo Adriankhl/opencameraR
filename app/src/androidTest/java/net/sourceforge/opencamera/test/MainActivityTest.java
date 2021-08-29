@@ -576,11 +576,12 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
      */
     private void subTestSaveFocusMode() {
         Log.d(TAG, "subTestSaveFocusMode");
+        setToDefault();
+
         if( !mPreview.supportsFocus() ) {
+            Log.d(TAG, "test requires focus");
             return;
         }
-
-        setToDefault();
 
         String non_default_focus = getNonDefaultFocus();
 
@@ -4786,12 +4787,15 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             Log.d(TAG, "test requires camera2 api");
             return;
         }
+
+        setToDefault();
+
         if( !mPreview.supportsFocus() ) {
-            // if no focus, then the photo will be taken on th UI thread
+            // if no focus, then the photo will be taken on the UI thread
+            Log.d(TAG, "test requires focus");
             return;
         }
 
-        setToDefault();
         switchToFocusValue("focus_mode_auto");
 
         mPreview.getCameraController().test_release_during_photo = true;
@@ -5826,12 +5830,13 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
     private void takePhotoRepeatFocus(boolean locked) throws InterruptedException {
         Log.d(TAG, "takePhotoRepeatFocus");
+        setToDefault();
 
         if( !mPreview.supportsFocus() ) {
+            Log.d(TAG, "test requires focus");
             return;
         }
 
-        setToDefault();
         if( locked ) {
             switchToFocusValue("focus_mode_locked");
         }
