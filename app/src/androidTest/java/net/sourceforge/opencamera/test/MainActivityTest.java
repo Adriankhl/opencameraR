@@ -1500,10 +1500,19 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     /* Test doing touch to auto-focus region by swiping to all four corners works okay.
+     * Update: now only do one corner, due to complications with different orientations and devices.
      */
     public void testAutoFocusCorners() {
         Log.d(TAG, "testAutoFocusCorners");
         setToDefault();
+        {
+            // icons along top mode interferes with doing the touch at corners (e.g., on Galaxy Nexus)
+            SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString(PreferenceKeys.UIPlacementPreferenceKey, "ui_right");
+            editor.apply();
+            updateForSettings();
+        }
 
         if( !mPreview.supportsFocus() ) {
             return;
@@ -1537,18 +1546,18 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertNull(mPreview.getCameraController().getFocusAreas());
         assertNull(mPreview.getCameraController().getMeteringAreas());
 
-        // do larger step at top-right, due to conflicting with Settings button
-        // but we now ignore swipes - so we now test for that instead
-        Log.d(TAG, "top-right");
+        // skip top-right, as in portrait orientation we'd conflict with settings button
+        /*Log.d(TAG, "top-right");
         TouchUtils.drag(MainActivityTest.this, gui_location[0]+width-1-large_step_dist_c, gui_location[0]+width-1, gui_location[1]+large_step_dist_c, gui_location[1], step_count_c);
         assertFalse(mPreview.hasFocusArea());
         assertNull(mPreview.getCameraController().getFocusAreas());
-        assertNull(mPreview.getCameraController().getMeteringAreas());
+        assertNull(mPreview.getCameraController().getMeteringAreas());*/
 
         // skip bottom right, conflicts with zoom on various devices
         // but note in portrait mode, this is bottom-left that we need to skip
+        // update: and in portrait mode, that now conflicts with settings, so we just skip this too
 
-        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+        /*if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
             Log.d(TAG, "bottom-right");
             TouchUtils.drag(MainActivityTest.this, gui_location[0]+width-1-step_dist_c, gui_location[0]+width-1, gui_location[1]+height-1-step_dist_c, gui_location[1]+height-1, step_count_c);
             assertTrue(mPreview.hasFocusArea());
@@ -1565,7 +1574,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
             assertNotNull(mPreview.getCameraController().getMeteringAreas());
             assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
-        }
+        }*/
 
         mPreview.clearFocusAreas();
         assertFalse(mPreview.hasFocusArea());
@@ -2841,9 +2850,10 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         // test touch to focus clears the exposure controls
         int [] gui_location = new int[2];
         mPreview.getView().getLocationOnScreen(gui_location);
-        final int step_dist_c = 2;
+        final float scale = mActivity.getResources().getDisplayMetrics().density;
+        final int large_step_dist_c = (int) (80 * scale + 0.5f); // convert dps to pixels
         final int step_count_c = 10;
-        TouchUtils.drag(MainActivityTest.this, gui_location[0]+step_dist_c, gui_location[0], gui_location[1]+step_dist_c, gui_location[1], step_count_c);
+        TouchUtils.drag(MainActivityTest.this, gui_location[0]+large_step_dist_c, gui_location[0], gui_location[1]+large_step_dist_c, gui_location[1], step_count_c);
         assertEquals(exposureButton.getVisibility(), View.VISIBLE);
         assertEquals(exposureContainer.getVisibility(), View.GONE);
         clickView(exposureButton);
@@ -2859,7 +2869,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertEquals(mPreview.getCurrentExposure() - mPreview.getMinimumExposure(), seekBar.getProgress());
 
         // clear again so as to not interfere with take photo routine
-        TouchUtils.drag(MainActivityTest.this, gui_location[0]+step_dist_c, gui_location[0], gui_location[1]+step_dist_c, gui_location[1], step_count_c);
+        TouchUtils.drag(MainActivityTest.this, gui_location[0]+large_step_dist_c, gui_location[0], gui_location[1]+large_step_dist_c, gui_location[1], step_count_c);
         assertEquals(exposureButton.getVisibility(), View.VISIBLE);
         assertEquals(exposureContainer.getVisibility(), View.GONE);
 
