@@ -8714,7 +8714,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
             assertTrue(settingsButton.getBottom() > (int)(0.8*display_size.y));
             assertEquals(display_size.x, settingsButton.getRight());
-            assertEquals(display_size.y-1, galleryButton.getBottom());
+            // position may be 1 coordinate different on some devices, e.g., Galaxy Nexus
+            assertEquals((double)(display_size.y-1), (double)(galleryButton.getBottom()), 1.0+1.0e-5);
             assertEquals(display_size.x, galleryButton.getRight());
         }
         else {
@@ -8740,7 +8741,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
             assertTrue(settingsButton.getBottom() < (int)(0.2*display_size.y));
             assertEquals(display_size.x, settingsButton.getRight());
-            assertEquals(display_size.y-1, galleryButton.getBottom());
+            // position may be 1 coordinate different on some devices, e.g., Galaxy Nexus
+            assertEquals((double)(display_size.y-1), (double)(galleryButton.getBottom()), 1.0+1.0e-5);
             assertEquals(display_size.x, galleryButton.getRight());
         }
         else {
