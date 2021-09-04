@@ -1003,6 +1003,7 @@
         including stamp and subtitles options).
         When relevant option(s) are enabled, your device location will be stored in photo/video/subtitle files.
         Location permission is also requested in order to connect to Bluetooth remote control devices.
+        Bluetooth permission is used to allow the optional feature to enable Bluetooth remote control devices.
         &lt;br/&gt;Resultant data such as photos or videos can be shared with
         other apps if you use the share option in Open Camera, or when Open Camera is called by
         another app on your device, or when you use the Storage Access Framework option to save
