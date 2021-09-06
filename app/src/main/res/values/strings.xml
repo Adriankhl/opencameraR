@@ -993,9 +993,7 @@
     <string name="preference_privacy_policy_text" translatable="false"> <!-- if changing this, remember to consider if the online privacy policy needs updating -->
         <!-- now interpreted as HTML so that we can have the mailto link, for the contact that's needed for Google Play policies! -->
         <!-- be careful of rewording/removing bits, as some things here may be required for Google Play policies -->
-        Open Camera is developed by Mark Harman. If you have inquiries about my privacy policy,
-        please contact me by email at
-        &lt;a href=\"mailto:mark.harman.apps@gmail.com?subject=Open%20Camera%20privacy%20policy\"&gt;mark.harman.apps@gmail.com&lt;/a&gt;.
+        Open Camera is developed by Mark Harman.
         &lt;br/&gt;Open Camera accesses camera sensor and microphone data to fulfil its purpose as a camera.
         Microphone is also used for the optional \"Audio control\".
         &lt;br/&gt;Access to files is needed (at least for Android 9 and earlier) to save resultant files such as photos and videos to your device.
@@ -1020,6 +1018,8 @@
         When this option is enabled, in order to deliver this functionality the API transmits your device location data across the Internet to a
         third party (which may depend on what "backend services" are installed on your device).
         &lt;br/&gt;*Apps/services such as cloud services on your device may auto-upload photos and videos that are saved on your device.
+        &lt;br/&gt;If you have inquiries about my privacy policy, please contact me by email at
+        &lt;a href=\"mailto:mark.harman.apps@gmail.com?subject=Open%20Camera%20privacy%20policy\"&gt;mark.harman.apps@gmail.com&lt;/a&gt;.
     </string>
 
     <string name="speech_recognizer_extra_info" translatable="false">
