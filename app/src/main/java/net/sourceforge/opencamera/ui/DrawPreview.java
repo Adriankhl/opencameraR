@@ -1008,30 +1008,40 @@ public class DrawPreview {
                         crop_ratio = 2.4;
                         break;
                 }
-                // we should compare to getCurrentPreviewAspectRatio() not getCurrentPreviewAspectRatio(), as the actual preview
-                // aspect ratio may differ to the requested photo/video resolution's aspect ratio, in which case it's still useful
-                // to display the crop guide
-                if( crop_ratio > 0.0 && Math.abs(preview.getCurrentPreviewAspectRatio() - crop_ratio) > 1.0e-5 ) {
-		    		/*if( MyDebug.LOG ) {
-		    			Log.d(TAG, "crop_ratio: " + crop_ratio);
-		    			Log.d(TAG, "preview_targetRatio: " + preview_targetRatio);
-		    			Log.d(TAG, "canvas width: " + canvas.getWidth());
-		    			Log.d(TAG, "canvas height: " + canvas.getHeight());
-		    		}*/
-                    int left = 1, top = 1, right = canvas.getWidth()-1, bottom = canvas.getHeight()-1;
-                    if( crop_ratio > preview.getTargetRatio() ) {
-                        // crop ratio is wider, so we have to crop top/bottom
-                        double new_hheight = ((double)canvas.getWidth()) / (2.0f*crop_ratio);
-                        top = (canvas.getHeight()/2 - (int)new_hheight);
-                        bottom = (canvas.getHeight()/2 + (int)new_hheight);
+                if( crop_ratio > 0.0 ) {
+                    // we should compare to getCurrentPreviewAspectRatio() not getTargetRatio(), as the actual preview
+                    // aspect ratio may differ to the requested photo/video resolution's aspect ratio, in which case it's still useful
+                    // to display the crop guide
+                    double preview_aspect_ratio = preview.getCurrentPreviewAspectRatio();
+                    MainActivity.SystemOrientation system_orientation = main_activity.getSystemOrientation();
+                    boolean system_orientation_portrait = system_orientation == MainActivity.SystemOrientation.PORTRAIT;
+                    if( system_orientation_portrait ) {
+                        // crop ratios are always drawn as if in landscape
+                        crop_ratio = 1.0/crop_ratio;
+                        preview_aspect_ratio = 1.0/preview_aspect_ratio;
                     }
-                    else {
-                        // crop ratio is taller, so we have to crop left/right
-                        double new_hwidth = (((double)canvas.getHeight()) * crop_ratio) / 2.0f;
-                        left = (canvas.getWidth()/2 - (int)new_hwidth);
-                        right = (canvas.getWidth()/2 + (int)new_hwidth);
+                    if( Math.abs(preview_aspect_ratio - crop_ratio) > 1.0e-5 ) {
+                        /*if( MyDebug.LOG ) {
+                            Log.d(TAG, "crop_ratio: " + crop_ratio);
+                            Log.d(TAG, "preview_aspect_ratio: " + preview_aspect_ratio);
+                            Log.d(TAG, "canvas width: " + canvas.getWidth());
+                            Log.d(TAG, "canvas height: " + canvas.getHeight());
+                        }*/
+                        int left = 1, top = 1, right = canvas.getWidth()-1, bottom = canvas.getHeight()-1;
+                        if( crop_ratio > preview_aspect_ratio ) {
+                            // crop ratio is wider, so we have to crop top/bottom
+                            double new_hheight = ((double)canvas.getWidth()) / (2.0f*crop_ratio);
+                            top = (canvas.getHeight()/2 - (int)new_hheight);
+                            bottom = (canvas.getHeight()/2 + (int)new_hheight);
+                        }
+                        else {
+                            // crop ratio is taller, so we have to crop left/right
+                            double new_hwidth = (((double)canvas.getHeight()) * crop_ratio) / 2.0f;
+                            left = (canvas.getWidth()/2 - (int)new_hwidth);
+                            right = (canvas.getWidth()/2 + (int)new_hwidth);
+                        }
+                        canvas.drawRect(left, top, right, bottom, p);
                     }
-                    canvas.drawRect(left, top, right, bottom, p);
                 }
                 p.setStyle(Paint.Style.FILL); // reset
             }
