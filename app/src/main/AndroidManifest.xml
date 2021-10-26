@@ -37,6 +37,7 @@
             android:label="@string/app_name"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:clearTaskOnLaunch="true"
+            android:exported="true"
             >
             <!-- clearTaskOnLaunch set to true, so if user goes to gallery then returns to home, we return to the camera rather than remaining in gallery if user relaunches Open Camera -->
             <intent-filter>
@@ -92,7 +93,9 @@
         <receiver
             android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name"
-            android:name="MyWidgetProvider" >
+            android:name="MyWidgetProvider" 
+            android:exported="false"
+            >
             <intent-filter >
                  <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -107,7 +110,9 @@
         <receiver
             android:icon="@drawable/ic_launcher_take_photo"
             android:label="@string/take_photo"
-            android:name="MyWidgetProviderTakePhoto" >
+            android:name="MyWidgetProviderTakePhoto" 
+            android:exported="false"
+            >
             <intent-filter >
                  <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -120,7 +125,9 @@
             android:name="net.sourceforge.opencamera.MyTileService"
             android:icon="@drawable/ic_photo_camera_white_48dp"
             android:label="@string/camera"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="false"
+            >
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -130,7 +137,9 @@
             android:name="net.sourceforge.opencamera.MyTileServiceVideo"
             android:icon="@drawable/ic_videocam_white_48dp"
             android:label="@string/record_video"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="false"
+            >
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -140,7 +149,9 @@
             android:name="net.sourceforge.opencamera.MyTileServiceFrontCamera"
             android:icon="@drawable/ic_face_white_48dp"
             android:label="@string/selfie"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="false"
+            >
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
