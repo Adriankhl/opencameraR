@@ -40,12 +40,11 @@ public abstract class CameraController {
     public static final String ISO_DEFAULT = "auto";
     public static final long EXPOSURE_TIME_DEFAULT = 1000000000L/30; // note, responsibility of callers to check that this is within the valid min/max range
 
-    public static final int ISO_FOR_DARK = 1100;
     public static final int N_IMAGES_NR_DARK = 8;
     public static final int N_IMAGES_NR_DARK_LOW_LIGHT = 15;
 
     // for testing:
-    volatile int count_camera_parameters_exception;
+    public volatile int count_camera_parameters_exception;
     public volatile int count_precapture_timeout;
     public volatile boolean test_wait_capture_result; // whether to test delayed capture result in Camera2 API
     public volatile boolean test_release_during_photo; // for Camera2 API, will force takePictureAfterPrecapture() to call release() on UI thread
@@ -177,7 +176,7 @@ public abstract class CameraController {
         }
 
         public Size(int width, int height) {
-            this(width, height, new ArrayList<int[]>(), false);
+            this(width, height, new ArrayList<>(), false);
         }
 
         boolean supportsFrameRate(double fps) {
@@ -280,10 +279,13 @@ public abstract class CameraController {
 
     public static class Face {
         public final int score;
-        /* The has values from [-1000,-1000] (for top-left) to [1000,1000] (for bottom-right) for whatever is
+        /* The rect has values from [-1000,-1000] (for top-left) to [1000,1000] (for bottom-right) for whatever is
          * the current field of view (i.e., taking zoom into account).
          */
         public final Rect rect;
+        /** The temp rect is temporary storage that can be used by callers.
+         */
+        public final Rect temp = new Rect();
 
         Face(int score, Rect rect) {
             this.score = score;

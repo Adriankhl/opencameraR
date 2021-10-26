@@ -112,7 +112,7 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Noise level sensitivity for audio (loud noise) option</string>
     <string name="preference_save_location">Save location</string>
     <string name="preference_save_location_summary">Folder to save the photo/video files in</string>
-    <string name="preference_using_saf">Use Storage Access Framework</string>
+    <string name="preference_using_saf" translatable="false">Storage Access Framework</string> <!-- not translated as it's referenced in the privacy policy, and unclear how this term should be translated -->
     <string name="preference_using_saf_summary">Whether to use Storage Access Framework for saving photos and videos. This should be enabled to allow saving to external SD cards. On Android 10+ this option must be enabled if you want to save in a folder outside of DCIM.</string>
     <string name="preference_save_photo_prefix">Save photo prefix</string>
     <string name="preference_save_photo_prefix_summary">The prefix to use for the save filenames for photos</string>
@@ -138,7 +138,7 @@
     <string name="preference_show_zoom_slider_controls">Show zoom slider control</string>
     <string name="preference_show_zoom_slider_controls_summary">Show the slider for zoom control</string>
     <string name="preference_show_iso">Show ISO</string>
-    <string name="preference_show_iso_summary">Display the current ISO level. In flash auto mode, a flash symbol will also indicate when flash will fire. (Requires Camera2 API.)</string>
+    <string name="preference_show_iso_summary">Display the current ISO level. (Requires Camera2 API.)</string>
     <string name="preference_free_memory">Show free memory</string>
     <string name="preference_free_memory_summary">Display the remaining device storage space on screen</string>
     <string name="preference_show_angle">Show angle</string>
@@ -364,7 +364,7 @@
     <string name="preference_show_geo_direction_lines">Show compass direction lines</string>
     <string name="preference_show_geo_direction_lines_summary">Display compass direction lines</string>
     <string name="preference_video_subtitle">Video subtitles</string>
-    <string name="preference_video_subtitle_summary">Create a subtitles (.SRT) file storing date and time; and also GPS info if location/direction data is enabled\n%s</string>
+    <string name="preference_video_subtitle_summary">Create a subtitles (.SRT) file storing date and time; and also GPS info if location/direction data is enabled. (On Android 11+, this option requires More camera controls/Storage Access Framework to be enabled.)\n%s</string>
 
     <string name="duration_unlimited">Unlimited</string>
     <string name="duration_3s">3 seconds</string>
@@ -802,7 +802,7 @@
     <string name="preference_water_type_summary">For underwater housings, improves accuracy if correct water type is selected.</string>
     <string name="remote_connected">Remote connected</string>
 
-    <string name="preference_remote_type_kraken">Kraken Smart Housing</string>
+    <string name="preference_remote_type_kraken" translatable="false">Kraken</string>
 
     <string name="preference_stamp_geo_address">Use addresses</string>
     <!-- preference_stamp_geo_address_summary defined below -->
@@ -913,7 +913,7 @@
 
     <string name="intro_text">Touch to focus, and press the blue camera button to take photos.
         \n\nTo disable maximum screen brightness, see Settings/On screen GUI/\"Force maximum brightness\".
-        To save to SD cards on Android 5+, see Settings/More camera controls/\"Use Storage Access Framework\".
+        To save to SD cards on Android 5+, see Settings/More camera controls/\"Storage Access Framework\".
         For more help, click \"Online help\" from Settings.
     </string>
 
@@ -991,21 +991,35 @@
     <string name="preference_privacy_policy_summary" translatable="false">Tap to display privacy policy</string>
     <string name="preference_privacy_policy_online" translatable="false">Online privacy policy</string>
     <string name="preference_privacy_policy_text" translatable="false"> <!-- if changing this, remember to consider if the online privacy policy needs updating -->
-        Open Camera accesses camera sensor and microphone data to fulfil its purpose as a camera.
+        <!-- now interpreted as HTML so that we can have the mailto link, for the contact that's needed for Google Play policies! -->
+        <!-- be careful of rewording/removing bits, as some things here may be required for Google Play policies -->
+        Open Camera is developed by Mark Harman.
+        &lt;br/&gt;Open Camera accesses camera sensor and microphone data to fulfil its purpose as a camera.
         Microphone is also used for the optional \"Audio control\".
-        \nAccess to files is needed (at least for Android 9 and earlier) to save resultant files such as photos and videos to your device.
-        \nLocation permission is required for the optional geotagging features (for photos and videos,
+        &lt;br/&gt;Access to files is needed (at least for Android 9 and earlier) to save resultant files such as photos and videos to your device.
+        &lt;br/&gt;Location permission is requested in order to deliver the optional geotagging features (for photos and videos,
         including stamp and subtitles options).
         When relevant option(s) are enabled, your device location will be stored in photo/video/subtitle files.
-        Location permission is also required to connect to Bluetooth remote control devices.
-        \nSince Open Camera also uses operating system APIs, you should review relevant privacy policies
+        Location permission is also requested in order to connect to Bluetooth remote control devices.
+        Bluetooth permission is used to allow the optional feature to enable Bluetooth remote control devices.
+        &lt;br/&gt;Resultant data such as photos or videos can be shared with
+        other apps if you use the share option in Open Camera, or when Open Camera is called by
+        another app on your device, or when you use the Storage Access Framework option to save
+        to another app or service.
+        &lt;br/&gt;Data handling procedures, data retention and deletion policies: Open Camera
+        does not transmit personal or sensitive information to me.
+        &lt;br/&gt;Since Open Camera also uses operating system APIs, you should review relevant privacy policies
         such as for your device, manufacturer, operating system and/or Google accounts. For example:
-        \n*The optional voice control option uses the Android speech recognition service. When enabled,
+        &lt;br/&gt;*The optional voice control option uses the Android speech recognition service. When enabled,
         audio data is likely to be sent to remote servers by Android to perform speech recognition.
-        \n*The \"addresses\" option for photo stamp or video subtitles uses the Android Geocoder API.
-        When enabled, this requires that your device transmits location data across the Internet to a
+        This is subject to the Data Processing Addendum for Products where Google is a Data Processor,
+        located at https://privacy.google.com/businesses/gdprprocessorterms/ , as updated from time to time.
+        &lt;br/&gt;*The \"addresses\" option for photo stamp or video subtitles uses the Android Geocoder API.
+        When this option is enabled, in order to deliver this functionality the API transmits your device location data across the Internet to a
         third party (which may depend on what "backend services" are installed on your device).
-        \n*Apps/services such as cloud services on your device may auto-upload photos and videos that are saved on your device.
+        &lt;br/&gt;*Apps/services such as cloud services on your device may auto-upload photos and videos that are saved on your device.
+        &lt;br/&gt;If you have inquiries about my privacy policy, please contact me by email at
+        &lt;a href=\"mailto:mark.harman.apps@gmail.com?subject=Open%20Camera%20privacy%20policy\"&gt;mark.harman.apps@gmail.com&lt;/a&gt;.
     </string>
 
     <string name="speech_recognizer_extra_info" translatable="false">
@@ -1015,7 +1029,7 @@
 
     <string name="preference_screen_licences" translatable="false">Open Source licences</string>
     <string name="preference_licence_open_camera" translatable="false">Open Camera</string>
-    <string name="preference_licence_open_camera_text" translatable="false">Open Camera is © 2013–2020 Mark Harman, released under the GPL v3 or later. Tap here for full licence text and terms of service.</string>
+    <string name="preference_licence_open_camera_text" translatable="false">Open Camera is © 2013–2021 Mark Harman, released under the GPL v3 or later. Tap here for full licence text and terms of service.</string>
     <string name="preference_licence_androidx" translatable="false">AndroidX libraries</string>
     <string name="preference_licence_androidx_text" translatable="false">Open Camera uses the AndroidX/Jetpack libraries
         under the Apache license version 2.0. Tap here for full licence text.</string>
@@ -1033,20 +1047,14 @@
     <string name="whats_new_text" translatable="false">
         <small>[This dialog is shown when Open Camera is updated. You can disable it under
             Settings/On screen GUI/Show What\'s New dialog.]</small>
-        \n\n<b>v1.48.3:</b>\n
+        \n\n<b>v1.49:</b>\n
         <ul>
-            <li>Now supporting \"scoped storage\" on Android 10+. This means the following changes for devices with Android 10+:\n</li>
-            <li>- Saving outside of DCIM/ is no longer possible unless using the Storage Access Framework
-            option. If you had set up a custom save folder outside of DCIM/ and are on Android 10+,
-            it will be reset to the default DCIM/OpenCamera/ folder. If you want to continue saving
-            outside of DCIM/, you can enable
-            Settings/More camera controls/\"Use Storage Access Framework\" and choose a new folder.\n</li>
-            <li>- If using Video subtitles option, then the .SRT files will show up in gallery
-            applications, unless Settings/More camera controls/\"Use Storage Access Framework\" is
-            enabled.\n</li>
-            <li>HDR improvements for some specific scenes.\n</li>
-            <li>Seekbar now used for more settings.\n</li>
-            <li>Bug fixes.\n</li>
+            <li>Support for portrait and landscape system orientations.\n</li>
+            <li>Minor improvements for NR, DRO and HDR photo modes.\n</li>
+            <li>Video subtitles option now requires Settings/More camera controls/\"Storage Access Framework\" on Android 11, this is due to changes on Android 11.\n</li>
+            <li>Fixed manual white balance.\n</li>
+            <li>Fixes for Android 11.\n</li>
+            <li>Bug fixes and other improvements.\n</li>
         </ul>
     </string>
 </resources>

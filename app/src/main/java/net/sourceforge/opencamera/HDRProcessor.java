@@ -262,7 +262,7 @@ public class HDRProcessor {
                 Log.d(TAG, "parameter_B = " + parameter_B);
             }
 
-            if( MyDebug.LOG ) {
+            /*if( MyDebug.LOG ) {
                 // log samples to a CSV file
                 File file = new File(context.getExternalFilesDir(null).getPath() + "/net.sourceforge.opencamera.hdr_samples_" + id + ".csv");
                 if( file.exists() ) {
@@ -300,7 +300,7 @@ public class HDRProcessor {
                     }
                 }
                 MediaScannerConnection.scanFile(context, new String[] { file.getAbsolutePath() }, null, null);
-            }
+            }*/
         }
     }
 
@@ -1094,15 +1094,32 @@ public class HDRProcessor {
         }
     }
 
+    public static boolean sceneIsLowLight(int iso, long exposure_time) {
+        final int ISO_FOR_DARK = 1100;
+        // For Nexus 6, max reported ISO is 1196, so the limit for dark scenes shouldn't be more than this
+        // Nokia 8's max reported ISO is 1551
+        // Note that OnePlus 3T has max reported ISO of 800, but this is a device bug
+        // The addition of the iso*exposure_time helps behaviour on Galaxy S10e which uses ISO >= 1600
+        // far more often, even for non-dark scenes. Potentially we could drop the requirement for
+        // "iso >= ISO_FOR_DARK" and instead have iso*exposure_time >= 91 to 115, but we need the
+        // dedicated iso check for Nexus 6 (iso 1196 exposure time 1/12s should be dark) and
+        // Nokia 8 testAvg23 (iso 1044 exposure time 0.1s shouldn't be dark).
+        // We also assume dark for long exposure times (which in practice is probably set in
+        // manual mode) - since long exposure times will give lower ISOs (e.g., on Galaxy S10e)
+        // (also useful for cameras where max ISO isn't as high as ISO_FOR_DARK)
+        //return iso >= ISO_FOR_DARK;
+        return ( iso >= ISO_FOR_DARK && iso*exposure_time >= 69*1000000000L ) || exposure_time >= (1000000000L/5-10000L);
+    }
+
     private int cached_avg_sample_size = 1;
 
     /** As part of the noise reduction process, the caller should scale the input images down by the factor returned
      *  by this method. This both provides a spatial smoothing, as well as improving performance and memory usage.
      */
-    public int getAvgSampleSize(int capture_result_iso) {
+    public int getAvgSampleSize(int capture_result_iso, long capture_result_exposure_tim) {
         // If changing this, may also want to change the radius of the spatial filter in avg_brighten.rs ?
         //this.cached_avg_sample_size = (n_images>=8) ? 2 : 1;
-        this.cached_avg_sample_size = (capture_result_iso >= 1100) ? 2 : 1;
+        this.cached_avg_sample_size = sceneIsLowLight(capture_result_iso, capture_result_exposure_tim) ? 2 : 1;
         //this.cached_avg_sample_size = 1;
         //this.cached_avg_sample_size = 2;
         if( MyDebug.LOG )
@@ -1118,11 +1135,13 @@ public class HDRProcessor {
         public Allocation allocation_out;
         Bitmap bitmap_avg_align;
         Allocation allocation_avg_align;
+        Allocation allocation_orig; // saved version of the first allocation
 
-        AvgData(Allocation allocation_out, Bitmap bitmap_avg_align, Allocation allocation_avg_align) {
+        AvgData(Allocation allocation_out, Bitmap bitmap_avg_align, Allocation allocation_avg_align, Allocation allocation_orig) {
             this.allocation_out = allocation_out;
             this.bitmap_avg_align = bitmap_avg_align;
             this.allocation_avg_align = allocation_avg_align;
+            this.allocation_orig = allocation_orig;
         }
 
         public void destroy() {
@@ -1140,6 +1159,10 @@ public class HDRProcessor {
                 allocation_avg_align.destroy();
                 allocation_avg_align = null;
             }
+            if( allocation_orig != null ) {
+                allocation_orig.destroy();
+                allocation_orig = null;
+            }
         }
     }
 
@@ -1155,10 +1178,11 @@ public class HDRProcessor {
      * @param bitmap_new     The other input image. The bitmap is recycled.
      * @param avg_factor     The weighting factor for bitmap_avg.
      * @param iso            The ISO used to take the photos.
+     * @param exposure_time  The exposure time used to take the photos.
      * @param zoom_factor    The digital zoom factor used to take the photos.
      */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public AvgData processAvg(Bitmap bitmap_avg, Bitmap bitmap_new, float avg_factor, int iso, float zoom_factor) throws HDRProcessorException {
+    public AvgData processAvg(Bitmap bitmap_avg, Bitmap bitmap_new, float avg_factor, int iso, long exposure_time, float zoom_factor) throws HDRProcessorException {
         if( MyDebug.LOG ) {
             Log.d(TAG, "processAvg");
             Log.d(TAG, "avg_factor: " + avg_factor);
@@ -1213,7 +1237,7 @@ public class HDRProcessor {
 		if( MyDebug.LOG )
 			Log.d(TAG, "median: " + luminanceInfo.median_value);*/
 
-        AvgData avg_data = processAvgCore(null, null, bitmap_avg, bitmap_new, width, height, avg_factor, iso, zoom_factor, null, null, time_s);
+        AvgData avg_data = processAvgCore(null, null, bitmap_avg, bitmap_new, width, height, avg_factor, iso, exposure_time, zoom_factor, null, null, null, time_s);
 
         //allocation_avg.copyTo(bitmap_avg);
 
@@ -1230,10 +1254,11 @@ public class HDRProcessor {
      * @param bitmap_new     The new input image. The bitmap is recycled.
      * @param avg_factor     The weighting factor for bitmap_avg.
      * @param iso            The ISO used to take the photos.
+     * @param exposure_time  The exposure time used to take the photos.
      * @param zoom_factor    The digital zoom factor used to take the photos.
      */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public void updateAvg(AvgData avg_data, int width, int height, Bitmap bitmap_new, float avg_factor, int iso, float zoom_factor) throws HDRProcessorException {
+    public void updateAvg(AvgData avg_data, int width, int height, Bitmap bitmap_new, float avg_factor, int iso, long exposure_time, float zoom_factor) throws HDRProcessorException {
         if( MyDebug.LOG ) {
             Log.d(TAG, "updateAvg");
             Log.d(TAG, "avg_factor: " + avg_factor);
@@ -1253,7 +1278,7 @@ public class HDRProcessor {
 		if( MyDebug.LOG )
 			Log.d(TAG, "### time after creating allocations from bitmaps: " + (System.currentTimeMillis() - time_s));*/
 
-        processAvgCore(avg_data.allocation_out, avg_data.allocation_out, null, bitmap_new, width, height, avg_factor, iso, zoom_factor, avg_data.allocation_avg_align, avg_data.bitmap_avg_align, time_s);
+        processAvgCore(avg_data.allocation_out, avg_data.allocation_out, null, bitmap_new, width, height, avg_factor, iso, exposure_time, zoom_factor, avg_data.allocation_avg_align, avg_data.bitmap_avg_align, avg_data.allocation_orig, time_s);
 
         if( MyDebug.LOG )
             Log.d(TAG, "### time for updateAvg: " + (System.currentTimeMillis() - time_s));
@@ -1275,10 +1300,12 @@ public class HDRProcessor {
      * @param allocation_avg_align If non-null, use this allocation for alignment for averaged image.
      * @param bitmap_avg_align Should be supplied if allocation_avg_align is non-null, and stores
      *                         the bitmap corresponding to the allocation_avg_align.
+     * @param allocation_orig
+     *                       If non-null, this is an allocation representing the first image.
      * @param time_s         Time, for debugging.
      */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    private AvgData processAvgCore(Allocation allocation_out, Allocation allocation_avg, Bitmap bitmap_avg, Bitmap bitmap_new, int width, int height, float avg_factor, int iso, float zoom_factor, Allocation allocation_avg_align, Bitmap bitmap_avg_align, long time_s) {
+    private AvgData processAvgCore(Allocation allocation_out, Allocation allocation_avg, Bitmap bitmap_avg, Bitmap bitmap_new, int width, int height, float avg_factor, int iso, long exposure_time, float zoom_factor, Allocation allocation_avg_align, Bitmap bitmap_avg_align, Allocation allocation_orig, long time_s) {
         if( MyDebug.LOG ) {
             Log.d(TAG, "processAvgCore");
             Log.d(TAG, "iso: " + iso);
@@ -1312,7 +1339,7 @@ public class HDRProcessor {
             //final int scale_align_size = Math.max(4 / this.cached_avg_sample_size, 1);
             final int scale_align_size = (zoom_factor > 3.9f) ?
                     1 :
-                    Math.max(4 / this.getAvgSampleSize(iso), 1);
+                    Math.max(4 / this.getAvgSampleSize(iso, exposure_time), 1);
             if( MyDebug.LOG )
                 Log.d(TAG, "scale_align_size: " + scale_align_size);
             boolean crop_to_centre = true;
@@ -1380,7 +1407,7 @@ public class HDRProcessor {
 
             // misalignment more likely in "dark" images with more images and/or longer exposures
             // using max_align_scale=2 needed to prevent misalignment in testAvg51; also helps testAvg14
-            boolean wider = iso >= 1100;
+            boolean wider = sceneIsLowLight(iso, exposure_time);
             autoAlignment(offsets_x, offsets_y, allocations, alignment_width, alignment_height, align_bitmaps, 0, true, null, false, floating_point_align, 1, crop_to_centre, wider ? 2 : 1, full_alignment_width, full_alignment_height, time_s);
 
 			/*
@@ -1473,7 +1500,18 @@ public class HDRProcessor {
         }
 
         // set allocations
-        //processAvgScript.set_bitmap_avg(allocation_avg);
+
+        if( allocation_orig == null ) {
+            // allocation_orig should only be null for the first pair of images, which should be when we
+            // have the avg image not in floating point format
+            if( floating_point ) {
+                throw new RuntimeException("is in floating point mode, but no allocation_orig supplied");
+            }
+            if( MyDebug.LOG )
+                Log.d(TAG, "create allocation_avg");
+            allocation_orig = Allocation.createFromBitmap(rs, bitmap_avg);
+        }
+        processAvgScript.set_bitmap_orig(allocation_orig);
         processAvgScript.set_bitmap_new(allocation_new);
 
         // set offsets
@@ -1484,6 +1522,7 @@ public class HDRProcessor {
 
         processAvgScript.set_avg_factor(avg_factor);
 
+        // higher wiener_C (and higher wiener_cutoff_factor) means more averaging (but more risk of ghosting)
         // if changing this, pay close attention to tests testAvg6, testAvg8, testAvg17, testAvg23
         float limited_iso = Math.min(iso, 400);
         float wiener_cutoff_factor = 1.0f;
@@ -1566,7 +1605,7 @@ public class HDRProcessor {
 
         if( MyDebug.LOG )
             Log.d(TAG, "### time for processAvgCore: " + (System.currentTimeMillis() - time_s));
-        return new AvgData(allocation_out, bitmap_avg_align, allocation_avg_align);
+        return new AvgData(allocation_out, bitmap_avg_align, allocation_avg_align, allocation_orig);
     }
 
     /** Combines multiple images by averaging them.
@@ -2770,6 +2809,26 @@ public class HDRProcessor {
     }
 
     private static int getBrightnessTarget(int brightness, float max_gain_factor, int ideal_brightness) {
+        if( brightness > 0 ) {
+            // At least try to achieve a minimum brightness.
+            // Increasing max_gain_factor helps the following tests significantly: testAvg12, testAvg14, testAvg15,
+            // testAvg28, testAvg31, testAvg32.
+            // Other tests also helped to a lesser degree are: testAvg1, testAvg5, testAvg6, testAvg40, testAvg41,
+            // testAvg42, testHDR1, testHDR1_exp5, testHDR11 (DRO example), testHDR20 (DRO example), testHDR28 (DRO example),
+            // testHDR48, testHDR49, testHDR49_exp5, testHDR53.
+            // We need to be careful of increasing max_gain_factor too high in some cases - for AvgTests, see comment in
+            // computeBrightenFactors() for examples of tests that would be affected.
+
+            final float min_brightness_c = 42.0f;
+            float min_max_gain_factor = min_brightness_c / brightness;
+            max_gain_factor = Math.max(max_gain_factor, min_max_gain_factor);
+
+            // still set some maximum max_gain_factor - highest max_gain_factor in tests is
+            // testAvg14 with max_gain_factor=14.0, which benefits from this, but some parts starting
+            // to look overblown
+            max_gain_factor = Math.min(max_gain_factor, 15.0f);
+        }
+
         if( brightness <= 0 )
             brightness = 1;
         if( MyDebug.LOG ) {
@@ -2798,11 +2857,13 @@ public class HDRProcessor {
     /** Computes various factors used in the avg_brighten.rs script.
      */
     public static BrightenFactors computeBrightenFactors(boolean has_iso_exposure, int iso, long exposure_time, int brightness, int max_brightness) {
-        // for outdoor/bright images, don't want max_gain_factor 4, otherwise we lose variation in grass colour in testAvg42
+        // For outdoor/bright images, don't want max_gain_factor 4, otherwise we lose variation in grass colour in testAvg42
         // and having max_gain_factor at 1.5 prevents testAvg43, testAvg44 being too bright and oversaturated
         // for other images, we also don't want max_gain_factor 4, as makes cases too bright and overblown if it would
         // take the max_possible_value over 255. Especially testAvg46, but also testAvg25, testAvg31, testAvg38,
-        // testAvg39
+        // testAvg39.
+        // Note however that we now do allow increasing the max_gain_factor in getBrightnessTarget(), depending on
+        // brightness levels.
         float max_gain_factor = 1.5f;
         int ideal_brightness = 119;
         if( has_iso_exposure && iso < 1100 && exposure_time < 1000000000L/59 ) {
@@ -2813,6 +2874,9 @@ public class HDRProcessor {
         int brightness_target = getBrightnessTarget(brightness, max_gain_factor, ideal_brightness);
         //int max_target = Math.min(255, (int)((max_brightness*brightness_target)/(float)brightness + 0.5f) );
         if( MyDebug.LOG ) {
+            Log.d(TAG, "brightness: " + brightness);
+            Log.d(TAG, "max_brightness: " + max_brightness);
+            Log.d(TAG, "ideal_brightness: " + ideal_brightness);
             Log.d(TAG, "brightness target: " + brightness_target);
             //Log.d(TAG, "max target: " + max_target);
         }

@@ -112,7 +112,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">音訊（大的聲音）選項的聲音等級敏感度</string>
     <string name="preference_save_location">儲存位置</string>
     <string name="preference_save_location_summary">用來儲存照片/影片檔的資料夾</string>
-    <string name="preference_using_saf">使用 Storage Access Framework</string>
     <string name="preference_using_saf_summary">是否使用 Storage Access Framework 來儲存照片和影片。這個選項應該被啟用來允許儲存到外部 SD 卡。</string>
     <string name="preference_save_photo_prefix">照片檔名前綴</string>
     <string name="preference_save_photo_prefix_summary">用於儲存照片檔名的前置字串</string>
@@ -138,7 +137,7 @@
     <string name="preference_show_zoom_slider_controls">顯示縮放滑桿控制</string>
     <string name="preference_show_zoom_slider_controls_summary">顯示縮放控制的滑桿</string>
     <string name="preference_show_iso">顯示 ISO</string>
-    <string name="preference_show_iso_summary">顯示目前的 ISO 等級。在自動閃光模式，閃光符號也會指示閃光燈何時閃光。（需要 Camera2 API。）</string>
+    <string name="preference_show_iso_summary">顯示目前的 ISO 等級。（需要 Camera2 API。）</string>
     <string name="preference_free_memory">顯示可用記憶體</string>
     <string name="preference_free_memory_summary">在螢幕上顯示剩餘的裝置儲存空間</string>
     <string name="preference_show_angle">顯示角度</string>
@@ -303,7 +302,6 @@
     <string name="no_permission">權限不可用</string>
     <string name="permission_rationale_title">需要權限</string>
     <string name="permission_rationale_camera">需要相機權限來啟用相機</string>
-    <string name="permission_rationale_storage">需要讀/寫儲存空間權限來儲存照片</string>
     <string name="permission_rationale_record_audio">錄製具有音訊的影片和語音控制需要麥克風權限</string>
     <string name="permission_rationale_location">地理標記需要位置權限（在照片和影片中儲存位置資訊）。
         連線到藍牙低功耗遠端控制裝置也需要位置權限。</string>
@@ -800,8 +798,6 @@
     <string name="preference_water_type_summary">使用水下防水盒時，如果選擇正確的水的類型，可以提高拍攝的準確性。</string>
     <string name="remote_connected">遠端已連線</string>
 
-    <string name="preference_remote_type_kraken">Kraken Smart Housing</string>
-
     <string name="preference_stamp_geo_address">使用地址</string>
     <!-- preference_stamp_geo_address_summary defined below -->
     <string name="preference_stamp_geo_address_both">可以的話，除了 GPS 座標之外也顯示地址</string>
@@ -911,7 +907,7 @@
 
     <string name="intro_text">點擊以對焦，按下藍色相機按鈕來拍照。
         \n\n要停用最大螢幕亮度，請到設定/螢幕 GUI/「強制最大亮度」。
-        要在 Android 5+ 儲存到 SD 卡，請到設定/更多相機控制/「使用 Storage Access Framework」。
+        要在 Android 5+ 儲存到 SD 卡，請到設定/更多相機控制/Storage Access Framework」。
         請從設定點選「線上說明」取得更多說明。</string>
 
     <string name="preference_select_remote">選擇遠端裝置</string>

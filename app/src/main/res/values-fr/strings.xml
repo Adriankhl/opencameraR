@@ -110,7 +110,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Niveau de la sensibilité sonore pour l\'option contrôle audio (bruit fort)</string>
     <string name="preference_save_location">Dossier de stockage</string>
     <string name="preference_save_location_summary">Dossier où sont stockés les fichiers photo/vidéo</string>
-    <string name="preference_using_saf">Utilisation «\u00A0Storage Access Framework\u00A0»</string>
     <string name="preference_using_saf_summary">Utilise le Storage Access Framework pour enregistrer les photos et vidéos</string>
     <string name="preference_save_photo_prefix">Préfixe du nom de photo</string>
     <string name="preference_save_photo_prefix_summary">Le préfixe est utilisé pour le nom de fichier des photos</string>

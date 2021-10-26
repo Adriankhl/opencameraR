@@ -3,6 +3,7 @@ package net.sourceforge.opencamera.preview;
 import java.util.Date;
 import java.util.List;
 
+import android.app.Activity;
 import android.graphics.Canvas;
 import android.location.Location;
 import android.net.Uri;
@@ -189,11 +190,6 @@ public abstract class BasicApplicationInterface implements ApplicationInterface 
     }
 
     @Override
-    public String getPreviewRotationPref() {
-        return "0";
-    }
-
-    @Override
     public String getLockOrientationPref() {
         return "none";
     }
@@ -286,6 +282,12 @@ public abstract class BasicApplicationInterface implements ApplicationInterface 
     @Override
     public boolean imageQueueWouldBlock(int n_raw, int n_jpegs) {
         return false;
+    }
+
+    @Override
+    public int getDisplayRotation() {
+        Activity activity = (Activity)this.getContext();
+        return activity.getWindowManager().getDefaultDisplay().getRotation();
     }
 
     @Override
@@ -509,6 +511,10 @@ public abstract class BasicApplicationInterface implements ApplicationInterface 
     @Override
     public void multitouchZoom(int new_zoom) {
 
+    }
+
+    @Override
+    public void requestTakePhoto() {
     }
 
     @Override

@@ -9,6 +9,7 @@ copy %src%\.gitignore %dst%
 copy %src%\build.gradle %dst%
 copy %src%\gradlew %dst%
 copy %src%\gradlew.bat %dst%
+copy %src%\gradle.properties %dst%
 copy %src%\makesrcarchive.bat %dst%
 copy %src%\opencamera_source.txt %dst%
 copy %src%\gpl-3.0.txt %dst%

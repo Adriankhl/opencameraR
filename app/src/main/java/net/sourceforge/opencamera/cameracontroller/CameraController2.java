@@ -1,5 +1,6 @@
 package net.sourceforge.opencamera.cameracontroller;
 
+import net.sourceforge.opencamera.HDRProcessor;
 import net.sourceforge.opencamera.MyDebug;
 
 import java.nio.ByteBuffer;
@@ -29,6 +30,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.DngCreator;
 import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.Capability;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.RggbChannelVector;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -65,14 +67,17 @@ public class CameraController2 extends CameraController {
     private CameraDevice camera;
     private final String cameraIdS;
 
+    private final boolean is_oneplus;
     private final boolean is_samsung;
     private final boolean is_samsung_s7; // Galaxy S7 or Galaxy S7 Edge
+    private final boolean is_samsung_galaxy_s;
 
     private CameraCharacteristics characteristics;
     // cached characteristics (use this for values that need to be frequently accessed, e.g., per frame, to improve performance);
     private int characteristics_sensor_orientation;
     private Facing characteristics_facing;
 
+    // camera features that we save (either to avoid repeatedly accessing, or we do our own modification)
     private List<Integer> zoom_ratios;
     private int current_zoom_value;
     private boolean supports_face_detect_mode_simple;
@@ -81,6 +86,9 @@ public class CameraController2 extends CameraController {
     private boolean supports_photo_video_recording;
     private boolean supports_white_balance_temperature;
     private String initial_focus_mode; // if non-null, focus mode to use if not set by Preview (rather than relying on the Builder template's default, which can be one that isn't supported, at least on Android emulator with its LIMITED camera!)
+    private boolean supports_exposure_time;
+    private long min_exposure_time;
+    private long max_exposure_time;
 
     private final static int tonemap_log_max_curve_points_c = 64;
     private final static float [] jtvideo_values_base = new float[] {
@@ -263,8 +271,15 @@ public class CameraController2 extends CameraController {
     /*private boolean capture_result_has_focus_distance;
     private float capture_result_focus_distance_min;
     private float capture_result_focus_distance_max;*/
-    private final static long max_preview_exposure_time_c = 1000000000L/12;
-    
+    /** Even if using long exposure, we want to set a maximum for the preview to avoid very low
+     *  frame rates.
+     *  Originally this was 1/12s, but I think we can get away with 1/5s - for this range, having
+     *  a WYSIWYG preview is probably still better than the reduced framerate. Also as a side-benefit,
+     *  it reduces the impact of the Samsung Galaxy Android 11 bug where manual exposure is ignored if
+     *  different to the preview.
+     */
+    private final static long max_preview_exposure_time_c = 1000000000L/5;
+
     private enum RequestTagType {
         CAPTURE, // request is either for a regular non-burst capture, or the last of a burst capture sequence
         CAPTURE_BURST_IN_PROGRESS // request is for a burst capture, but isn't the last of the burst capture sequence
@@ -535,7 +550,7 @@ public class CameraController2 extends CameraController {
                 if( MyDebug.LOG )
                     Log.d(TAG, "setting white balance temperature: " + white_balance_temperature);
                 // manual white balance
-                RggbChannelVector rggbChannelVector = convertTemperatureToRggb(white_balance_temperature);
+                RggbChannelVector rggbChannelVector = convertTemperatureToRggbVector(white_balance_temperature);
                 builder.set(CaptureRequest.COLOR_CORRECTION_MODE, CameraMetadata.COLOR_CORRECTION_MODE_TRANSFORM_MATRIX);
                 builder.set(CaptureRequest.COLOR_CORRECTION_GAINS, rggbChannelVector);
                 changed = true;
@@ -1136,9 +1151,14 @@ public class CameraController2 extends CameraController {
         // n.b., if we add more methods, remember to update setupBuilder() above!
     }
 
+    private static RggbChannelVector convertTemperatureToRggbVector(int temperature_kelvin) {
+        float [] rggb = convertTemperatureToRggb(temperature_kelvin);
+        return new RggbChannelVector(rggb[0], rggb[1], rggb[2], rggb[3]);
+    }
+
     /** Converts a white balance temperature to red, green even, green odd and blue components.
      */
-    private RggbChannelVector convertTemperatureToRggb(int temperature_kelvin) {
+    public static float [] convertTemperatureToRggb(int temperature_kelvin) {
         float temperature = temperature_kelvin / 100.0f;
         float red;
         float green;
@@ -1191,63 +1211,90 @@ public class CameraController2 extends CameraController {
             Log.d(TAG, "green: " + green);
             Log.d(TAG, "blue: " + blue);
         }
-        return new RggbChannelVector((red/255)*2,(green/255),(green/255),(blue/255)*2);
+
+        red = (red/255.0f);
+        green = (green/255.0f);
+        blue = (blue/255.0f);
+
+        red = RGBtoGain(red);
+        green = RGBtoGain(green);
+        blue = RGBtoGain(blue);
+        if( MyDebug.LOG ) {
+            Log.d(TAG, "red gain: " + red);
+            Log.d(TAG, "green gain: " + green);
+            Log.d(TAG, "blue gain: " + blue);
+        }
+
+        return new float[]{red,green/2,green/2,blue};
+    }
+
+    private static float RGBtoGain(float value) {
+        final float max_gain_c = 10.0f;
+        if( value < 1.0e-5f ) {
+            return max_gain_c;
+        }
+        value = 1.0f/value;
+        value = Math.min(max_gain_c, value);
+        return value;
+    }
+
+    public static int convertRggbVectorToTemperature(RggbChannelVector rggbChannelVector) {
+        return convertRggbToTemperature(new float[]{rggbChannelVector.getRed(), rggbChannelVector.getGreenEven(), rggbChannelVector.getGreenOdd(), rggbChannelVector.getBlue()});
     }
 
     /** Converts a red, green even, green odd and blue components to a white balance temperature.
      *  Note that this is not necessarily an inverse of convertTemperatureToRggb, since many rggb
      *  values can map to the same temperature.
      */
-    private int convertRggbToTemperature(RggbChannelVector rggbChannelVector) {
+    public static int convertRggbToTemperature(float [] rggb) {
         if( MyDebug.LOG ) {
             Log.d(TAG, "temperature:");
-            Log.d(TAG, "    red: " + rggbChannelVector.getRed());
-            Log.d(TAG, "    green even: " + rggbChannelVector.getGreenEven());
-            Log.d(TAG, "    green odd: " + rggbChannelVector.getGreenOdd());
-            Log.d(TAG, "    blue: " + rggbChannelVector.getBlue());
+            Log.d(TAG, "    red: " + rggb[0]);
+            Log.d(TAG, "    green even: " + rggb[1]);
+            Log.d(TAG, "    green odd: " + rggb[2]);
+            Log.d(TAG, "    blue: " + rggb[3]);
         }
-        float red = rggbChannelVector.getRed();
-        float green_even = rggbChannelVector.getGreenEven();
-        float green_odd = rggbChannelVector.getGreenOdd();
-        float blue = rggbChannelVector.getBlue();
-        float green = 0.5f*(green_even + green_odd);
+        float red = rggb[0];
+        float green_even = rggb[1];
+        float green_odd = rggb[2];
+        float blue = rggb[3];
+        float green = (green_even + green_odd);
 
-        float max = Math.max(red, blue);
-        if( green > max )
-            green = max;
+        red = GaintoRGB(red);
+        green = GaintoRGB(green);
+        blue = GaintoRGB(blue);
 
-        float scale = 255.0f/max;
-        red *= scale;
-        green *= scale;
-        blue *= scale;
+        red *= 255.0f;
+        green *= 255.0f;
+        blue *= 255.0f;
 
-        int red_i = (int)red;
-        int green_i = (int)green;
-        int blue_i = (int)blue;
+        int red_i = (int)(red+0.5f);
+        int green_i = (int)(green+0.5f);
+        int blue_i = (int)(blue+0.5f);
         int temperature;
         if( red_i == blue_i ) {
             temperature = 6600;
         }
         else if( red_i > blue_i ) {
             // temperature <= 6600
-            int t_g = (int)( 100 * Math.exp((green_i + 161.1195681661) / 99.4708025861) );
+            float t_g = (float)( 100 * Math.exp((green + 161.1195681661) / 99.4708025861) );
             if( blue_i == 0 ) {
-                temperature = t_g;
+                temperature = (int)(t_g+0.5f);
             }
             else {
-                int t_b = (int)( 100 * (Math.exp((blue_i + 305.0447927307) / 138.5177312231) + 10) );
-                temperature = (t_g + t_b)/2;
+                float t_b = (float)( 100 * (Math.exp((blue + 305.0447927307) / 138.5177312231) + 10) );
+                temperature = (int)((t_g + t_b)/2+0.5f);
             }
         }
         else {
-            // temperature >= 6700
+            // temperature >= 6600
             if( red_i <= 1 || green_i <= 1 ) {
                 temperature = max_white_balance_temperature_c;
             }
             else {
-                int t_r = (int)(100 * (Math.pow(red_i / 329.698727446, 1.0 / -0.1332047592) + 60.0));
-                int t_g = (int)(100 * (Math.pow(green_i / 288.1221695283, 1.0 / -0.0755148492) + 60.0));
-                temperature = (t_r + t_g) / 2;
+                float t_r = (float)(100 * (Math.pow(red / 329.698727446, 1.0 / -0.1332047592) + 60.0));
+                float t_g = (float)(100 * (Math.pow(green / 288.1221695283, 1.0 / -0.0755148492) + 60.0));
+                temperature = (int)((t_r + t_g)/2+0.5f);
             }
         }
         temperature = Math.max(temperature, min_white_balance_temperature_c);
@@ -1256,6 +1303,14 @@ public class CameraController2 extends CameraController {
             Log.d(TAG, "    temperature: " + temperature);
         }
         return temperature;
+    }
+
+    private static float GaintoRGB(float value) {
+        if( value <= 1.0f ) {
+            return 1.0f;
+        }
+        value = 1.0f/value;
+        return value;
     }
 
     private class OnImageAvailableListener implements ImageReader.OnImageAvailableListener {
@@ -1757,11 +1812,15 @@ public class CameraController2 extends CameraController {
         this.preview_error_cb = preview_error_cb;
         this.camera_error_cb = camera_error_cb;
 
+        this.is_oneplus = Build.MANUFACTURER.toLowerCase(Locale.US).contains("oneplus");
         this.is_samsung = Build.MANUFACTURER.toLowerCase(Locale.US).contains("samsung");
         this.is_samsung_s7 = Build.MODEL.toLowerCase(Locale.US).contains("sm-g93");
+        this.is_samsung_galaxy_s = is_samsung && Build.MODEL.toLowerCase(Locale.US).contains("sm-g");
         if( MyDebug.LOG ) {
+            Log.d(TAG, "is_oneplus: " + is_oneplus);
             Log.d(TAG, "is_samsung: " + is_samsung);
             Log.d(TAG, "is_samsung_s7: " + is_samsung_s7);
+            Log.d(TAG, "is_samsung_galaxy_s: " + is_samsung_galaxy_s);
         }
 
         thread = new HandlerThread("CameraBackground"); 
@@ -2264,6 +2323,32 @@ public class CameraController2 extends CameraController {
                 for(int i=0;i<nr_modes.length;i++) {
                     Log.d(TAG, "    " + i + ": " + nr_modes[i]);
                 }
+
+            }
+
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ) {
+                Capability [] capabilities = characteristics.get(CameraCharacteristics.CONTROL_AVAILABLE_EXTENDED_SCENE_MODE_CAPABILITIES);
+                Log.d(TAG, "capabilities:");
+                if( capabilities == null ) {
+                    Log.d(TAG, "    none");
+                }
+                else {
+                    for(int i=0;i<capabilities.length;i++) {
+                        Log.d(TAG, "    " + i + ": " + capabilities[i].getMode());
+                    }
+                }
+            }
+
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ) {
+                Range<Float> zoom_ratio_range = characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+                Log.d(TAG, "zoom_ratio_range:");
+                if( zoom_ratio_range == null ) {
+                    Log.d(TAG, "    not supported");
+                }
+                else {
+                    Log.d(TAG, "    min zoom ratio: " + zoom_ratio_range.getLower());
+                    Log.d(TAG, "    max zoom ratio: " + zoom_ratio_range.getUpper());
+                }
             }
         }
 
@@ -2728,9 +2813,22 @@ public class CameraController2 extends CameraController {
                     camera_features.max_expo_bracketing_n_images = max_expo_bracketing_n_images;
                     camera_features.min_exposure_time = exposure_time_range.getLower();
                     camera_features.max_exposure_time = exposure_time_range.getUpper();
+                    if( is_samsung_galaxy_s && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
+                        // seems we can get away with longer exposure on some devices (e.g., Galaxy S10e claims only max of 0.1s, but works with 1/3s)
+                        // but Android 11 on Samsung devices also introduces a bug where manual exposure gets ignored if different to the preview,
+                        // and since the max preview rate is limited to 1/5s (see max_preview_exposure_time_c), there's no point
+                        // going above this!
+                        if( MyDebug.LOG )
+                            Log.d(TAG, "boost max_exposure_time, was: " + max_exposure_time);
+                        camera_features.max_exposure_time = Math.max(camera_features.max_exposure_time, 1000000000L/5);
+                    }
                 }
             }
         }
+        // save to local fields:
+        this.supports_exposure_time = camera_features.supports_exposure_time;
+        this.min_exposure_time = camera_features.min_exposure_time;
+        this.max_exposure_time = camera_features.max_exposure_time;
 
         Range<Integer> exposure_range = characteristics.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE);
         camera_features.min_exposure = exposure_range.getLower();
@@ -3878,17 +3976,24 @@ public class CameraController2 extends CameraController {
             return 0; // total burst size is unknown
         return n_burst_total;
     }
+
     @Override
     public void setOptimiseAEForDRO(boolean optimise_ae_for_dro) {
         if( MyDebug.LOG )
             Log.d(TAG, "setOptimiseAEForDRO: " + optimise_ae_for_dro);
-        boolean is_oneplus = Build.MANUFACTURER.toLowerCase(Locale.US).contains("oneplus");
         if( is_oneplus ) {
-            // OnePlus 3T has preview corruption / camera freezing problems when using manual shutter speeds
-            // So best not to modify auto-exposure for DRO
+            // OnePlus 3T has preview corruption / camera freezing problems when using manual shutter speeds.
+            // So best not to modify auto-exposure for DRO.
             this.optimise_ae_for_dro = false;
             if( MyDebug.LOG )
                 Log.d(TAG, "don't modify ae for OnePlus");
+        }
+        else if( is_samsung ) {
+            // At least some Samsung devices (e.g., Galaxy S10e on Android 11) give better results in auto mode
+            // than manual mode, so we're better off staying in auto mode.
+            this.optimise_ae_for_dro = false;
+            if( MyDebug.LOG )
+                Log.d(TAG, "don't modify ae for Samsung");
         }
         else {
             this.optimise_ae_for_dro = optimise_ae_for_dro;
@@ -5729,14 +5834,11 @@ public class CameraController2 extends CameraController {
     /** Sets up a builder to have manual exposure time, if supported. The exposure time will be
      *  clamped to the allowed values, and manual ISO will also be set based on the current ISO value.
      */
-    private void setManualExposureTime(CaptureRequest.Builder stillBuilder, long exposure_time) {
+    private void setManualExposureTime(CaptureRequest.Builder stillBuilder, long exposure_time, boolean set_iso, int new_iso) {
         if( MyDebug.LOG )
             Log.d(TAG, "setManualExposureTime: " + exposure_time);
-        Range<Long> exposure_time_range = characteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE); // may be null on some devices
         Range<Integer> iso_range = characteristics.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE); // may be null on some devices
-        if( exposure_time_range != null && iso_range != null ) {
-            long min_exposure_time = exposure_time_range.getLower();
-            long max_exposure_time = exposure_time_range.getUpper();
+        if( this.supports_exposure_time && iso_range != null ) {
             if( exposure_time < min_exposure_time )
                 exposure_time = min_exposure_time;
             if( exposure_time > max_exposure_time )
@@ -5748,12 +5850,17 @@ public class CameraController2 extends CameraController {
             {
                 // set ISO
                 int iso = 800;
-                if( capture_result_has_iso )
+                if( set_iso )
+                    iso = new_iso;
+                else if( capture_result_has_iso )
                     iso = capture_result_iso;
                 // see https://sourceforge.net/p/opencamera/tickets/321/ - some devices may have auto ISO that's
                 // outside of the allowed manual iso range!
                 iso = Math.max(iso, iso_range.getLower());
                 iso = Math.min(iso, iso_range.getUpper());
+                if( MyDebug.LOG ) {
+                    Log.d(TAG, "iso: " + iso);
+                }
                 stillBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, iso );
             }
             if( capture_result_has_frame_duration  )
@@ -5836,7 +5943,7 @@ public class CameraController2 extends CameraController {
                             Log.d(TAG, "exposure_time_scale: " + exposure_time_scale);
                         }
                         modified_from_camera_settings = true;
-                        setManualExposureTime(stillBuilder, exposure_time);
+                        setManualExposureTime(stillBuilder, exposure_time, false, 0);
                     }
                 }
                 //stillBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
@@ -6120,14 +6227,7 @@ public class CameraController2 extends CameraController {
                     base_exposure_time = capture_result_exposure_time;
 
                 int n_half_images = expo_bracketing_n_images/2;
-                long min_exposure_time = base_exposure_time;
-                long max_exposure_time = base_exposure_time;
                 final double scale = Math.pow(2.0, expo_bracketing_stops/(double)n_half_images);
-                Range<Long> exposure_time_range = characteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE); // may be null on some devices
-                if( exposure_time_range != null ) {
-                    min_exposure_time = exposure_time_range.getLower();
-                    max_exposure_time = exposure_time_range.getUpper();
-                }
 
                 if( MyDebug.LOG ) {
                     Log.d(TAG, "taking expo bracketing with n_images: " + expo_bracketing_n_images);
@@ -6141,7 +6241,7 @@ public class CameraController2 extends CameraController {
                 // darker images
                 for(int i=0;i<n_half_images;i++) {
                     long exposure_time = base_exposure_time;
-                    if( exposure_time_range != null ) {
+                    if( supports_exposure_time ) {
                         double this_scale = scale;
                         for(int j=i;j<n_half_images-1;j++)
                             this_scale *= scale;
@@ -6169,7 +6269,7 @@ public class CameraController2 extends CameraController {
                 // lighter images
                 for(int i=0;i<n_half_images;i++) {
                     long exposure_time = base_exposure_time;
-                    if( exposure_time_range != null ) {
+                    if( supports_exposure_time ) {
                         double this_scale = scale;
                         for(int j=0;j<i;j++)
                             this_scale *= scale;
@@ -6234,6 +6334,7 @@ public class CameraController2 extends CameraController {
                     }
                     for(int i=0;i<focus_distances.size();i++) {
                         stillBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, focus_distances.get(i));
+                        //stillBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, focus_distances.get(focus_distances.size()-1));
                         if( i == focus_distances.size()-1 ) {
                             stillBuilder.setTag(new RequestTagObject(RequestTagType.CAPTURE)); // set capture tag for last only
                         }
@@ -6323,6 +6424,7 @@ public class CameraController2 extends CameraController {
                 }
                 try {
                     modified_from_camera_settings = true;
+                    //setRepeatingRequest(requests.get(0));
                     if( use_expo_fast_burst && burst_type == BurstType.BURSTTYPE_EXPO ) { // alway use slow burst for focus bracketing
                         if( MyDebug.LOG )
                             Log.d(TAG, "using fast burst");
@@ -6462,24 +6564,34 @@ public class CameraController2 extends CameraController {
                     n_burst = 4;
                     n_burst_taken = 0;
 
-                    if( capture_result_has_iso ) {
-                        // For Nexus 6, max reported ISO is 1196, so the limit for dark scenes shouldn't be more than this
-                        // Nokia 8's max reported ISO is 1551
-                        // Note that OnePlus 3T has max reported ISO of 800, but this is a device bug
-                        if( capture_result_iso >= ISO_FOR_DARK ) {
+                    if( capture_result_has_iso && capture_result_has_exposure_time ) {
+                        if( HDRProcessor.sceneIsLowLight(capture_result_iso, capture_result_exposure_time) ) {
                             if( MyDebug.LOG )
                                 Log.d(TAG, "optimise for dark scene");
                             n_burst = noise_reduction_low_light ? N_IMAGES_NR_DARK_LOW_LIGHT : N_IMAGES_NR_DARK;
-                            boolean is_oneplus = Build.MANUFACTURER.toLowerCase(Locale.US).contains("oneplus");
                             // OnePlus 3T at least has bug where manual ISO can't be set to above 800, so dark images end up too dark -
                             // so no point enabling this code, which is meant to brighten the scene, not make it darker!
                             if( !camera_settings.has_iso && !is_oneplus ) {
                                 long exposure_time = noise_reduction_low_light ? 1000000000L/3 : 1000000000L/10;
-                                if( !capture_result_has_exposure_time || capture_result_exposure_time < exposure_time ) {
+                                if(  capture_result_exposure_time < exposure_time ) {
                                     if( MyDebug.LOG )
                                         Log.d(TAG, "also set long exposure time");
                                     modified_from_camera_settings = true;
-                                    setManualExposureTime(stillBuilder, exposure_time);
+
+                                    boolean set_new_iso = false;
+                                    int new_iso = 0;
+                                    {
+                                        // ISO*exposure should be a constant
+                                        set_new_iso = true;
+                                        new_iso = (int)((capture_result_iso * capture_result_exposure_time)/exposure_time);
+                                        // but don't make ISO too low
+                                        new_iso = Math.max(new_iso, capture_result_iso/2);
+                                        new_iso = Math.max(new_iso, 1100);
+                                        if( MyDebug.LOG )
+                                            Log.d(TAG, "... and set iso to " + new_iso);
+                                    }
+
+                                    setManualExposureTime(stillBuilder, exposure_time, set_new_iso, new_iso);
                                 }
                                 else {
                                     if( MyDebug.LOG )
@@ -6498,7 +6610,9 @@ public class CameraController2 extends CameraController {
                                     Log.d(TAG, "optimise for bright scene");
                                 //n_burst = 2;
                                 n_burst = 3;
-                                if( !camera_settings.has_iso ) {
+                                // At least some Samsung devices (e.g., Galaxy S10e on Android 11) give better results in auto mode
+                                // than manual mode, so we're better off staying in auto mode.
+                                if( !camera_settings.has_iso && !is_samsung ) {
                                     double exposure_time_scale = getScaleForExposureTime(exposure_time, fixed_exposure_time, scaled_exposure_time, full_exposure_time_scale);
                                     exposure_time *= exposure_time_scale;
                                     if( MyDebug.LOG ) {
@@ -6506,7 +6620,7 @@ public class CameraController2 extends CameraController {
                                         Log.d(TAG, "exposure_time_scale: " + exposure_time_scale);
                                     }
                                     modified_from_camera_settings = true;
-                                    setManualExposureTime(stillBuilder, exposure_time);
+                                    setManualExposureTime(stillBuilder, exposure_time, false, 0);
                                 }
                             }
                         }
@@ -7145,7 +7259,7 @@ public class CameraController2 extends CameraController {
     @Override
     public int captureResultWhiteBalanceTemperature() {
         // for performance reasons, we don't convert from rggb to temperature in every frame, rather only when requested
-        return convertRggbToTemperature(capture_result_white_balance_rggb);
+        return convertRggbVectorToTemperature(capture_result_white_balance_rggb);
     }
 
     @Override
@@ -7262,6 +7376,11 @@ public class CameraController2 extends CameraController {
                     Log.d(TAG, "frameNumber: " + frameNumber);
                     Log.d(TAG, "exposure time: " + request.get(CaptureRequest.SENSOR_EXPOSURE_TIME));
                 }
+                else if( getRequestTagType(request) == RequestTagType.CAPTURE_BURST_IN_PROGRESS ) {
+                    Log.d(TAG, "onCaptureStarted: capture burst in progress");
+                    Log.d(TAG, "frameNumber: " + frameNumber);
+                    Log.d(TAG, "exposure time: " + request.get(CaptureRequest.SENSOR_EXPOSURE_TIME));
+                }
             }
             // n.b., we don't play the shutter sound here for RequestTagType.CAPTURE, as it typically sounds "too late"
             // (if ever we changed this, would also need to fix for burst, where we only set the RequestTagType.CAPTURE for the last image)
@@ -7287,6 +7406,13 @@ public class CameraController2 extends CameraController {
             if( MyDebug.LOG ) {
                 if( getRequestTagType(request) == RequestTagType.CAPTURE ) {
                     Log.d(TAG, "onCaptureCompleted: capture");
+                    Log.d(TAG, "sequenceId: " + result.getSequenceId());
+                    Log.d(TAG, "frameNumber: " + result.getFrameNumber());
+                    Log.d(TAG, "exposure time: " + request.get(CaptureRequest.SENSOR_EXPOSURE_TIME));
+                    Log.d(TAG, "frame duration: " + request.get(CaptureRequest.SENSOR_FRAME_DURATION));
+                }
+                else if( getRequestTagType(request) == RequestTagType.CAPTURE_BURST_IN_PROGRESS ) {
+                    Log.d(TAG, "onCaptureCompleted: capture burst in progress");
                     Log.d(TAG, "sequenceId: " + result.getSequenceId());
                     Log.d(TAG, "frameNumber: " + result.getFrameNumber());
                     Log.d(TAG, "exposure time: " + request.get(CaptureRequest.SENSOR_EXPOSURE_TIME));
@@ -7790,7 +7916,11 @@ public class CameraController2 extends CameraController {
                 // (This affects the exposure time shown on on-screen preview - whilst showing the preview exposure time
                 // isn't necessarily wrong, it tended to confuse people, thinking that manual exposure time wasn't working
                 // when set above max_preview_exposure_time_c.)
-                if( camera_settings.has_iso && camera_settings.exposure_time > max_preview_exposure_time_c )
+                // Update: but on some devices (e.g., Galaxy S10e) the reported exposure time can become inaccurate when
+                // we set longer preview exposure times (fine at 1/15s, 1/10s, but wrong at 0.2s and 0.3s), possibly this is
+                // by design if the preview along supports certain rates(?), but best to fall back to the requested exposure
+                // time in manual mode if requested exposure is longer than 1/12s OR the max_preview_exposure_time_c.
+                if( camera_settings.has_iso && camera_settings.exposure_time > Math.min(max_preview_exposure_time_c, 1000000000L/12) )
                     capture_result_exposure_time = camera_settings.exposure_time;
 
                 if( capture_result_exposure_time <= 0 ) {
@@ -7861,7 +7991,7 @@ public class CameraController2 extends CameraController {
             /*if( MyDebug.LOG ) {
                 RggbChannelVector vector = result.get(CaptureResult.COLOR_CORRECTION_GAINS);
                 if( vector != null ) {
-                    convertRggbToTemperature(vector); // logging will occur in this function
+                    convertRggbVectorToTemperature(vector); // logging will occur in this function
                 }
             }*/
         }

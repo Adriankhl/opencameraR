@@ -112,7 +112,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Чувствительность уровня шума для управления звуком (опция \"громкий шум\")</string>
     <string name="preference_save_location">Папка сохранения</string>
     <string name="preference_save_location_summary">Имя папки для сохранения фото и видео (также может быть полный путь)</string>
-    <string name="preference_using_saf">Использовать Storage Access Framework</string>
     <string name="preference_using_saf_summary">Использовать Storage Access Framework для сохранения фото и видео</string>
     <string name="preference_save_photo_prefix">Префикс для фото</string>
     <string name="preference_save_photo_prefix_summary">Префикс имен файлов для сохраняемых фото</string>
@@ -303,8 +302,6 @@
     <string name="no_permission">РАЗРЕШЕНИЯ НЕДОСТУПНЫ</string>
     <string name="permission_rationale_title">Требуется разрешение</string>
     <string name="permission_rationale_camera">Требуется разрешение на доступ к камере для ее включения</string>
-    <string name="permission_rationale_storage">Требуется разрешение на чтение/запись для сохранения фото</string>
-    <string name="permission_rationale_record_audio">Требуется разрешение на доступ к микрофону для записи видео со звуком</string>
     <string name="permission_rationale_location">Требуется разрешение на определение местоположения для геотеггинга (хранение информации о местоположении
         внутри фото и видео). Разрешение на определение местоположения также требуется для подключения к устройствам удаленного управления по Bluetooth LE.</string>
 
@@ -800,8 +797,6 @@
     <string name="preference_water_type_summary">При размещении под водой улучшает точность, если выбран правильный тип воды.</string>
     <string name="remote_connected">Удаленное устройство подключено</string>
 
-    <string name="preference_remote_type_kraken">Kraken Smart Housing</string>
-
     <string name="preference_stamp_geo_address">Использовать адреса</string>
     <!-- preference_stamp_geo_address_summary defined below -->
     <string name="preference_stamp_geo_address_both">По возможности показывать адреса вместе с GPS-координатами</string>
@@ -911,7 +906,7 @@
 
     <string name="intro_text">Коснитесь для фокуса и нажмите синюю кнопку камеры, чтобы сделать фото.
         \n\nДля отключения максимальной яркости экрана перейдите в Настройки/Настройки интерфейса…/\"Максимальная яркость\".
-        Для сохранения на SD-карту на Android 5+ перейдите в Настройки/Дополнительные настройки…/\"Использовать Storage Access Framework\".
+        Для сохранения на SD-карту на Android 5+ перейдите в Настройки/Дополнительные настройки…/\"Storage Access Framework\".
         Для получения подробностей нажмите \"Помощь в Интернете\" в меню Настройки.
     </string>
 

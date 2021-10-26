@@ -9,6 +9,7 @@ public class AvgTests {
      *  To use these tests, the testdata/ subfolder should be manually copied to the test device in the DCIM/testOpenCamera/
      *  folder (so you have DCIM/testOpenCamera/testdata/). We don't use assets/ as we'd end up with huge APK sizes which takes
      *  time to transfer to the device every time we run the tests.
+     *  On Android 10+, scoped storage permission needs to be given to Open Camera for the DCIM/testOpenCamera/ folder.
      */
     public static Test suite() {
         TestSuite suite = new TestSuite(MainTests.class.getName());

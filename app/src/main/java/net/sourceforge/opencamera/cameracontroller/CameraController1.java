@@ -437,6 +437,7 @@ public class CameraController1 extends CameraController {
         catch(RuntimeException e) {
             Log.e(TAG, "exception from getParameters");
             e.printStackTrace();
+            count_camera_parameters_exception++;
             return null;
         }
         List<String> values = parameters.getSupportedSceneModes();
@@ -892,8 +893,17 @@ public class CameraController1 extends CameraController {
     }
 
     public boolean getVideoStabilization() {
-        Camera.Parameters parameters = this.getParameters();
-        return parameters.getVideoStabilization();
+        try {
+            Camera.Parameters parameters = this.getParameters();
+            return parameters.getVideoStabilization();
+        }
+        catch(RuntimeException e) {
+            // have had crashes from Google Play for getParameters - assume video stabilization not enabled
+            Log.e(TAG, "failed to get parameters for video stabilization");
+            e.printStackTrace();
+            count_camera_parameters_exception++;
+            return false;
+        }
     }
 
     @Override
@@ -936,6 +946,7 @@ public class CameraController1 extends CameraController {
         catch(RuntimeException e) {
             Log.e(TAG, "failed to set parameters for zoom");
             e.printStackTrace();
+            count_camera_parameters_exception++;
         }
     }
 
@@ -996,6 +1007,7 @@ public class CameraController1 extends CameraController {
             // but here it doesn't really matter if we fail to set the fps range
             Log.e(TAG, "setPreviewFpsRange failed to get parameters");
             e.printStackTrace();
+            count_camera_parameters_exception++;
         }
     }
 
@@ -1018,6 +1030,7 @@ public class CameraController1 extends CameraController {
 			  But that's a subclass of RuntimeException which we now catch anyway.
 			  */
             e.printStackTrace();
+            count_camera_parameters_exception++;
         }
         return null;
     }
@@ -1272,6 +1285,7 @@ public class CameraController1 extends CameraController {
             // but here it doesn't really matter if we fail to set the recording hint
             Log.e(TAG, "setRecordingHint failed to get parameters");
             e.printStackTrace();
+            count_camera_parameters_exception++;
         }
     }
 
@@ -1381,6 +1395,7 @@ public class CameraController1 extends CameraController {
         }
         catch(RuntimeException e) {
             e.printStackTrace();
+            count_camera_parameters_exception++;
         }
         return false;
     }
@@ -1403,6 +1418,7 @@ public class CameraController1 extends CameraController {
         }
         catch(RuntimeException e) {
             e.printStackTrace();
+            count_camera_parameters_exception++;
         }
     }
 
@@ -1443,6 +1459,7 @@ public class CameraController1 extends CameraController {
         }
         catch(RuntimeException e) {
             e.printStackTrace();
+            count_camera_parameters_exception++;
         }
         return false;
     }
@@ -1460,6 +1477,7 @@ public class CameraController1 extends CameraController {
         }
         catch(RuntimeException e) {
             e.printStackTrace();
+            count_camera_parameters_exception++;
         }
         return false;
     }
@@ -1550,6 +1568,7 @@ public class CameraController1 extends CameraController {
         catch(RuntimeException e) {
             if( MyDebug.LOG )
                 Log.d(TAG, "face detection failed or already started");
+            count_camera_parameters_exception++;
             return false;
         }
         return true;

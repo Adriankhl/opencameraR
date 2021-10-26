@@ -16,6 +16,13 @@
     }
 </script>-->
 
+<script>
+    var old_domain = "//opencamera.sourceforge.io";
+    if( window.location.href.indexOf(old_domain) >= 0 ) {
+        window.location.href = window.location.href.replace(old_domain, "//opencamera.org.uk");
+    }
+</script>
+
 <!-- EU cookie law, needed for analytics and adsense -->
 <!-- Begin Cookie Consent plugin by Silktide - http://silktide.com/cookieconsent -->
 <script type="text/javascript">
@@ -31,16 +38,15 @@
 <!-- End Cookie Consent plugin -->
 
 <!-- Google Analytics -->
-<!-- anonymizeIp is set: unclear if this is needed for EU GDPR, but just in case -->
+<!-- anonymize_ip is set: unclear if this is needed for EU GDPR, but just in case -->
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-38364448-5"></script>
 <script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-  ga('create', 'UA-38364448-5', 'auto');
-  ga('set', 'anonymizeIp', true);
-  ga('send', 'pageview');
+  gtag('config', 'UA-38364448-5', { 'anonymize_ip': true });
 </script>
 
 <!-- Google adsense auto ads -->
@@ -124,13 +130,8 @@ browsers -->
 <p>(Some features may not be available on all devices, as they may depend on hardware features, or the Android version.)</p>
 
 <!-- we don't use the Google Play badge because it looks awful - comes out way too big?! -->
-<p><a href="https://play.google.com/store/apps/details?id=net.sourceforge.opencamera">Download on Google Play.</a></p>
+<p><a href="https://play.google.com/store/apps/details?id=net.sourceforge.opencamera">Get it on Google Play.</a></p>
 
-<p>Also see <a href="info.html#altdownload">alternative download sites</a>.</p>
-
-<hr>
-<p>Open Camera is completely free, however if you wish you can show your appreciation by <a href="info.html#supportme">supporting me</a>.</p>
- 
 <hr>
 <p>
 <a href="http://sourceforge.net/p/opencamera/blog/">Open Camera Blog</a> ~
@@ -142,7 +143,6 @@ browsers -->
 <ul>
 <li><a href="#requirements">Requirements</a></li>
 <li><a href="help.html">Instructions</a></li>
-<li><a href="info.html#supportme">Support me!</a></li>
 <li><a href="#credits">Credits</a></li>
 <li><a href="privacy_oc.html">Privacy policy</a></li>
 <li><a href="#licence">Licence and Terms of Service</a></li>
@@ -215,7 +215,9 @@ Also see <i>"Can I use the Open Camera source code in my app?"</i> under the <a 
     by Google, under <a href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache license version 2.0</a> (some cases include modifications, no need to credit me).
     In particular:
     baseline_add_a_photo_white_48.png,
-    baseline_bluetooth_white_48.png, baseline_check_white_48.png, baseline_close_white_48.png, baseline_filter_vintage_white_48.png,
+    baseline_bluetooth_white_48.png, baseline_check_white_48.png, baseline_close_white_48.png,
+    baseline_delete_white_48.png,
+    baseline_filter_vintage_white_48.png,
     baseline_folder_open_white_48.png,
     baseline_highlight_white_48.png,
     baseline_panorama_horizontal_white_48.png,
@@ -223,11 +225,14 @@ Also see <i>"Can I use the Open Camera source code in my app?"</i> under the <a 
     baseline_remove_red_eye_white_48.png,
     baseline_rotate_left_white_48.png, baseline_rotate_right_white_48.png,
     baseline_shutter_speed_white_48.png,
+    baseline_switch_camera_white_48.png,
     baseline_text_fields_red_48.png (modified from baseline_text_fields_white_48), baseline_text_fields_white_48.png,
     exposure_locked.png (modified from baseline_lock_white_48 and ic_exposure_white_48dp),
     exposure_unlocked.png (modified from baseline_lock_open_white_48 and ic_exposure_white_48dp),
-    flash_auto.png (from ic_action_flash_automatic), flash_off.png (from ic_action_flash_off),
+    flash_auto.png (from baseline_flash_auto_white_48), flash_off.png (from baseline_flash_off_white_48),
     flash_on.png (from ic_action_flash_on),
+    focus_mode_continuous_picture.png and focus_mode_continuous_video.png (from baseline_loop_white_48),
+    focus_mode_infinity (from baseline_loop_white_48),
     focus_mode_locked.png (modified from baseline_lock_white_48),
     ic_burst_mode_white_48dp.png, ic_colorize_white_48dp.png,
     ic_exposure_red_48dp.png, ic_exposure_white_48dp.png, ic_face_red_48dp.png (modified from ic_face_white_48dp), ic_face_white_48dp.png,
@@ -245,15 +250,13 @@ Also see <i>"Can I use the Open Camera source code in my app?"</i> under the <a 
     ic_timelapse_white_48dp.png, ic_timer_white_48dp.png,
     ic_touch_app_white_48dp.png, ic_videocam_white_48dp.png,
     ic_stat_notify_take_photo.png (modified from ic_photo_camera_white_48dp),
-    popup*.png (modified from ic_more_vert_white, baseline_highlight_white, baseline_remove_red_eye_white, ic_action_flash_automatic,
-        ic_action_flash_off, ic_action_flash_on),
+    popup*.png (modified from ic_more_vert_white, baseline_highlight_white, baseline_remove_red_eye_white, baseline_flash_auto_white,
+    baseline_flash_off_white, ic_action_flash_on),
     settings.png (from ic_action_settings), share.png (from ic_action_share),
-    switch_camera.png (from ic_action_switch_camera),
     take_photo.png (modified from ic_photo_camera_white_48dp), take_photo_pref.png (modified from ic_photo_camera_white_48dp),
     take_photo_pressed.png (modified from ic_photo_camera_white_48dp), take_photo_when_video_recording.png (modified from ic_photo_camera_white_48dp),
     take_video.png (modified from baseline_videocam_white_48), take_video_pref.png (modified from baseline_videocam_white_48),
     take_video_pressed.png (modified from baseline_videocam_white_48), take_video_recording.png (modified from baseline_videocam_white_48),
-    trash.png (from ic_action_discard),
     white_balance_locked.png (modified from baseline_lock_white_48),
     white_balance_unlocked.png (modified from baseline_lock_open_white_48).
     <br>Modified versions of some of these icons are also used on this website.

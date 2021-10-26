@@ -51,6 +51,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.util.Pair;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.widget.ImageButton;
 
@@ -346,9 +347,25 @@ public class MyApplicationInterface extends BasicApplicationInterface {
             contentValues.put(MediaStore.Video.Media.IS_PENDING, 1);
         }
 
-        last_video_file_uri = main_activity.getContentResolver().insert(folder, contentValues);
-        if( MyDebug.LOG )
-            Log.d(TAG, "uri: " + last_video_file_uri);
+        try {
+            last_video_file_uri = main_activity.getContentResolver().insert(folder, contentValues);
+            if( MyDebug.LOG )
+                Log.d(TAG, "uri: " + last_video_file_uri);
+        }
+        catch(IllegalArgumentException e) {
+            // can happen for mediastore method if invalid ContentResolver.insert() call
+            if( MyDebug.LOG )
+                Log.e(TAG, "IllegalArgumentException writing video file: " + e.getMessage());
+            e.printStackTrace();
+            throw new IOException();
+        }
+        catch(IllegalStateException e) {
+            // have received Google Play crashes from ContentResolver.insert() call for mediastore method
+            if( MyDebug.LOG )
+                Log.e(TAG, "IllegalStateException writing video file: " + e.getMessage());
+            e.printStackTrace();
+            throw new IOException();
+        }
         if( last_video_file_uri == null ) {
             throw new IOException();
         }
@@ -898,7 +915,7 @@ public class MyApplicationInterface extends BasicApplicationInterface {
                 int intent_duration_limit = main_activity.getIntent().getIntExtra(MediaStore.EXTRA_DURATION_LIMIT, 0);
                 if( MyDebug.LOG )
                     Log.d(TAG, "intent_duration_limit: " + intent_duration_limit);
-                return intent_duration_limit * 1000;
+                return intent_duration_limit * 1000L;
             }
         }
 
@@ -1072,11 +1089,6 @@ public class MyApplicationInterface extends BasicApplicationInterface {
     @Override
     public String getPreviewSizePref() {
         return sharedPreferences.getString(PreferenceKeys.PreviewSizePreferenceKey, "preference_preview_size_wysiwyg");
-    }
-
-    @Override
-    public String getPreviewRotationPref() {
-        return sharedPreferences.getString(PreferenceKeys.RotatePreviewPreferenceKey, "0");
     }
 
     @Override
@@ -1281,7 +1293,17 @@ public class MyApplicationInterface extends BasicApplicationInterface {
         return font_size;
     }
 
-    private String getVideoSubtitlePref() {
+    /** Whether the Mediastore API supports saving subtitle files.
+     */
+    static boolean mediastoreSupportsVideoSubtitles() {
+        // Android 11+ no longer allows mediastore API to save types that Android doesn't support!
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.R;
+    }
+
+    private String getVideoSubtitlePref(VideoMethod video_method) {
+        if( video_method == VideoMethod.MEDIASTORE && !mediastoreSupportsVideoSubtitles() ) {
+            return "preference_video_subtitle_no";
+        }
         return sharedPreferences.getString(PreferenceKeys.VideoSubtitlePref, "preference_video_subtitle_no");
     }
 
@@ -1408,6 +1430,34 @@ public class MyApplicationInterface extends BasicApplicationInterface {
         if( MyDebug.LOG )
             Log.d(TAG, "imageQueueWouldBlock");
         return imageSaver.queueWouldBlock(n_raw, n_jpegs);
+    }
+
+    /** Returns the ROTATION_* enum of the display relative to the natural device orientation, but
+     *  also checks for the preview being rotated due to user preference
+     *  RotatePreviewPreferenceKey.
+     */
+    @Override
+    public int getDisplayRotation() {
+        // important to use cached rotation to reduce issues of incorrect focus square location when
+        // rotating device, due to strange Android behaviour where rotation changes shortly before
+        // the configuration actually changes
+        int rotation = main_activity.getDisplayRotation();
+
+        String rotate_preview = sharedPreferences.getString(PreferenceKeys.RotatePreviewPreferenceKey, "0");
+        if( MyDebug.LOG )
+            Log.d(TAG, "    rotate_preview = " + rotate_preview);
+        if( rotate_preview.equals("180") ) {
+            switch (rotation) {
+                case Surface.ROTATION_0: rotation = Surface.ROTATION_180; break;
+                case Surface.ROTATION_90: rotation = Surface.ROTATION_270; break;
+                case Surface.ROTATION_180: rotation = Surface.ROTATION_0; break;
+                case Surface.ROTATION_270: rotation = Surface.ROTATION_90; break;
+                default:
+                    break;
+            }
+        }
+
+        return rotation;
     }
 
     @Override
@@ -1841,6 +1891,7 @@ public class MyApplicationInterface extends BasicApplicationInterface {
         if( MyDebug.LOG )
             Log.d(TAG, "setNextPanoramaPoint : " + x + " , " + y + " , " + z);
 
+        @SuppressWarnings("PointlessArithmeticExpression")
         final float target_angle = 1.0f * 0.01745329252f;
         //final float target_angle = 0.5f * 0.01745329252f;
         final float upright_angle_tol = 2.0f * 0.017452406437f;
@@ -1917,6 +1968,283 @@ public class MyApplicationInterface extends BasicApplicationInterface {
         main_activity.getMainUI().destroyPopup(); // as the available popup options change while recording video
     }
 
+    private void startVideoSubtitlesTask(final VideoMethod video_method) {
+        final String preference_stamp_dateformat = this.getStampDateFormatPref();
+        final String preference_stamp_timeformat = this.getStampTimeFormatPref();
+        final String preference_stamp_gpsformat = this.getStampGPSFormatPref();
+        final String preference_units_distance = this.getUnitsDistancePref();
+        final String preference_stamp_geo_address = this.getStampGeoAddressPref();
+        final boolean store_location = getGeotaggingPref();
+        final boolean store_geo_direction = getGeodirectionPref();
+        class SubtitleVideoTimerTask extends TimerTask {
+            // need to keep a reference to pfd_saf for as long as writer, to avoid getting garbage collected - see https://sourceforge.net/p/opencamera/tickets/417/
+            private ParcelFileDescriptor pfd_saf;
+            private OutputStreamWriter writer;
+            private Uri uri;
+            private int count = 1;
+            private long min_video_time_from = 0;
+
+            private String getSubtitleFilename(String video_filename) {
+                if( MyDebug.LOG )
+                    Log.d(TAG, "getSubtitleFilename");
+                int indx = video_filename.indexOf('.');
+                if( indx != -1 ) {
+                    video_filename = video_filename.substring(0, indx);
+                }
+                video_filename = video_filename + ".srt";
+                if( MyDebug.LOG )
+                    Log.d(TAG, "return filename: " + video_filename);
+                return video_filename;
+            }
+
+            public void run() {
+                if( MyDebug.LOG )
+                    Log.d(TAG, "SubtitleVideoTimerTask run");
+                long video_time = main_activity.getPreview().getVideoTime(true); // n.b., in case of restarts due to max filesize, we only want the time for this video file!
+                if( !main_activity.getPreview().isVideoRecording() ) {
+                    if( MyDebug.LOG )
+                        Log.d(TAG, "no longer video recording");
+                    return;
+                }
+                if( main_activity.getPreview().isVideoRecordingPaused() ) {
+                    if( MyDebug.LOG )
+                        Log.d(TAG, "video recording is paused");
+                    return;
+                }
+                Date current_date = new Date();
+                Calendar current_calendar = Calendar.getInstance();
+                int offset_ms = current_calendar.get(Calendar.MILLISECOND);
+                // We subtract an offset, because if the current time is say 00:00:03.425 and the video has been recording for
+                // 1s, we instead need to record the video time when it became 00:00:03.000. This does mean that the GPS
+                // location is going to be off by up to 1s, but that should be less noticeable than the clock being off.
+                if( MyDebug.LOG ) {
+                    Log.d(TAG, "count: " + count);
+                    Log.d(TAG, "offset_ms: " + offset_ms);
+                    Log.d(TAG, "video_time: " + video_time);
+                }
+                String date_stamp = TextFormatter.getDateString(preference_stamp_dateformat, current_date);
+                String time_stamp = TextFormatter.getTimeString(preference_stamp_timeformat, current_date);
+                Location location = store_location ? getLocation() : null;
+                double geo_direction = store_geo_direction && main_activity.getPreview().hasGeoDirection() ? main_activity.getPreview().getGeoDirection() : 0.0;
+                String gps_stamp = main_activity.getTextFormatter().getGPSString(preference_stamp_gpsformat, preference_units_distance, store_location && location!=null, location, store_geo_direction && main_activity.getPreview().hasGeoDirection(), geo_direction);
+                if( MyDebug.LOG ) {
+                    Log.d(TAG, "date_stamp: " + date_stamp);
+                    Log.d(TAG, "time_stamp: " + time_stamp);
+                    // don't log gps_stamp, in case of privacy!
+                }
+
+                String datetime_stamp = "";
+                if( date_stamp.length() > 0 )
+                    datetime_stamp += date_stamp;
+                if( time_stamp.length() > 0 ) {
+                    if( datetime_stamp.length() > 0 )
+                        datetime_stamp += " ";
+                    datetime_stamp += time_stamp;
+                }
+
+                // build subtitles
+                StringBuilder subtitles = new StringBuilder();
+                if( datetime_stamp.length() > 0 )
+                    subtitles.append(datetime_stamp).append("\n");
+
+                if( gps_stamp.length() > 0 ) {
+                    Address address = null;
+                    if( store_location && !preference_stamp_geo_address.equals("preference_stamp_geo_address_no") ) {
+                        // try to find an address
+                        if( main_activity.isAppPaused() ) {
+                            // seems safer to not try to initiate potential network connections (via geocoder) if Open Camera
+                            // is paused - this shouldn't happen, since we stop video when paused, but just to be safe
+                            if( MyDebug.LOG )
+                                Log.d(TAG, "don't call geocoder for video subtitles  as app is paused?!");
+                        }
+                        else if( Geocoder.isPresent() ) {
+                            if( MyDebug.LOG )
+                                Log.d(TAG, "geocoder is present");
+                            Geocoder geocoder = new Geocoder(main_activity, Locale.getDefault());
+                            try {
+                                List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                                if( addresses != null && addresses.size() > 0 ) {
+                                    address = addresses.get(0);
+                                    // don't log address, in case of privacy!
+                                    if( MyDebug.LOG ) {
+                                        Log.d(TAG, "max line index: " + address.getMaxAddressLineIndex());
+                                    }
+                                }
+                            }
+                            catch(Exception e) {
+                                Log.e(TAG, "failed to read from geocoder");
+                                e.printStackTrace();
+                            }
+                        }
+                        else {
+                            if( MyDebug.LOG )
+                                Log.d(TAG, "geocoder not present");
+                        }
+                    }
+
+                    if( address != null ) {
+                        for(int i=0;i<=address.getMaxAddressLineIndex();i++) {
+                            // write in forward order
+                            String addressLine = address.getAddressLine(i);
+                            subtitles.append(addressLine).append("\n");
+                        }
+                    }
+
+                    if( address == null || preference_stamp_geo_address.equals("preference_stamp_geo_address_both") ) {
+                        if( MyDebug.LOG )
+                            Log.d(TAG, "display gps coords");
+                        subtitles.append(gps_stamp).append("\n");
+                    }
+                    else if( store_geo_direction ) {
+                        if( MyDebug.LOG )
+                            Log.d(TAG, "not displaying gps coords, but need to display geo direction");
+                        gps_stamp = main_activity.getTextFormatter().getGPSString(preference_stamp_gpsformat, preference_units_distance, false, null, store_geo_direction && main_activity.getPreview().hasGeoDirection(), geo_direction);
+                        if( gps_stamp.length() > 0 ) {
+                            // don't log gps_stamp, in case of privacy!
+                            subtitles.append(gps_stamp).append("\n");
+                        }
+                    }
+                }
+
+                if( subtitles.length() == 0 ) {
+                    return;
+                }
+                long video_time_from = video_time - offset_ms;
+                long video_time_to = video_time_from + 999;
+                // don't want to start from before 0; also need to keep track of min_video_time_from to avoid bug reported at
+                // https://forum.xda-developers.com/showpost.php?p=74827802&postcount=345 for pause video where we ended up
+                // with overlapping times when resuming
+                if( video_time_from < min_video_time_from )
+                    video_time_from = min_video_time_from;
+                min_video_time_from = video_time_to + 1;
+                String subtitle_time_from = TextFormatter.formatTimeMS(video_time_from);
+                String subtitle_time_to = TextFormatter.formatTimeMS(video_time_to);
+                try {
+                    synchronized( this ) {
+                        if( writer == null ) {
+                            if( video_method == VideoMethod.FILE ) {
+                                String subtitle_filename = last_video_file.getAbsolutePath();
+                                subtitle_filename = getSubtitleFilename(subtitle_filename);
+                                writer = new FileWriter(subtitle_filename);
+                            }
+                            else if( video_method == VideoMethod.SAF || video_method == VideoMethod.MEDIASTORE ) {
+                                if( MyDebug.LOG )
+                                    Log.d(TAG, "last_video_file_uri: " + last_video_file_uri);
+                                String subtitle_filename = storageUtils.getFileName(last_video_file_uri);
+                                subtitle_filename = getSubtitleFilename(subtitle_filename);
+                                if( video_method == VideoMethod.SAF ) {
+                                    uri = storageUtils.createOutputFileSAF(subtitle_filename, ""); // don't set a mimetype, as we don't want it to append a new extension
+                                }
+                                else {
+                                    Uri folder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ?
+                                            MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY) :
+                                            MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+                                    ContentValues contentValues = new ContentValues();
+                                    contentValues.put(MediaStore.Video.Media.DISPLAY_NAME, subtitle_filename);
+                                    // set mime type - it's unclear if .SRT files have an official mime type, but (a) we must set a mime type otherwise
+                                    // resultant files are named "*.srt.mp4", and (b) the mime type must be video/*, otherwise we get exception:
+                                    // "java.lang.IllegalArgumentException: MIME type text/plain cannot be inserted into content://media/external_primary/video/media; expected MIME type under video/*"
+                                    // and we need the file to be saved in the same folder (in DCIM/ ) as the video
+                                    contentValues.put(MediaStore.Images.Media.MIME_TYPE, "video/x-srt");
+                                    if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
+                                        String relative_path = storageUtils.getSaveRelativeFolder();
+                                        if( MyDebug.LOG )
+                                            Log.d(TAG, "relative_path: " + relative_path);
+                                        contentValues.put(MediaStore.Video.Media.RELATIVE_PATH, relative_path);
+                                        contentValues.put(MediaStore.Video.Media.IS_PENDING, 1);
+                                    }
+
+                                    // Note, we catch exceptions specific to insert() here and rethrow as IOException,
+                                    // rather than catching below, to avoid catching things too broadly.
+                                    // Catching too broadly could mean we miss genuine problems that should be fixed.
+                                    try {
+                                        uri = main_activity.getContentResolver().insert(folder, contentValues);
+                                    }
+                                    catch(IllegalArgumentException e) {
+                                        // can happen for mediastore method if invalid ContentResolver.insert() call
+                                        if( MyDebug.LOG )
+                                            Log.e(TAG, "IllegalArgumentException from SubtitleVideoTimerTask inserting to mediastore: " + e.getMessage());
+                                        e.printStackTrace();
+                                        throw new IOException();
+                                    }
+                                    catch(IllegalStateException e) {
+                                        if( MyDebug.LOG )
+                                            Log.e(TAG, "IllegalStateException from SubtitleVideoTimerTask inserting to mediastore: " + e.getMessage());
+                                        e.printStackTrace();
+                                        throw new IOException();
+                                    }
+                                    if( uri == null ) {
+                                        throw new IOException();
+                                    }
+                                }
+                                if( MyDebug.LOG )
+                                    Log.d(TAG, "uri: " + uri);
+                                pfd_saf = getContext().getContentResolver().openFileDescriptor(uri, "w");
+                                writer = new FileWriter(pfd_saf.getFileDescriptor());
+                            }
+                        }
+                        if( writer != null ) {
+                            writer.append(Integer.toString(count));
+                            writer.append('\n');
+                            writer.append(subtitle_time_from);
+                            writer.append(" --> ");
+                            writer.append(subtitle_time_to);
+                            writer.append('\n');
+                            writer.append(subtitles.toString()); // subtitles should include the '\n' at the end
+                            writer.append('\n'); // additional newline to indicate end of this subtitle
+                            writer.flush();
+                            // n.b., we flush rather than closing/reopening the writer each time, as appending doesn't seem to work with storage access framework
+                        }
+                    }
+                    count++;
+                }
+                catch(IOException e) {
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "SubtitleVideoTimerTask failed to create or write");
+                    e.printStackTrace();
+                }
+                if( MyDebug.LOG )
+                    Log.d(TAG, "SubtitleVideoTimerTask exit");
+            }
+
+            public boolean cancel() {
+                if( MyDebug.LOG )
+                    Log.d(TAG, "SubtitleVideoTimerTask cancel");
+                synchronized( this ) {
+                    if( writer != null ) {
+                        if( MyDebug.LOG )
+                            Log.d(TAG, "close writer");
+                        try {
+                            writer.close();
+                        }
+                        catch(IOException e) {
+                            e.printStackTrace();
+                        }
+                        writer = null;
+                    }
+                    if( pfd_saf != null ) {
+                        try {
+                            pfd_saf.close();
+                        }
+                        catch(IOException e) {
+                            e.printStackTrace();
+                        }
+                        pfd_saf = null;
+                    }
+                    if( video_method == VideoMethod.MEDIASTORE ) {
+                        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
+                            ContentValues contentValues = new ContentValues();
+                            contentValues.put(MediaStore.Video.Media.IS_PENDING, 0);
+                            main_activity.getContentResolver().update(uri, contentValues, null, null);
+                        }
+                    }
+                }
+                return super.cancel();
+            }
+        }
+        subtitleVideoTimer.schedule(subtitleVideoTimerTask = new SubtitleVideoTimerTask(), 0, 1000);
+    }
+
     @Override
     public void startedVideo() {
         if( MyDebug.LOG )
@@ -1942,263 +2270,9 @@ public class MyApplicationInterface extends BasicApplicationInterface {
             main_activity.getMainUI().setupExposureUI();
         }
         final VideoMethod video_method = this.createOutputVideoMethod();
-        boolean dategeo_subtitles = getVideoSubtitlePref().equals("preference_video_subtitle_yes");
+        boolean dategeo_subtitles = getVideoSubtitlePref(video_method).equals("preference_video_subtitle_yes");
         if( dategeo_subtitles && video_method != ApplicationInterface.VideoMethod.URI ) {
-            final String preference_stamp_dateformat = this.getStampDateFormatPref();
-            final String preference_stamp_timeformat = this.getStampTimeFormatPref();
-            final String preference_stamp_gpsformat = this.getStampGPSFormatPref();
-            final String preference_units_distance = this.getUnitsDistancePref();
-            final String preference_stamp_geo_address = this.getStampGeoAddressPref();
-            final boolean store_location = getGeotaggingPref();
-            final boolean store_geo_direction = getGeodirectionPref();
-            class SubtitleVideoTimerTask extends TimerTask {
-                // need to keep a reference to pfd_saf for as long as writer, to avoid getting garbage collected - see https://sourceforge.net/p/opencamera/tickets/417/
-                private ParcelFileDescriptor pfd_saf;
-                private OutputStreamWriter writer;
-                private Uri uri;
-                private int count = 1;
-                private long min_video_time_from = 0;
-
-                private String getSubtitleFilename(String video_filename) {
-                    if( MyDebug.LOG )
-                        Log.d(TAG, "getSubtitleFilename");
-                    int indx = video_filename.indexOf('.');
-                    if( indx != -1 ) {
-                        video_filename = video_filename.substring(0, indx);
-                    }
-                    video_filename = video_filename + ".srt";
-                    if( MyDebug.LOG )
-                        Log.d(TAG, "return filename: " + video_filename);
-                    return video_filename;
-                }
-
-                public void run() {
-                    if( MyDebug.LOG )
-                        Log.d(TAG, "SubtitleVideoTimerTask run");
-                    long video_time = main_activity.getPreview().getVideoTime();
-                    if( !main_activity.getPreview().isVideoRecording() ) {
-                        if( MyDebug.LOG )
-                            Log.d(TAG, "no longer video recording");
-                        return;
-                    }
-                    if( main_activity.getPreview().isVideoRecordingPaused() ) {
-                        if( MyDebug.LOG )
-                            Log.d(TAG, "video recording is paused");
-                        return;
-                    }
-                    Date current_date = new Date();
-                    Calendar current_calendar = Calendar.getInstance();
-                    int offset_ms = current_calendar.get(Calendar.MILLISECOND);
-                    // We subtract an offset, because if the current time is say 00:00:03.425 and the video has been recording for
-                    // 1s, we instead need to record the video time when it became 00:00:03.000. This does mean that the GPS
-                    // location is going to be off by up to 1s, but that should be less noticeable than the clock being off.
-                    if( MyDebug.LOG ) {
-                        Log.d(TAG, "count: " + count);
-                        Log.d(TAG, "offset_ms: " + offset_ms);
-                        Log.d(TAG, "video_time: " + video_time);
-                    }
-                    String date_stamp = TextFormatter.getDateString(preference_stamp_dateformat, current_date);
-                    String time_stamp = TextFormatter.getTimeString(preference_stamp_timeformat, current_date);
-                    Location location = store_location ? getLocation() : null;
-                    double geo_direction = store_geo_direction && main_activity.getPreview().hasGeoDirection() ? main_activity.getPreview().getGeoDirection() : 0.0;
-                    String gps_stamp = main_activity.getTextFormatter().getGPSString(preference_stamp_gpsformat, preference_units_distance, store_location && location!=null, location, store_geo_direction && main_activity.getPreview().hasGeoDirection(), geo_direction);
-                    if( MyDebug.LOG ) {
-                        Log.d(TAG, "date_stamp: " + date_stamp);
-                        Log.d(TAG, "time_stamp: " + time_stamp);
-                        // don't log gps_stamp, in case of privacy!
-                    }
-
-                    String datetime_stamp = "";
-                    if( date_stamp.length() > 0 )
-                        datetime_stamp += date_stamp;
-                    if( time_stamp.length() > 0 ) {
-                        if( datetime_stamp.length() > 0 )
-                            datetime_stamp += " ";
-                        datetime_stamp += time_stamp;
-                    }
-
-                    // build subtitles
-                    StringBuilder subtitles = new StringBuilder();
-                    if( datetime_stamp.length() > 0 )
-                        subtitles.append(datetime_stamp).append("\n");
-
-                    if( gps_stamp.length() > 0 ) {
-                        Address address = null;
-                        if( store_location && !preference_stamp_geo_address.equals("preference_stamp_geo_address_no") ) {
-                            // try to find an address
-                            if( main_activity.isAppPaused() ) {
-                                // seems safer to not try to initiate potential network connections (via geocoder) if Open Camera
-                                // is paused - this shouldn't happen, since we stop video when paused, but just to be safe
-                                if( MyDebug.LOG )
-                                    Log.d(TAG, "don't call geocoder for video subtitles  as app is paused?!");
-                            }
-                            else if( Geocoder.isPresent() ) {
-                                if( MyDebug.LOG )
-                                    Log.d(TAG, "geocoder is present");
-                                Geocoder geocoder = new Geocoder(main_activity, Locale.getDefault());
-                                try {
-                                    List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
-                                    if( addresses != null && addresses.size() > 0 ) {
-                                        address = addresses.get(0);
-                                        // don't log address, in case of privacy!
-                                        if( MyDebug.LOG ) {
-                                            Log.d(TAG, "max line index: " + address.getMaxAddressLineIndex());
-                                        }
-                                    }
-                                }
-                                catch(Exception e) {
-                                    Log.e(TAG, "failed to read from geocoder");
-                                    e.printStackTrace();
-                                }
-                            }
-                            else {
-                                if( MyDebug.LOG )
-                                    Log.d(TAG, "geocoder not present");
-                            }
-                        }
-
-                        if( address != null ) {
-                            for(int i=0;i<=address.getMaxAddressLineIndex();i++) {
-                                // write in forward order
-                                String addressLine = address.getAddressLine(i);
-                                subtitles.append(addressLine).append("\n");
-                            }
-                        }
-
-                        if( address == null || preference_stamp_geo_address.equals("preference_stamp_geo_address_both") ) {
-                            if( MyDebug.LOG )
-                                Log.d(TAG, "display gps coords");
-                            subtitles.append(gps_stamp).append("\n");
-                        }
-                        else if( store_geo_direction ) {
-                            if( MyDebug.LOG )
-                                Log.d(TAG, "not displaying gps coords, but need to display geo direction");
-                            gps_stamp = main_activity.getTextFormatter().getGPSString(preference_stamp_gpsformat, preference_units_distance, false, null, store_geo_direction && main_activity.getPreview().hasGeoDirection(), geo_direction);
-                            if( gps_stamp.length() > 0 ) {
-                                // don't log gps_stamp, in case of privacy!
-                                subtitles.append(gps_stamp).append("\n");
-                            }
-                        }
-                    }
-
-                    if( subtitles.length() == 0 ) {
-                        return;
-                    }
-                    long video_time_from = video_time - offset_ms;
-                    long video_time_to = video_time_from + 999;
-                    // don't want to start from before 0; also need to keep track of min_video_time_from to avoid bug reported at
-                    // https://forum.xda-developers.com/showpost.php?p=74827802&postcount=345 for pause video where we ended up
-                    // with overlapping times when resuming
-                    if( video_time_from < min_video_time_from )
-                        video_time_from = min_video_time_from;
-                    min_video_time_from = video_time_to + 1;
-                    String subtitle_time_from = TextFormatter.formatTimeMS(video_time_from);
-                    String subtitle_time_to = TextFormatter.formatTimeMS(video_time_to);
-                    try {
-                        synchronized( this ) {
-                            if( writer == null ) {
-                                if( video_method == VideoMethod.FILE ) {
-                                    String subtitle_filename = last_video_file.getAbsolutePath();
-                                    subtitle_filename = getSubtitleFilename(subtitle_filename);
-                                    writer = new FileWriter(subtitle_filename);
-                                }
-                                else if( video_method == VideoMethod.SAF || video_method == VideoMethod.MEDIASTORE ) {
-                                    if( MyDebug.LOG )
-                                        Log.d(TAG, "last_video_file_uri: " + last_video_file_uri);
-                                    String subtitle_filename = storageUtils.getFileName(last_video_file_uri);
-                                    subtitle_filename = getSubtitleFilename(subtitle_filename);
-                                    if( video_method == VideoMethod.SAF ) {
-                                        uri = storageUtils.createOutputFileSAF(subtitle_filename, ""); // don't set a mimetype, as we don't want it to append a new extension
-                                    }
-                                    else {
-                                        Uri folder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ?
-                                                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY) :
-                                                MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-                                        ContentValues contentValues = new ContentValues();
-                                        contentValues.put(MediaStore.Video.Media.DISPLAY_NAME, subtitle_filename);
-                                        // set mime type - it's unclear if .SRT files have an official mime type, but (a) we must set a mime type otherwise
-                                        // resultant files are named "*.srt.mp4", and (b) the mime type must be video/*, otherwise we get exception:
-                                        // "java.lang.IllegalArgumentException: MIME type text/plain cannot be inserted into content://media/external_primary/video/media; expected MIME type under video/*"
-                                        // and we need the file to be saved in the same folder (in DCIM/ ) as the video
-                                        contentValues.put(MediaStore.Images.Media.MIME_TYPE, "video/x-srt");
-                                        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
-                                            String relative_path = storageUtils.getSaveRelativeFolder();
-                                            if( MyDebug.LOG )
-                                                Log.d(TAG, "relative_path: " + relative_path);
-                                            contentValues.put(MediaStore.Video.Media.RELATIVE_PATH, relative_path);
-                                            contentValues.put(MediaStore.Video.Media.IS_PENDING, 1);
-                                        }
-                                        uri = main_activity.getContentResolver().insert(folder, contentValues);
-                                        if( uri == null ) {
-                                            throw new IOException();
-                                        }
-                                    }
-                                    if( MyDebug.LOG )
-                                        Log.d(TAG, "uri: " + uri);
-                                    pfd_saf = getContext().getContentResolver().openFileDescriptor(uri, "w");
-                                    writer = new FileWriter(pfd_saf.getFileDescriptor());
-                                }
-                            }
-                            if( writer != null ) {
-                                writer.append(Integer.toString(count));
-                                writer.append('\n');
-                                writer.append(subtitle_time_from);
-                                writer.append(" --> ");
-                                writer.append(subtitle_time_to);
-                                writer.append('\n');
-                                writer.append(subtitles.toString()); // subtitles should include the '\n' at the end
-                                writer.append('\n'); // additional newline to indicate end of this subtitle
-                                writer.flush();
-                                // n.b., we flush rather than closing/reopening the writer each time, as appending doesn't seem to work with storage access framework
-                            }
-                        }
-                        count++;
-                    }
-                    catch(IOException e) {
-                        if( MyDebug.LOG )
-                            Log.e(TAG, "SubtitleVideoTimerTask failed to create or write");
-                        e.printStackTrace();
-                    }
-                    if( MyDebug.LOG )
-                        Log.d(TAG, "SubtitleVideoTimerTask exit");
-                }
-
-                public boolean cancel() {
-                    if( MyDebug.LOG )
-                        Log.d(TAG, "SubtitleVideoTimerTask cancel");
-                    synchronized( this ) {
-                        if( writer != null ) {
-                            if( MyDebug.LOG )
-                                Log.d(TAG, "close writer");
-                            try {
-                                writer.close();
-                            }
-                            catch(IOException e) {
-                                e.printStackTrace();
-                            }
-                            writer = null;
-                        }
-                        if( pfd_saf != null ) {
-                            try {
-                                pfd_saf.close();
-                            }
-                            catch(IOException e) {
-                                e.printStackTrace();
-                            }
-                            pfd_saf = null;
-                        }
-                        if( video_method == VideoMethod.MEDIASTORE ) {
-                            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
-                                ContentValues contentValues = new ContentValues();
-                                contentValues.put(MediaStore.Video.Media.IS_PENDING, 0);
-                                main_activity.getContentResolver().update(uri, contentValues, null, null);
-                            }
-                        }
-                    }
-                    return super.cancel();
-                }
-            }
-            subtitleVideoTimer.schedule(subtitleVideoTimerTask = new SubtitleVideoTimerTask(), 0, 1000);
+            startVideoSubtitlesTask(video_method);
         }
     }
 
@@ -2346,6 +2420,16 @@ public class MyApplicationInterface extends BasicApplicationInterface {
         }
         completeVideo(video_method, uri);
         broadcastVideo(video_method, uri, filename);
+
+        // also need to restart subtitles file
+        if( subtitleVideoTimerTask != null ) {
+            subtitleVideoTimerTask.cancel();
+            subtitleVideoTimerTask = null;
+
+            // No need to check if option for subtitles is set, if we were already saving subtitles.
+            // Assume that video_method is unchanged between old and new video file when restarting.
+            startVideoSubtitlesTask(video_method);
+        }
     }
 
     /** Called when we've finished recording to a video file, to do any necessary cleanup for the
@@ -2371,6 +2455,8 @@ public class MyApplicationInterface extends BasicApplicationInterface {
             Log.d(TAG, "filename " + filename);
         }
         boolean done = false;
+        // clear just in case we're unable to update this - don't want an out of date cached uri
+        storageUtils.clearLastMediaScanned();
         if( video_method == VideoMethod.MEDIASTORE ) {
             // no need to broadcast when using mediastore
 
@@ -2381,7 +2467,7 @@ public class MyApplicationInterface extends BasicApplicationInterface {
                 storageUtils.announceUri(uri, false, true);
 
                 // we also want to save the uri - we can use the media uri directly, rather than having to scan it
-                storageUtils.setLastMediaScanned(uri);
+                storageUtils.setLastMediaScanned(uri, false);
 
                 done = true;
             }
@@ -2680,6 +2766,13 @@ public class MyApplicationInterface extends BasicApplicationInterface {
     @Override
     public void multitouchZoom(int new_zoom) {
         main_activity.getMainUI().setSeekbarZoom(new_zoom);
+    }
+
+    @Override
+    public void requestTakePhoto() {
+        if( MyDebug.LOG )
+            Log.d(TAG, "requestTakePhoto");
+        main_activity.takePicture(false);
     }
 
     /** Switch to the first available camera that is front or back facing as desired.

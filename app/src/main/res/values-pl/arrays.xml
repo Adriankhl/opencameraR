@@ -281,8 +281,8 @@
         <item>3</item>
     </string-array>
     <string-array name="preference_front_camera_mirror_entries">
-        <item>No mirror</item>
-        <item>Mirror photo</item>
+        <item>Bez lustra</item>
+        <item>Odbicie lustrzane</item>
     </string-array>
     <string-array name="preference_front_camera_mirror_values">
         <item>preference_front_camera_mirror_no</item>

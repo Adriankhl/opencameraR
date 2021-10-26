@@ -14,8 +14,13 @@ public class Nexus7Tests {
         suite.addTest(TestSuite.createTest(MainActivityTest.class, "testPhotoStampSAF"));
         suite.addTest(TestSuite.createTest(MainActivityTest.class, "testDirectionOnSAF"));
 
+        // tests useful for device with no flash, and only 1 camera
         suite.addTest(TestSuite.createTest(MainActivityTest.class, "testSwitchVideo"));
         suite.addTest(TestSuite.createTest(MainActivityTest.class, "testFocusFlashAvailability"));
+
+        // tests for testing Camera2 API with LEGACY Camera2 functionality
+        suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakePhoto"));
+        suite.addTest(TestSuite.createTest(MainActivityTest.class, "testTakeVideo"));
 
         return suite;
     }

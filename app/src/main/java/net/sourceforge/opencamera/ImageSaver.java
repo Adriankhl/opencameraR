@@ -683,12 +683,12 @@ public class ImageSaver extends Thread {
                 false,
                 0,
                 save_base,
-                new ArrayList<byte[]>(),
+                new ArrayList<>(),
                 null,
                 image_capture_intent, image_capture_intent_uri,
                 using_camera2,
                 image_format, image_quality,
-                do_auto_stabilise, level_angle, want_gyro_matrices ? new ArrayList<float []>() : null,
+                do_auto_stabilise, level_angle, want_gyro_matrices ? new ArrayList<>() : null,
                 is_front_facing,
                 mirror,
                 current_date,
@@ -1354,7 +1354,7 @@ public class ImageSaver extends Thread {
                     long time_s = System.currentTimeMillis();
                     // initialise allocation from first two bitmaps
                     //int inSampleSize = hdrProcessor.getAvgSampleSize(request.jpeg_images.size());
-                    int inSampleSize = hdrProcessor.getAvgSampleSize(request.iso);
+                    int inSampleSize = hdrProcessor.getAvgSampleSize(request.iso, request.exposure_time);
                     //final boolean use_smp = false;
                     final boolean use_smp = true;
                     // n_smp_images is how many bitmaps to decompress at once if use_smp==true. Beware of setting too high -
@@ -1399,7 +1399,7 @@ public class ImageSaver extends Thread {
                     int height = bitmap0.getHeight();
                     float avg_factor = 1.0f;
                     this_time_s = System.currentTimeMillis();
-                    HDRProcessor.AvgData avg_data = hdrProcessor.processAvg(bitmap0, bitmap1, avg_factor, request.iso, request.zoom_factor);
+                    HDRProcessor.AvgData avg_data = hdrProcessor.processAvg(bitmap0, bitmap1, avg_factor, request.iso, request.exposure_time, request.zoom_factor);
                     if( bitmaps != null ) {
                         bitmaps.set(0, null);
                         bitmaps.set(1, null);
@@ -1451,7 +1451,7 @@ public class ImageSaver extends Thread {
                         }
                         avg_factor = (float)i;
                         this_time_s = System.currentTimeMillis();
-                        hdrProcessor.updateAvg(avg_data, width, height, new_bitmap, avg_factor, request.iso, request.zoom_factor);
+                        hdrProcessor.updateAvg(avg_data, width, height, new_bitmap, avg_factor, request.iso, request.exposure_time, request.zoom_factor);
                         // updateAvg recycles new_bitmap
                         if( bitmaps != null ) {
                             bitmaps.set(i, null);
@@ -1668,7 +1668,7 @@ public class ImageSaver extends Thread {
                         storageUtils.broadcastFile(saveFile, false, false, false);
                     }
                     else {
-                        broadcastSAFFile(saveUri, false);
+                        broadcastSAFFile(saveUri, false, false);
                     }
                 }
                 catch(IOException e) {
@@ -2000,18 +2000,23 @@ public class ImageSaver extends Thread {
                 if( MyDebug.LOG ) {
                     Log.d(TAG, "x0 = " + x0 + " , y0 = " + y0);
                 }
-                // We need the bitmap to be mutable for photostamp to work - contrary to the documentation for Bitmap.createBitmap
-                // (which says it returns an immutable bitmap), we seem to always get a mutable bitmap anyway. A mutable bitmap
-                // would result in an exception "java.lang.IllegalStateException: Immutable bitmap passed to Canvas constructor"
-                // from the Canvas(bitmap) constructor call in the photostamp code, and I've yet to see this from Google Play.
                 new_bitmap = Bitmap.createBitmap(bitmap, x0, y0, w2, h2);
                 if( new_bitmap != bitmap ) {
                     bitmap.recycle();
                     bitmap = new_bitmap;
                 }
-                if( MyDebug.LOG )
-                    Log.d(TAG, "bitmap is mutable?: " + bitmap.isMutable());
                 System.gc();
+            }
+
+            if( MyDebug.LOG )
+                Log.d(TAG, "bitmap is mutable?: " + bitmap.isMutable());
+            // Usually createBitmap will return a mutable bitmap, but not if the source bitmap (which we set as immutable)
+            // is returned (if the level angle is (tolerantly) 0.
+            // see testPhotoStamp() for testing this.
+            if( !bitmap.isMutable() ) {
+                new_bitmap = bitmap.copy(bitmap.getConfig(), true);
+                bitmap.recycle();
+                bitmap = new_bitmap;
             }
         }
         return bitmap;
@@ -2445,7 +2450,28 @@ public class ImageSaver extends Thread {
                     contentValues.put(MediaStore.Images.Media.IS_PENDING, 1);
                 }
 
-                saveUri = main_activity.getContentResolver().insert(folder, contentValues);
+                // Note, we catch exceptions specific to insert() here and rethrow as IOException,
+                // rather than catching below, to avoid catching things too broadly - e.g.,
+                // IllegalStateException can also be thrown via "new Canvas" (from
+                // postProcessBitmap()) but this is a programming error that we shouldn't catch.
+                // Catching too broadly could mean we miss genuine problems that should be fixed.
+                try {
+                    saveUri = main_activity.getContentResolver().insert(folder, contentValues);
+                }
+                catch(IllegalArgumentException e) {
+                    // can happen for mediastore method if invalid ContentResolver.insert() call
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "IllegalArgumentException inserting to mediastore: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new IOException();
+                }
+                catch(IllegalStateException e) {
+                    // have received Google Play crashes from ContentResolver.insert() call for mediastore method
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "IllegalStateException inserting to mediastore: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new IOException();
+                }
                 if( MyDebug.LOG )
                     Log.d(TAG, "saveUri: " + saveUri);
                 if( saveUri == null ) {
@@ -2542,6 +2568,11 @@ public class ImageSaver extends Thread {
                     }
                 }
 
+                if( update_thumbnail ) {
+                    // clear just in case we're unable to update this - don't want an out of date cached uri
+                    storageUtils.clearLastMediaScanned();
+                }
+
                 if( picFile != null && saveUri == null ) {
                     // broadcast for SAF is done later, when we've actually written out the file
                     storageUtils.broadcastFile(picFile, true, false, update_thumbnail);
@@ -2553,10 +2584,6 @@ public class ImageSaver extends Thread {
                         Log.d(TAG, "finish activity due to being called from intent");
                     main_activity.setResult(Activity.RESULT_OK);
                     main_activity.finish();
-                }
-                if( storageUtils.isUsingSAF() ) {
-                    // most Gallery apps don't seem to recognise the SAF-format Uri, so just clear the field
-                    storageUtils.clearLastMediaScanned();
                 }
 
                 if( saveUri != null ) {
@@ -2577,12 +2604,14 @@ public class ImageSaver extends Thread {
                             // and mediastore method is only used on Android 10+, but keep this just in case
                             // announceUri does something in future
                             storageUtils.announceUri(saveUri, true, false);
-                            // we also want to save the uri - we can use the media uri directly, rather than having to scan it
-                            storageUtils.setLastMediaScanned(saveUri);
+                            if( update_thumbnail ) {
+                                // we also want to save the uri - we can use the media uri directly, rather than having to scan it
+                                storageUtils.setLastMediaScanned(saveUri, false);
+                            }
                         }
                     }
                     else {
-                        broadcastSAFFile(saveUri, request.image_capture_intent);
+                        broadcastSAFFile(saveUri, update_thumbnail, request.image_capture_intent);
                     }
 
                     main_activity.test_last_saved_imageuri = saveUri;
@@ -2606,13 +2635,6 @@ public class ImageSaver extends Thread {
             // update: no longer have copyFileToUri() (as no longer use temporary files for SAF), but might as well keep this
             if( MyDebug.LOG )
                 Log.e(TAG, "security exception writing file: " + e.getMessage());
-            e.printStackTrace();
-            main_activity.getPreview().showToast(null, R.string.failed_to_save_photo);
-        }
-        catch(IllegalArgumentException e) {
-            // can happen for mediastore method if invalid ContentResolver.insert() call
-            if( MyDebug.LOG )
-                Log.e(TAG, "IllegalArgumentException writing file: " + e.getMessage());
             e.printStackTrace();
             main_activity.getPreview().showToast(null, R.string.failed_to_save_photo);
         }
@@ -2743,11 +2765,11 @@ public class ImageSaver extends Thread {
         }
     }
 
-    private void broadcastSAFFile(Uri saveUri, boolean image_capture_intent) {
+    private void broadcastSAFFile(Uri saveUri, boolean set_last_scanned, boolean image_capture_intent) {
         if( MyDebug.LOG )
             Log.d(TAG, "broadcastSAFFile");
         StorageUtils storageUtils = main_activity.getStorageUtils();
-        storageUtils.broadcastUri(saveUri, true, false, true, image_capture_intent);
+        storageUtils.broadcastUri(saveUri, true, false, set_last_scanned, image_capture_intent);
     }
 
     /** As setExifFromFile, but can read the Exif tags directly from the jpeg data, and to a file descriptor, rather than a file.
@@ -3115,7 +3137,25 @@ public class ImageSaver extends Thread {
                     contentValues.put(MediaStore.Images.Media.IS_PENDING, 1);
                 }
 
-                saveUri = main_activity.getContentResolver().insert(folder, contentValues);
+                // Note, we catch exceptions specific to insert() here and rethrow as IOException,
+                // rather than catching below, to avoid catching things too broadly.
+                // Catching too broadly could mean we miss genuine problems that should be fixed.
+                try {
+                    saveUri = main_activity.getContentResolver().insert(folder, contentValues);
+                }
+                catch(IllegalArgumentException e) {
+                    // can happen for mediastore method if invalid ContentResolver.insert() call
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "IllegalArgumentException inserting to mediastore: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new IOException();
+                }
+                catch(IllegalStateException e) {
+                    if( MyDebug.LOG )
+                        Log.e(TAG, "IllegalStateException inserting to mediastore: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new IOException();
+                }
                 if( MyDebug.LOG )
                     Log.d(TAG, "saveUri: " + saveUri);
                 if( saveUri == null )
@@ -3158,8 +3198,14 @@ public class ImageSaver extends Thread {
                 applicationInterface.addLastImageMediaStore(saveUri, raw_only);
             }
 
+            // if RAW only, need to update the cached uri
+            if( raw_only ) {
+                // clear just in case we're unable to update this - don't want an out of date cached uri
+                storageUtils.clearLastMediaScanned();
+            }
+
             if( saveUri == null ) {
-                storageUtils.broadcastFile(picFile, true, false, false);
+                storageUtils.broadcastFile(picFile, true, false, raw_only);
             }
             else if( use_media_store ) {
                 if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
@@ -3174,9 +3220,14 @@ public class ImageSaver extends Thread {
                 // and mediastore method is only used on Android 10+, but keep this just in case
                 // announceUri does something in future
                 storageUtils.announceUri(saveUri, true, false);
+
+                if( raw_only ) {
+                    // we also want to save the uri - we can use the media uri directly, rather than having to scan it
+                    storageUtils.setLastMediaScanned(saveUri, true);
+                }
             }
             else {
-                storageUtils.broadcastUri(saveUri, true, false, false, false);
+                storageUtils.broadcastUri(saveUri, true, false, raw_only, false);
             }
         }
         catch(FileNotFoundException e) {

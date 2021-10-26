@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string-array name="focus_mode_icons">
+        <item>drawable/focus_mode_auto</item>
+        <item>drawable/focus_mode_infinity</item>
+        <item>drawable/baseline_filter_vintage_white_48</item>
+        <item>drawable/focus_mode_locked</item>
+        <item>drawable/focus_mode_manual</item>
+        <item>drawable/focus_mode_fixed</item>
+        <item>drawable/focus_mode_edof</item>
+        <item>drawable/focus_mode_continuous_picture</item>
+        <item>drawable/focus_mode_continuous_video</item>
+    </string-array>
     <string-array name="focus_mode_entries">
         <item>Samodejno ostrenje</item>
         <item>Ostrenje v neskončnosti</item>
         <item>Ostrenje makro</item>
-        <item>Zaklenjeno ostrenje</item>
+        <item>Ostrenje je zaklenjeno.</item>
         <item>Ročno ostrenje</item>
         <item>Pritrjeno ostrenje</item>
         <item>Ostrenje EDOF</item>
@@ -83,7 +94,7 @@
         <item>Ostrenje</item>
         <item>Povečaj/Pomanjšaj</item>
         <item>Spremeni raven osvetlitve</item>
-        <item>Vklopi/Izklopi samodejno izravnavo</item>
+        <item>Vklopi/Izklopi samodejno poravnavo</item>
         <item>Spremeni glasnost naprave</item>
         <item>Ne naredi ničesar</item>
     </string-array>
@@ -104,7 +115,7 @@
         <item>0</item>
         <item>180</item>
     </string-array>
-    <string-array name="preference_angle_highlight_color_entries">
+    <string-array name="preference_angle_highlight_color_entries"> <!-- n.b., also used for focus peaking colors -->
         <item>Rdeča</item>
         <item>Zelena</item>
         <item>Modra</item>
@@ -132,7 +143,7 @@
         <item>Zlata (4)</item>
         <item>Trikotnik (1)</item>
         <item>Trikotnik (2)</item>
-        <item>Diagonala</item>
+        <item>Diagonale</item>
     </string-array>
     <string-array name="preference_grid_values">
         <item>preference_grid_none</item>
@@ -170,7 +181,7 @@
     </string-array>
     <string-array name="preference_stamp_gpsformat_entries">
         <item>Privzeta</item>
-        <item>Stopinje/minute/sekunde</item>
+        <item>Stopinje/Minute/Sekunde</item>
         <item>Brez</item>
     </string-array>
     <string-array name="preference_stamp_gpsformat_values">
@@ -205,6 +216,16 @@
         <item>20</item>
         <item>22</item>
         <item>24</item>
+    </string-array>
+	<string-array name="preference_stamp_style_entries">
+        <item>@string/preference_stamp_style_plain</item>
+        <item>@string/preference_stamp_style_shadowed</item>
+        <item>@string/preference_stamp_style_background</item>
+    </string-array>
+    <string-array name="preference_stamp_style_values">
+        <item>preference_stamp_style_plain</item>
+        <item>preference_stamp_style_shadowed</item>
+        <item>preference_stamp_style_background</item>
     </string-array>
     <string-array name="preference_video_restart_entries">
         <item>Ne zaženi ponovno</item>
@@ -244,8 +265,8 @@
     </string-array>
     <string-array name="preference_audio_control_entries">
         <item>Brez</item>
-        <item>Glasen šum</item>
-        <item>Glasovni ukaz: \"cheese\"</item>
+        <item>Glasen zvok</item>
+        <item>Glasovni ukaz: \"cheese\"</item> <!-- note that cheese shouldn't be translated, as we listen for this no matter what language is being used -->
     </string-array>
     <string-array name="preference_audio_control_values">
         <item>none</item>

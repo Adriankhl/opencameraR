@@ -112,7 +112,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">音に対する感度の設定</string>
     <string name="preference_save_location">保存場所</string>
     <string name="preference_save_location_summary">写真/ビデオを保存するフォルダを決めます</string>
-    <string name="preference_using_saf">ストレージへのフレームワークを使用する</string>
     <string name="preference_using_saf_summary">写真やビデオを保存する際にStorage Accessフレームワークを使用するかどうかを選択します。外付けのSDカードに保存する場合はこの設定が必要となります。</string>
     <string name="preference_save_photo_prefix">保存する写真の命名ルール</string>
     <string name="preference_save_photo_prefix_summary">保存する写真のファイル名の手前につける内容を設定します</string>
@@ -299,7 +298,6 @@
     <string name="no_permission">カメラの権限がありません</string>
     <string name="permission_rationale_title">権限が必要です</string>
     <string name="permission_rationale_camera">カメラを有効にするにはカメラの権限が必要です</string>
-    <string name="permission_rationale_storage">写真を保存するにはストレージの読み書き権限が必要です</string>
     <string name="permission_rationale_record_audio">音声付き動画の撮影と音声コントロールを使用するにはマイクの権限が必要です</string>
     <string name="permission_rationale_location">ジオタギング(位置情報を写真やビデオに付加する)には位置情報の権限が必要です。
         位置情報の権限はBluetooth LE リモートコントロールデバイスの接続にも必要です。</string>
@@ -851,7 +849,7 @@
 
     <string name="intro_text">フォーカスするには画面をタッチ、そして写真を撮るには青いカメラボタンを押します。
         \n\n画面の輝度が最大になるのを無効にする場合は、[設定]->[画面表示設定]->[明るさを常に最大にする]をオフにします。
-        Android5以降の端末でSDカードに保存するには、[設定]->[カメラ制御の詳細設定]->[ストレージへのフレームワークを使う]を設定します。
+        Android5以降の端末でSDカードに保存するには、[設定]->[Storage Access Framework]を設定します。
         詳しくは、[設定]->[オンラインヘルプ]をご覧ください。
     </string>
 

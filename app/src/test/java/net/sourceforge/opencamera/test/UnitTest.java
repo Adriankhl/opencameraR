@@ -13,6 +13,8 @@ import net.sourceforge.opencamera.preview.Preview;
 import net.sourceforge.opencamera.preview.VideoQualityHandler;
 import net.sourceforge.opencamera.TextFormatter;
 import net.sourceforge.opencamera.ui.DrawPreview;
+import net.sourceforge.opencamera.ui.MainUI;
+import net.sourceforge.opencamera.ui.PopupView;
 
 import org.junit.Test;
 
@@ -123,21 +125,22 @@ public class UnitTest {
     public void testTimeString() throws ParseException {
         Log.d(TAG, "testTimeString");
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.US);
+        // n.b., do case insensitive checks as at one point I saw the text formatter change from upper case to lower case for AM/PM
         Date time1 = sdf.parse("00:00:00");
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_none", time1), "" );
-        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time1), "12:00:00 AM" );
+        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time1).toLowerCase(Locale.US), "12:00:00 am" );
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_24hour", time1), "00:00:00" );
         Date time2 = sdf.parse("08:15:43");
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_none", time2), "" );
-        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time2), "08:15:43 AM" );
+        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time2).toLowerCase(Locale.US), "08:15:43 am" );
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_24hour", time2), "08:15:43" );
         Date time3 = sdf.parse("12:00:00");
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_none", time3), "" );
-        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time3), "12:00:00 PM" );
+        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time3).toLowerCase(Locale.US), "12:00:00 pm" );
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_24hour", time3), "12:00:00" );
         Date time4 = sdf.parse("13:53:06");
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_none", time4), "" );
-        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time4), "01:53:06 PM" );
+        assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_12hour", time4).toLowerCase(Locale.US), "01:53:06 pm" );
         assertEquals( TextFormatter.getTimeString("preference_stamp_timeformat_24hour", time4), "13:53:06" );
     }
 
@@ -695,7 +698,8 @@ public class UnitTest {
         // If any of these tests fail due to changes to HDRProcessor, consider that we might want to update the values tested in
         // computeBrightenFactors(), rather than simply updating the expected results, to preserve what the test is meant to test.
 
-        HDRProcessor.BrightenFactors brighten_factors = HDRProcessor.computeBrightenFactors(true,1600, 1000000000L/12, 20, 170);
+        //HDRProcessor.BrightenFactors brighten_factors = HDRProcessor.computeBrightenFactors(true,1600, 1000000000L/12, 20, 170);
+        HDRProcessor.BrightenFactors brighten_factors = HDRProcessor.computeBrightenFactors(true,1600, 1000000000L/12, 42, 170);
         assertEquals(1.5f, brighten_factors.gain, 1.0e-5f);
         assertEquals(8.0f, brighten_factors.low_x, 0.1f);
         assertEquals(255.5f, brighten_factors.mid_x, 1.0e-5f);
@@ -703,7 +707,7 @@ public class UnitTest {
 
         // this checks for stability - we change the inputs so we enter "use piecewise function with gain and gamma", but
         // we should not significantly change the values of gain or low_x, and gamma should be close to 1
-        brighten_factors = HDRProcessor.computeBrightenFactors(true,1600, 1000000000L/12, 20, 171);
+        brighten_factors = HDRProcessor.computeBrightenFactors(true,1600, 1000000000L/12, 42, 171);
         assertEquals(1.5f, brighten_factors.gain, 1.0e-5f);
         assertEquals(8.0f, brighten_factors.low_x, 0.1f);
         assertEquals(136.0f, brighten_factors.mid_x, 0.5f);
@@ -880,6 +884,7 @@ public class UnitTest {
         List<HDRProcessor.LuminanceInfo> luminanceInfos = new ArrayList<>();
         List<HDRProcessor.LuminanceInfo> luminanceInfosSorted;
 
+        //noinspection RedundantOperationOnEmptyContainer
         luminanceInfos.clear();
         luminanceInfos.add(new HDRProcessor.LuminanceInfo(0, 64, 255, false));
         luminanceInfos.add(new HDRProcessor.LuminanceInfo(16, 80, 255, false));
@@ -955,5 +960,84 @@ public class UnitTest {
         assertEquals(luminanceInfos.get(3), luminanceInfosSorted.get(4));
         assertEquals(luminanceInfos.get(2), luminanceInfosSorted.get(5));
 
+    }
+
+    private void roundTripWhiteBalanceTemperature(int temperature) {
+        float [] rggb = CameraController2.convertTemperatureToRggb(temperature);
+        Log.d(TAG, "red: " + rggb[0]);
+        Log.d(TAG, "green even: " + rggb[1]);
+        Log.d(TAG, "green odd: " + rggb[2]);
+        Log.d(TAG, "blue: " + rggb[3]);
+        int new_temperature = CameraController2.convertRggbToTemperature(rggb);
+        assertEquals(temperature, new_temperature);
+    }
+
+    @Test
+    public void whiteBalanceTemperature() {
+        Log.d(TAG, "whiteBalanceTemperature");
+
+        // n.b., round trip won't work for low temperatures due to hitting max gain
+        roundTripWhiteBalanceTemperature(3000);
+        roundTripWhiteBalanceTemperature(4000);
+        roundTripWhiteBalanceTemperature(5000);
+        roundTripWhiteBalanceTemperature(6000);
+        roundTripWhiteBalanceTemperature(6600);
+        roundTripWhiteBalanceTemperature(7000);
+        roundTripWhiteBalanceTemperature(8000);
+        roundTripWhiteBalanceTemperature(9000);
+        roundTripWhiteBalanceTemperature(10000);
+        roundTripWhiteBalanceTemperature(12000);
+        roundTripWhiteBalanceTemperature(15000);
+    }
+
+    @Test
+    public void testNRSceneIsLowLight() {
+        Log.d(TAG, "testNRSceneIsLowLight");
+
+        // Galaxy S10e:
+        assertFalse(HDRProcessor.sceneIsLowLight(1000, 1000000000L/25));
+        assertFalse(HDRProcessor.sceneIsLowLight(1600, 1000000000L/25));
+        assertTrue(HDRProcessor.sceneIsLowLight(3200, 1000000000L/17));
+        assertTrue(HDRProcessor.sceneIsLowLight(800, 1000000000L/5));
+        assertTrue(HDRProcessor.sceneIsLowLight(400, 1000000000L/5));
+
+        // Nokia 8:
+        assertFalse(HDRProcessor.sceneIsLowLight(800, 1000000000L/14));
+        assertFalse(HDRProcessor.sceneIsLowLight(752, 1000000000L/10)); // see testAvg36
+        assertFalse(HDRProcessor.sceneIsLowLight(1044, 1000000000L/10)); // see testAvg23
+        assertTrue(HDRProcessor.sceneIsLowLight(1505, 1000000000L/10)); // see testAvg49
+        assertTrue(HDRProcessor.sceneIsLowLight(1551, 1000000000L/10));
+        assertTrue(HDRProcessor.sceneIsLowLight(1600, 1000000000L/3)); // see testAvg51
+        assertTrue(HDRProcessor.sceneIsLowLight(1600, 1000000000L/11)); // see testHDR51
+
+        // Nexus 6:
+        assertFalse(HDRProcessor.sceneIsLowLight(749, 1000000000L/12)); // see testAvg47
+        assertFalse(HDRProcessor.sceneIsLowLight(1000, 1000000000L/12));
+        assertTrue(HDRProcessor.sceneIsLowLight(1196, 1000000000L/12));
+
+        // misc:
+        assertTrue(HDRProcessor.sceneIsLowLight(1600, 1000000000L/17)); // see testAvg1
+    }
+
+    @Test
+    public void testISOButtonStrings() {
+        Log.d(TAG, "testISOButtonStrings");
+
+        int [] iso_button_values = {50, 100, 200, 400, 800, 1600, 3200, 6400};
+        for(int current_iso=1;current_iso<=10000;current_iso++) {
+            //Log.d(TAG, "current_iso: " + current_iso);
+            int index = -1;
+            for(int i=0;i<iso_button_values.length && index==-1;i++) {
+                if( iso_button_values[i] == current_iso ) {
+                    index = i;
+                }
+            }
+            // should only match the same button!
+            for(int i=0;i<iso_button_values.length;i++) {
+                String button_text = PopupView.getButtonOptionString(false, "ISO", MainUI.ISOToButtonText(iso_button_values[i]));
+                //Log.d(TAG, "    i = " + i + " iso: " + iso_button_values[i] + " : " + button_text);
+                assertEquals(i==index, MainUI.ISOTextEquals(button_text, ""+current_iso));
+            }
+        }
     }
 }

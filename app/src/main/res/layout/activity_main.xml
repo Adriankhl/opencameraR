@@ -20,7 +20,6 @@
         android:contentDescription="@string/take_photo"
         android:src="@drawable/take_photo_selector"
         android:onClick="clickedTakePhoto"
-        android:layout_centerVertical="true"
         android:background="@null"
         />
 
@@ -28,12 +27,11 @@
         android:id="@+id/switch_camera"
         android:layout_width="60dp"
         android:layout_height="60dp"
-        android:padding="5dp"
+        android:padding="12dp"
         android:scaleType="fitCenter"
         android:contentDescription="@string/switch_to_front_camera"
-        android:src="@drawable/switch_camera"
+        android:src="@drawable/baseline_switch_camera_white_48"
         android:onClick="clickedSwitchCamera"
-        android:layout_above="@+id/take_photo"
         android:background="@drawable/circle_background"
         android:backgroundTint="@color/icons_background_tint"
         android:backgroundTintMode="src_in"
@@ -47,15 +45,10 @@
         android:paddingRight="15dp"
         android:paddingTop="12dp"
         android:paddingBottom="18dp"
-        android:layout_marginRight="5dp"
         android:scaleType="fitCenter"
         android:contentDescription="@string/switch_multi_camera"
         android:src="@drawable/baseline_add_a_photo_white_48"
         android:onClick="clickedSwitchMultiCamera"
-        android:layout_below="@+id/switch_video"
-        android:layout_toLeftOf="@+id/switch_camera"
-        android:layout_alignTop="@+id/switch_camera"
-        android:layout_alignBottom="@+id/switch_camera"
         android:background="@drawable/circle_background"
         android:backgroundTint="@color/icons_background_tint"
         android:backgroundTintMode="src_in"
@@ -71,7 +64,6 @@
         android:contentDescription="@string/pause_video"
         android:src="@drawable/ic_pause_circle_outline_white_48dp"
         android:onClick="clickedPauseVideo"
-        android:layout_above="@+id/take_photo"
         android:background="@null"
         android:visibility="gone"
         />
@@ -85,7 +77,6 @@
         android:contentDescription="@string/cancel_panorama"
         android:src="@drawable/baseline_close_white_48"
         android:onClick="clickedCancelPanorama"
-        android:layout_above="@+id/take_photo"
         android:background="@null"
         android:visibility="gone"
         />
@@ -101,7 +92,6 @@
         android:src="@drawable/take_video"
         android:alpha="0.55"
         android:onClick="clickedSwitchVideo"
-        android:layout_below="@+id/take_photo"
         android:background="@null"
         />
 
@@ -114,16 +104,18 @@
         android:contentDescription="@string/take_photo"
         android:src="@drawable/take_photo_when_video_recording"
         android:onClick="clickedTakePhotoVideoSnapshot"
-        android:layout_below="@+id/take_photo"
         android:background="@null"
         android:visibility="gone"
         />
 
+    <!-- n.b., need to specify a fixed width/height rather than wrap_content, so that MainUI.setFixedRotation()
+        works okay (to help layout in portrait system orientation)
+    -->
     <ZoomControls
         android:id="@+id/zoom"
         android:contentDescription="@string/zoom"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="160dp"
+        android:layout_height="50dp"
         android:alpha="0.5"
         />
 
@@ -132,10 +124,6 @@
         android:contentDescription="@string/zoom"
         android:layout_width="150dp"
         android:layout_height="50dp"
-        android:layout_marginLeft="0dp"
-        android:layout_marginRight="20dp"
-        android:layout_marginTop="0dp"
-        android:layout_marginBottom="0dp"
         android:background="@color/seekbar_background"
         />
 
@@ -145,7 +133,7 @@
         android:contentDescription="@string/focus_distance"
         android:layout_width="150dp"
         android:layout_height="50dp"
-        android:layout_marginLeft="135dp"
+        android:layout_marginLeft="0dp"
         android:layout_marginRight="0dp"
         android:layout_marginTop="0dp"
         android:layout_marginBottom="0dp"
@@ -159,7 +147,7 @@
         android:contentDescription="@string/focus_bracketing_target_distance"
         android:layout_width="150dp"
         android:layout_height="50dp"
-        android:layout_marginLeft="135dp"
+        android:layout_marginLeft="0dp"
         android:layout_marginRight="0dp"
         android:layout_marginTop="0dp"
         android:layout_marginBottom="0dp"
@@ -315,7 +303,7 @@
         android:padding="10dp"
         android:scaleType="fitCenter"
         android:contentDescription="@string/switch_to_front_camera"
-        android:src="@drawable/switch_camera"
+        android:src="@drawable/baseline_switch_camera_white_48"
         android:background="@color/icons_background"
         android:backgroundTint="@color/icons_background_tint"
         android:backgroundTintMode="src_in"
@@ -434,7 +422,7 @@
         android:padding="10dp"
         android:scaleType="fitCenter"
         android:contentDescription="@string/trash"
-        android:src="@drawable/trash"
+        android:src="@drawable/baseline_delete_white_48"
         android:background="@color/icons_background"
         android:backgroundTint="@color/icons_background_tint"
         android:backgroundTintMode="src_in"
@@ -619,8 +607,6 @@
         android:id="@+id/popup_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignRight="@+id/popup"
-        android:layout_below="@+id/popup"
         android:fadeScrollbars="false"
         />
     

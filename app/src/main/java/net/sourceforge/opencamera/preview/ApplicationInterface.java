@@ -121,7 +121,6 @@ public interface ApplicationInterface {
     boolean getVideoFlashPref(); // option to switch flash on/off while recording video (should be false in most cases!)
     boolean getVideoLowPowerCheckPref(); // whether to stop video automatically on critically low battery
     String getPreviewSizePref(); // "preference_preview_size_wysiwyg" is recommended (preview matches aspect ratio of photo resolution as close as possible), but can also be "preference_preview_size_display" to maximise the preview size
-    String getPreviewRotationPref(); // return "0" for default; use "180" to rotate the preview 180 degrees
     String getLockOrientationPref(); // return "none" for default; use "portrait" or "landscape" to lock photos/videos to that orientation
     boolean getTouchCapturePref(); // whether to enable touch to capture
     boolean getDoubleTapCapturePref(); // whether to enable double-tap to capture
@@ -141,6 +140,7 @@ public interface ApplicationInterface {
     double getCalibratedLevelAngle(); // set to non-zero to calibrate the accelerometer used for the level angles
     boolean canTakeNewPhoto(); // whether taking new photos is allowed (e.g., can return false if queue for processing images would become full)
     boolean imageQueueWouldBlock(int n_raw, int n_jpegs); // called during some burst operations, whether we can allow taking the supplied number of extra photos
+    int getDisplayRotation(); // same behaviour as Activity.getWindowManager().getDefaultDisplay().getRotation() (including returning a member of Surface.ROTATION_*), but allows application to modify e.g. for upside-down preview
     // Camera2 only modes:
     long getExposureTimePref(); // only called if getISOPref() is not "default"
     float getFocusDistancePref(boolean is_target_distance);
@@ -201,6 +201,7 @@ public interface ApplicationInterface {
 
     // methods that request actions
     void multitouchZoom(int new_zoom); // indicates that the zoom has changed due to multitouch gesture on preview
+    void requestTakePhoto(); // requesting taking a photo (due to single/double tap, if either getTouchCapturePref(), getDoubleTouchCapturePref() options are enabled)
     // the set/clear*Pref() methods are called if Preview decides to override the requested pref (because Camera device doesn't support requested pref) (clear*Pref() is called if the feature isn't supported at all)
     // the application can use this information to update its preferences
     void setCameraIdPref(int cameraId);

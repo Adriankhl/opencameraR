@@ -74,6 +74,8 @@ import android.renderscript.Element;
 import android.renderscript.RSInvalidStateException;
 import android.renderscript.RenderScript;
 import android.renderscript.Type;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import android.util.Log;
@@ -91,7 +93,6 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
 import android.view.View.MeasureSpec;
-import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -172,8 +173,9 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     private boolean is_video;
     private volatile MediaRecorder video_recorder; // must be volatile for test project reading the state
     private volatile boolean video_start_time_set; // must be volatile for test project reading the state
-    private long video_start_time; // when the video recording was started, or last resumed if it's was paused
+    private long video_start_time; // system time when the video recording was started, or last resumed if it was paused
     private long video_accumulated_time; // this time should be added to (System.currentTimeMillis() - video_start_time) to find the true video duration, that takes into account pausing/resuming, as well as any auto-restarts from max filesize
+    private long video_time_last_maxfilesize_restart; // when the video last restarted due to maxfilesize (or otherwise 0) - note this is time in ms relative to the recorded video, and not system time
     private boolean video_recorder_is_paused; // whether video_recorder is running but has paused
     private boolean video_restart_on_max_filesize;
     private static final long min_safe_restart_video_time = 1000; // if the remaining max time after restart is less than this, don't restart
@@ -325,7 +327,6 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     private boolean using_face_detection;
     private CameraController.Face [] faces_detected;
     private final RectF face_rect = new RectF();
-    private final AccessibilityManager accessibility_manager;
     private boolean supports_optical_stabilization;
     private boolean supports_video_stabilization;
     private boolean supports_photo_video_recording;
@@ -334,8 +335,8 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     private boolean supports_tonemap_curve;
     private float [] supported_apertures;
     private boolean has_focus_area;
-    private int focus_screen_x;
-    private int focus_screen_y;
+    private float focus_camera_x;
+    private float focus_camera_y;
     private long focus_complete_time = -1;
     private long focus_started_time = -1;
     private int focus_success = FOCUS_DONE;
@@ -447,7 +448,6 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         gestureDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener());
         gestureDetector.setOnDoubleTapListener(new DoubleTapListener());
         scaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
-        accessibility_manager = (AccessibilityManager)activity.getSystemService(Activity.ACCESSIBILITY_SERVICE);
 
         parent.addView(cameraSurface.getView());
         if( canvasView != null ) {
@@ -537,16 +537,12 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
 		return preview_to_camera_matrix;
 	}*/
 
-    private ArrayList<CameraController.Area> getAreas(float x, float y) {
-        float [] coords = {x, y};
-        calculatePreviewToCameraMatrix();
-        preview_to_camera_matrix.mapPoints(coords);
-        float focus_x = coords[0];
-        float focus_y = coords[1];
-
+    /** Return a focus area from supplied point. Supplied coordinates should be in camera
+     *  coordinates.
+     */
+    private ArrayList<CameraController.Area> getAreas(float focus_x, float focus_y) {
         int focus_size = 50;
         if( MyDebug.LOG ) {
-            Log.d(TAG, "x, y: " + x + ", " + y);
             Log.d(TAG, "focus x, y: " + focus_x + ", " + focus_y);
         }
         Rect rect = new Rect();
@@ -625,10 +621,6 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         if( touch_was_multitouch ) {
             return true;
         }
-        if( !this.is_video && this.isTakingPhotoOrOnTimer() ) {
-            // if video, okay to refocus when recording
-            return true;
-        }
 
         // ignore swipes
         {
@@ -651,6 +643,24 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
             }
         }
 
+        if( takePhotoOnDoubleTap() ) {
+            // need to wait until onSingleTapConfirmed() before calling handleSingleTouch(), e.g., don't
+            // want to do touch-to-focus if this is part of a double tap
+            return true;
+        }
+
+        return handleSingleTouch(event, was_paused);
+    }
+
+    private boolean handleSingleTouch(MotionEvent event, boolean was_paused) {
+        if( MyDebug.LOG )
+            Log.d(TAG, "handleSingleTouch");
+
+        if( !this.is_video && this.isTakingPhotoOrOnTimer() ) {
+            // if video, okay to refocus when recording
+            return true;
+        }
+
         // note, we always try to force start the preview (in case is_preview_paused has become false)
         // except if recording video (firstly, the preview should be running; secondly, we don't want to reset the phase!)
         if( !this.is_video ) {
@@ -658,16 +668,29 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         }
         cancelAutoFocus();
 
+        boolean touch_capture = applicationInterface.getTouchCapturePref();
+
         // don't set focus areas on touch if the user is touching to unpause!
-        if( camera_controller != null && !this.using_face_detection && !was_paused ) {
+        // similarly if doing single touch to capture (we go straight to taking a photo)
+        if( camera_controller != null && !this.using_face_detection && !was_paused && !touch_capture ) {
             this.has_focus_area = false;
-            ArrayList<CameraController.Area> areas = getAreas(event.getX(), event.getY());
+
+            if( MyDebug.LOG ) {
+                Log.d(TAG, "x, y: " + event.getX() + ", " + event.getY());
+            }
+            float [] coords = {event.getX(), event.getY()};
+            calculatePreviewToCameraMatrix();
+            preview_to_camera_matrix.mapPoints(coords);
+            float focus_x = coords[0];
+            float focus_y = coords[1];
+            ArrayList<CameraController.Area> areas = getAreas(focus_x, focus_y);
+
             if( camera_controller.setFocusAndMeteringArea(areas) ) {
                 if( MyDebug.LOG )
                     Log.d(TAG, "set focus (and metering?) area");
                 this.has_focus_area = true;
-                this.focus_screen_x = (int)event.getX();
-                this.focus_screen_y = (int)event.getY();
+                this.focus_camera_x = focus_x;
+                this.focus_camera_y = focus_y;
             }
             else {
                 if( MyDebug.LOG )
@@ -677,11 +700,14 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         }
 
         // don't take a photo on touch if the user is touching to unpause!
-        if( !this.is_video && !was_paused && applicationInterface.getTouchCapturePref() ) {
+        if( !this.is_video && !was_paused && touch_capture ) {
             if( MyDebug.LOG )
                 Log.d(TAG, "touch to capture");
-            // interpret as if user had clicked take photo/video button, except that we set the focus/metering areas
-            this.takePicturePressed(false, false);
+            // Interpret as if user had clicked take photo/video button, except that we set the focus/metering areas.
+            // We go via ApplicationInterface instead of going direct to Preview.takePicturePressed(), so that
+            // the application can handle same as if user had pressed shutter button (needed so that this works
+            // correctly in Panorama mode).
+            applicationInterface.requestTakePhoto();
             return true;
         }
 
@@ -706,24 +732,53 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         }
     }
 
+    /** Returns whether we will take a photo on a double tap.
+     */
+    private boolean takePhotoOnDoubleTap() {
+        return !is_video && applicationInterface.getDoubleTapCapturePref();
+    }
+
     @SuppressWarnings("SameReturnValue")
     public boolean onDoubleTap() {
         if( MyDebug.LOG )
             Log.d(TAG, "onDoubleTap()");
-        if( !is_video && applicationInterface.getDoubleTapCapturePref() ) {
+        if( takePhotoOnDoubleTap() ) {
             if( MyDebug.LOG )
                 Log.d(TAG, "double-tap to capture");
-            // interpret as if user had clicked take photo/video button (don't need to set focus/metering, as this was done in touchEvent() for the first touch of the double-tap)
-            takePicturePressed(false, false);
+            // Interpret as if user had clicked take photo/video button.
+            // We go via ApplicationInterface instead of going direct to Preview.takePicturePressed(), so that
+            // the application can handle same as if user had pressed shutter button (needed so that this works
+            // correctly in Panorama mode).
+            applicationInterface.requestTakePhoto();
         }
         return true;
     }
 
     private class DoubleTapListener extends GestureDetector.SimpleOnGestureListener {
         @Override
+        public boolean onSingleTapConfirmed(MotionEvent e) {
+            if( MyDebug.LOG )
+                Log.d(TAG, "onSingleTapConfirmed");
+            // If we're taking a photo on double tap, then for single taps we need to wait until these are confirmed
+            // otherwise we handle via Preview.touchEvent().
+            // Arguably we could handle everything via onSingleTapConfirmed(), but want to avoid
+            // unexpected changes of behaviour - plus it would mean a slight delay for touch to
+            // focus (since onSingleTapConfirmed obviously has to wait to be sure this isn't a
+            // double tap).
+            if( takePhotoOnDoubleTap() ) {
+                // now safe to handle the single touch
+                boolean was_paused = !is_preview_started;
+                if( MyDebug.LOG )
+                    Log.d(TAG, "was_paused: " + was_paused);
+                return handleSingleTouch(e, was_paused);
+            }
+            return false;
+        }
+
+        @Override
         public boolean onDoubleTap(MotionEvent e) {
             if( MyDebug.LOG )
-                Log.d(TAG, "onDoubleTap()");
+                Log.d(TAG, "onDoubleTap");
             return Preview.this.onDoubleTap();
         }
     }
@@ -819,7 +874,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void surfaceCreated(SurfaceHolder holder) {
+    public void surfaceCreated(@NonNull SurfaceHolder holder) {
         if( MyDebug.LOG )
             Log.d(TAG, "surfaceCreated()");
         // The Surface has been created, acquire the camera and tell it where
@@ -829,7 +884,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
+    public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
         if( MyDebug.LOG )
             Log.d(TAG, "surfaceDestroyed()");
         // Surface will be destroyed when we return, so stop the preview.
@@ -839,7 +894,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
+    public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int w, int h) {
         if( MyDebug.LOG )
             Log.d(TAG, "surfaceChanged " + w + ", " + h);
         if( holder.getSurface() == null ) {
@@ -850,7 +905,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void onSurfaceTextureAvailable(SurfaceTexture arg0, int width, int height) {
+    public void onSurfaceTextureAvailable(@NonNull SurfaceTexture arg0, int width, int height) {
         if( MyDebug.LOG )
             Log.d(TAG, "onSurfaceTextureAvailable()");
         this.set_textureview_size = true;
@@ -860,7 +915,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public boolean onSurfaceTextureDestroyed(SurfaceTexture arg0) {
+    public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture arg0) {
         if( MyDebug.LOG )
             Log.d(TAG, "onSurfaceTextureDestroyed()");
         this.set_textureview_size = false;
@@ -871,7 +926,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
+    public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture texture, int width, int height) {
         if( MyDebug.LOG ) {
             Log.d(TAG, "onSurfaceTextureSizeChanged " + width + ", " + height);
             //Log.d(TAG, "surface texture is now: " + ((TextureView)cameraSurface).getSurfaceTexture());
@@ -906,7 +961,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     @Override
-    public void onSurfaceTextureUpdated(SurfaceTexture arg0) {
+    public void onSurfaceTextureUpdated(@NonNull SurfaceTexture arg0) {
         refreshPreviewBitmap();
     }
 
@@ -920,13 +975,13 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         }
         if( MyDebug.LOG )
             Log.d(TAG, "textureview size: " + textureview_w + ", " + textureview_h);
-        int rotation = getDisplayRotation();
+        int rotation = applicationInterface.getDisplayRotation();
         Matrix matrix = new Matrix();
         RectF viewRect = new RectF(0, 0, this.textureview_w, this.textureview_h);
         RectF bufferRect = new RectF(0, 0, this.preview_h, this.preview_w);
         float centerX = viewRect.centerX();
         float centerY = viewRect.centerY();
-        if( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {
+        if( rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270  ) {
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
             matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
             float scale = Math.max(
@@ -934,6 +989,9 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                     (float) textureview_w / preview_w);
             matrix.postScale(scale, scale, centerX, centerY);
             matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+        }
+        else if( rotation == Surface.ROTATION_180 ) {
+            matrix.postRotate(180, centerX, centerY);
         }
         cameraSurface.setTransform(matrix);
     }
@@ -1028,7 +1086,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         return applicationInterface.getContext();
     }
 
-    /** Restart video - either due to hitting maximum filesize, or maximum duration.
+    /** Restart video - either due to hitting maximum filesize (for pre-Android 8 when not able to restart seamlessly), or maximum duration.
      */
     private void restartVideo(boolean due_to_max_filesize) {
         if( MyDebug.LOG )
@@ -2199,15 +2257,6 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                         Activity activity = (Activity)Preview.this.getContext();
                         activity.runOnUiThread(new Runnable() {
                             public void run() {
-                                // convert rects to preview screen space - also needs to be done on UI thread
-                                // (otherwise can have crashes if camera_controller becomes null in the meantime)
-                                final Matrix matrix = getCameraToPreviewMatrix();
-                                for(CameraController.Face face : faces) {
-                                    face_rect.set(face.rect);
-                                    matrix.mapRect(face_rect);
-                                    face_rect.round(face.rect);
-                                }
-
                                 reportFaces(faces);
 
                                 if( faces_detected == null || faces_detected.length != faces.length ) {
@@ -2225,7 +2274,8 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                      */
                     private void reportFaces(CameraController.Face[] local_faces) {
                         // View.announceForAccessibility requires JELLY_BEAN
-                        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && accessibility_manager.isEnabled() && accessibility_manager.isTouchExplorationEnabled() ) {
+                        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN
+                            ) {
                             int n_faces = local_faces.length;
                             FaceLocation face_location = FaceLocation.FACELOCATION_UNKNOWN;
                             if( n_faces > 0 ) {
@@ -2233,9 +2283,16 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
                                 float avg_x = 0, avg_y = 0;
                                 final float bdry_frac_c = 0.35f;
                                 boolean all_centre = true;
+                                final Matrix matrix = getCameraToPreviewMatrix();
                                 for(CameraController.Face face : local_faces) {
-                                    float face_x = face.rect.centerX();
-                                    float face_y = face.rect.centerY();
+                                    //float face_x = face.rect.centerX();
+                                    //float face_y = face.rect.centerY();
+                                    // convert to screen space coordinates
+                                    face_rect.set(face.rect);
+                                    matrix.mapRect(face_rect);
+                                    float face_x = face_rect.centerX();
+                                    float face_y = face_rect.centerY();
+
                                     face_x /= (float)cameraSurface.getView().getWidth();
                                     face_y /= (float)cameraSurface.getView().getHeight();
                                     if( all_centre ) {
@@ -3695,36 +3752,12 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         return aspect_ratio;
     }
 
-    /** Returns the ROTATION_* enum of the display relative to the natural device orientation.
-     */
-    public int getDisplayRotation() {
-        // gets the display rotation (as a Surface.ROTATION_* constant), taking into account the getRotatePreviewPreferenceKey() setting
-        Activity activity = (Activity)this.getContext();
-        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-
-        String rotate_preview = applicationInterface.getPreviewRotationPref();
-        if( MyDebug.LOG )
-            Log.d(TAG, "    rotate_preview = " + rotate_preview);
-        if( rotate_preview.equals("180") ) {
-            switch (rotation) {
-                case Surface.ROTATION_0: rotation = Surface.ROTATION_180; break;
-                case Surface.ROTATION_90: rotation = Surface.ROTATION_270; break;
-                case Surface.ROTATION_180: rotation = Surface.ROTATION_0; break;
-                case Surface.ROTATION_270: rotation = Surface.ROTATION_90; break;
-                default:
-                    break;
-            }
-        }
-
-        return rotation;
-    }
-
     /** Returns the rotation in degrees of the display relative to the natural device orientation.
      */
     private int getDisplayRotationDegrees() {
         if( MyDebug.LOG )
             Log.d(TAG, "getDisplayRotationDegrees");
-        int rotation = getDisplayRotation();
+        int rotation = applicationInterface.getDisplayRotation();
         int degrees = 0;
         switch (rotation) {
             case Surface.ROTATION_0: degrees = 0; break;
@@ -4117,6 +4150,8 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     public String getExposureTimeString(long exposure_time) {
+        /*if( MyDebug.LOG )
+            Log.d(TAG, "getExposureTimeString(): " + exposure_time);*/
         double exposure_time_s = exposure_time/1000000000.0;
         String string;
         if( exposure_time > 100000000 ) {
@@ -4127,6 +4162,8 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
             double exposure_time_r = 1.0/exposure_time_s;
             string = " 1/" + (int)(exposure_time_r + 0.5) + getResources().getString(R.string.seconds_abbreviation);
         }
+        /*if( MyDebug.LOG )
+            Log.d(TAG, "getExposureTimeString() return: " + string);*/
         return string;
     }
 
@@ -5193,6 +5230,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
             }
             else {
                 videoFileInfo.close();
+                video_time_last_maxfilesize_restart = getVideoTime(false);
                 applicationInterface.restartedVideo(videoFileInfo.video_method, videoFileInfo.video_uri, videoFileInfo.video_filename);
                 videoFileInfo = nextVideoFileInfo;
                 nextVideoFileInfo = null;
@@ -5664,6 +5702,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
 
         video_start_time = System.currentTimeMillis();
         video_start_time_set = true;
+        video_time_last_maxfilesize_restart = max_filesize_restart ? video_accumulated_time : 0;
         applicationInterface.startedVideo();
         // Don't send intent for ACTION_MEDIA_SCANNER_SCAN_FILE yet - wait until finished, so we get completed file.
         // Don't do any further calls after applicationInterface.startedVideo() that might throw an error - instead video error
@@ -7663,7 +7702,7 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
 
     public void setUIRotation(int ui_rotation) {
         if( MyDebug.LOG )
-            Log.d(TAG, "setUIRotation");
+            Log.d(TAG, "setUIRotation: " + ui_rotation);
         this.ui_rotation = ui_rotation;
     }
 
@@ -7772,8 +7811,11 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     private void recreatePreviewBitmap() {
-        if( MyDebug.LOG )
+        if( MyDebug.LOG ) {
             Log.d(TAG, "recreatePreviewBitmap");
+            Log.d(TAG, "textureview_w: " + textureview_w);
+            Log.d(TAG, "textureview_h: " + textureview_h);
+        }
         freePreviewBitmap();
 
         if( want_preview_bitmap ) {
@@ -8343,12 +8385,17 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         return isVideoRecording() && video_recorder_is_paused;
     }
 
-    public long getVideoTime() {
+    /** Returns the time of the current video.
+     *  In case of restarting due to max filesize (whether on Android 8+ or not), this includes the
+     *  total time of all the previous video files too, unless this_file_only==true;
+     */
+    public long getVideoTime(boolean this_file_only) {
+        long offset = this_file_only ? video_time_last_maxfilesize_restart : 0;
         if( this.isVideoRecordingPaused() ) {
-            return video_accumulated_time;
+            return video_accumulated_time - offset;
         }
         long time_now = System.currentTimeMillis();
-        return time_now - video_start_time + video_accumulated_time;
+        return time_now - video_start_time + video_accumulated_time - offset;
     }
 
     public long getVideoAccumulatedTime() {
@@ -8434,7 +8481,12 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
     }
 
     public Pair<Integer, Integer> getFocusPos() {
-        return new Pair<>(focus_screen_x, focus_screen_y);
+        // note, we don't store the screen coordinates, as they may become out of date in the
+        // screen orientation changes (if MainActivity.lock_to_landscape==false)
+        float [] coords = {focus_camera_x, focus_camera_y};
+        final Matrix matrix = getCameraToPreviewMatrix();
+        matrix.mapPoints(coords);
+        return new Pair<>((int)coords[0], (int)coords[1]);
     }
 
     public int getMaxNumFocusAreas() {
@@ -8485,7 +8537,20 @@ public class Preview implements SurfaceHolder.Callback, TextureView.SurfaceTextu
         return this.successfully_focused && System.currentTimeMillis() < this.successfully_focused_time + 5000;
     }
 
+    /** If non-null, this returned array will stored the currently detected faces (if face recognition
+     *  is enabled). The face.temp rect will store the face rectangle in screen coordinates.
+     */
     public CameraController.Face [] getFacesDetected() {
+        if( faces_detected != null && faces_detected.length > 0 ) {
+            // note, we don't store the screen coordinates, as they may become out of date in the
+            // screen orientation changes (if MainActivity.lock_to_landscape==false)
+            final Matrix matrix = getCameraToPreviewMatrix();
+            for(CameraController.Face face : faces_detected) {
+                face_rect.set(face.rect);
+                matrix.mapRect(face_rect);
+                face_rect.round(face.temp);
+            }
+        }
         // FindBugs warns about returning the array directly, but in fact we need to return direct access rather than copying, so that the on-screen display of faces rectangles updates
         return this.faces_detected;
     }

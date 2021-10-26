@@ -1,6 +1,7 @@
 package net.sourceforge.opencamera.test;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -36,6 +37,8 @@ import net.sourceforge.opencamera.ui.PopupView;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 //import android.content.res.AssetManager;
@@ -58,6 +61,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 //import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
@@ -572,11 +576,12 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
      */
     private void subTestSaveFocusMode() {
         Log.d(TAG, "subTestSaveFocusMode");
+        setToDefault();
+
         if( !mPreview.supportsFocus() ) {
+            Log.d(TAG, "test requires focus");
             return;
         }
-
-        setToDefault();
 
         String non_default_focus = getNonDefaultFocus();
 
@@ -887,11 +892,15 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "frame size: " + mPreview.getView().getWidth() + ", " + mPreview.getView().getHeight());
         double frame_aspect_ratio = ((double)mPreview.getView().getWidth()) / (double)mPreview.getView().getHeight();
         double preview_aspect_ratio = ((double)mPreview.getCameraController().getPreviewSize().width) / (double)mPreview.getCameraController().getPreviewSize().height;
+        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            frame_aspect_ratio = 1.0f / frame_aspect_ratio;
+        }
         Log.d(TAG, "frame_aspect_ratio: " + frame_aspect_ratio);
         Log.d(TAG, "preview_aspect_ratio: " + preview_aspect_ratio);
         // we calculate etol like this, due to errors from rounding
         //double etol = 1.0f / Math.min((double)mPreview.getWidth(), (double)mPreview.getHeight()) + 1.0e-5;
         double etol = (double)mPreview.getView().getWidth() / (double)(mPreview.getView().getHeight() * (mPreview.getView().getHeight()-1) ) + 1.0e-5;
+        Log.d(TAG, "etol: " + etol);
         assertTrue( Math.abs(frame_aspect_ratio - preview_aspect_ratio) <= etol );
     }
 
@@ -916,6 +925,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         //double targetRatio = mPreview.getTargetRatioForPreview(display_size);
         double targetRatio = mPreview.getTargetRatio();
         double expTargetRatio = ((double)display_size.x) / (double)display_size.y;
+        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            expTargetRatio = 1.0f / expTargetRatio;
+        }
         Log.d(TAG, "targetRatio: " + targetRatio);
         Log.d(TAG, "expTargetRatio: " + expTargetRatio);
         assertTrue( Math.abs(targetRatio - expTargetRatio) <= 1.0e-5 );
@@ -1488,10 +1500,19 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     /* Test doing touch to auto-focus region by swiping to all four corners works okay.
+     * Update: now only do one corner, due to complications with different orientations and devices.
      */
     public void testAutoFocusCorners() {
         Log.d(TAG, "testAutoFocusCorners");
         setToDefault();
+        {
+            // icons along top mode interferes with doing the touch at corners (e.g., on Galaxy Nexus)
+            SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString(PreferenceKeys.UIPlacementPreferenceKey, "ui_right");
+            editor.apply();
+            updateForSettings();
+        }
 
         if( !mPreview.supportsFocus() ) {
             return;
@@ -1499,6 +1520,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         int [] gui_location = new int[2];
         mPreview.getView().getLocationOnScreen(gui_location);
+        Log.d(TAG, "gui_location: " + Arrays.toString(gui_location));
         final int step_dist_c = 2;
         final float scale = mActivity.getResources().getDisplayMetrics().density;
         final int large_step_dist_c = (int) (80 * scale + 0.5f); // convert dps to pixels
@@ -1524,28 +1546,41 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertNull(mPreview.getCameraController().getFocusAreas());
         assertNull(mPreview.getCameraController().getMeteringAreas());
 
-        // do larger step at top-right, due to conflicting with Settings button
-        // but we now ignore swipes - so we now test for that instead
-        Log.d(TAG, "top-right");
+        // skip top-right, as in portrait orientation we'd conflict with settings button
+        /*Log.d(TAG, "top-right");
         TouchUtils.drag(MainActivityTest.this, gui_location[0]+width-1-large_step_dist_c, gui_location[0]+width-1, gui_location[1]+large_step_dist_c, gui_location[1], step_count_c);
         assertFalse(mPreview.hasFocusArea());
         assertNull(mPreview.getCameraController().getFocusAreas());
-        assertNull(mPreview.getCameraController().getMeteringAreas());
+        assertNull(mPreview.getCameraController().getMeteringAreas());*/
 
-        Log.d(TAG, "bottom-left");
-        TouchUtils.drag(MainActivityTest.this, gui_location[0]+step_dist_c, gui_location[0], gui_location[1]+height-1-step_dist_c, gui_location[1]+height-1, step_count_c);
-        assertTrue(mPreview.hasFocusArea());
-        assertNotNull(mPreview.getCameraController().getFocusAreas());
-        assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
-        assertNotNull(mPreview.getCameraController().getMeteringAreas());
-        assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
+        // skip bottom right, conflicts with zoom on various devices
+        // but note in portrait mode, this is bottom-left that we need to skip
+        // update: and in portrait mode, that now conflicts with settings, so we just skip this too
+
+        /*if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            Log.d(TAG, "bottom-right");
+            TouchUtils.drag(MainActivityTest.this, gui_location[0]+width-1-step_dist_c, gui_location[0]+width-1, gui_location[1]+height-1-step_dist_c, gui_location[1]+height-1, step_count_c);
+            assertTrue(mPreview.hasFocusArea());
+            assertNotNull(mPreview.getCameraController().getFocusAreas());
+            assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
+            assertNotNull(mPreview.getCameraController().getMeteringAreas());
+            assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
+        }
+        else {
+            Log.d(TAG, "bottom-left");
+            TouchUtils.drag(MainActivityTest.this, gui_location[0]+step_dist_c, gui_location[0], gui_location[1]+height-1-step_dist_c, gui_location[1]+height-1, step_count_c);
+            assertTrue(mPreview.hasFocusArea());
+            assertNotNull(mPreview.getCameraController().getFocusAreas());
+            assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
+            assertNotNull(mPreview.getCameraController().getMeteringAreas());
+            assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
+        }*/
 
         mPreview.clearFocusAreas();
         assertFalse(mPreview.hasFocusArea());
         assertNull(mPreview.getCameraController().getFocusAreas());
         assertNull(mPreview.getCameraController().getMeteringAreas());
 
-        // skip bottom right, conflicts with zoom on various devices
     }
 
     /* Test face detection, and that we don't get the focus/metering areas set.
@@ -1633,6 +1668,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         // check face detection not already started
         assertTrue( mPreview.getCameraController().startFaceDetection() );
+
+        assertTrue( mPreview.getCameraController() == null || mPreview.getCameraController().count_camera_parameters_exception == 0 );
     }
 
     private void subTestPopupButtonAvailability(String test_key, String option, boolean expected) {
@@ -2813,9 +2850,10 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         // test touch to focus clears the exposure controls
         int [] gui_location = new int[2];
         mPreview.getView().getLocationOnScreen(gui_location);
-        final int step_dist_c = 2;
+        final float scale = mActivity.getResources().getDisplayMetrics().density;
+        final int large_step_dist_c = (int) (80 * scale + 0.5f); // convert dps to pixels
         final int step_count_c = 10;
-        TouchUtils.drag(MainActivityTest.this, gui_location[0]+step_dist_c, gui_location[0], gui_location[1]+step_dist_c, gui_location[1], step_count_c);
+        TouchUtils.drag(MainActivityTest.this, gui_location[0]+large_step_dist_c, gui_location[0], gui_location[1]+large_step_dist_c, gui_location[1], step_count_c);
         assertEquals(exposureButton.getVisibility(), View.VISIBLE);
         assertEquals(exposureContainer.getVisibility(), View.GONE);
         clickView(exposureButton);
@@ -2831,7 +2869,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertEquals(mPreview.getCurrentExposure() - mPreview.getMinimumExposure(), seekBar.getProgress());
 
         // clear again so as to not interfere with take photo routine
-        TouchUtils.drag(MainActivityTest.this, gui_location[0]+step_dist_c, gui_location[0], gui_location[1]+step_dist_c, gui_location[1], step_count_c);
+        TouchUtils.drag(MainActivityTest.this, gui_location[0]+large_step_dist_c, gui_location[0], gui_location[1]+large_step_dist_c, gui_location[1], step_count_c);
         assertEquals(exposureButton.getVisibility(), View.VISIBLE);
         assertEquals(exposureContainer.getVisibility(), View.GONE);
 
@@ -3298,6 +3336,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Thread.sleep(2000);
         int saved_count = mPreview.count_cameraAutoFocus;
         Log.d(TAG, "saved count_cameraAutoFocus: " + saved_count);
+        Log.d(TAG, "has focus area?: " + mPreview.hasFocusArea());
         Log.d(TAG, "about to click preview for autofocus");
         if( double_tap_photo ) {
             TouchUtils.tapView(MainActivityTest.this, mPreview.getView());
@@ -3308,14 +3347,21 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         this.getInstrumentation().waitForIdleSync();
         Log.d(TAG, "1 count_cameraAutoFocus: " + mPreview.count_cameraAutoFocus);
         assertEquals((manual_can_auto_focus ? saved_count + 1 : saved_count), mPreview.count_cameraAutoFocus);
-        assertEquals(mPreview.hasFocusArea(), can_focus_area);
-        if( can_focus_area ) {
+        Log.d(TAG, "has focus area?: " + mPreview.hasFocusArea());
+        if( single_tap_photo || double_tap_photo ) {
+            assertFalse(mPreview.hasFocusArea());
+            assertNull(mPreview.getCameraController().getFocusAreas());
+            assertNull(mPreview.getCameraController().getMeteringAreas());
+        }
+        else if( can_focus_area ) {
+            assertTrue(mPreview.hasFocusArea());
             assertNotNull(mPreview.getCameraController().getFocusAreas());
             assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
             assertNotNull(mPreview.getCameraController().getMeteringAreas());
             assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
         }
         else {
+            assertFalse(mPreview.hasFocusArea());
             assertNull(mPreview.getCameraController().getFocusAreas());
             // we still set metering areas
             assertNotNull(mPreview.getCameraController().getMeteringAreas());
@@ -3324,7 +3370,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         String new_focus_value_ui = mPreview.getCurrentFocusValue();
         //noinspection StringEquality
         assertTrue(new_focus_value_ui == focus_value_ui || new_focus_value_ui.equals(focus_value_ui)); // also need to do == check, as strings may be null if focus not supported
-        if( focus_value.equals("focus_mode_continuous_picture") && !single_tap_photo && mPreview.supportsFocus() && mPreview.getSupportedFocusValues().contains("focus_mode_auto") )
+        if( focus_value.equals("focus_mode_continuous_picture") && !single_tap_photo && !double_tap_photo && mPreview.supportsFocus() && mPreview.getSupportedFocusValues().contains("focus_mode_auto") )
             assertEquals("focus_mode_auto", mPreview.getCameraController().getFocusValue()); // continuous focus mode switches to auto focus on touch (unless single_tap_photo, or auto focus not supported)
         else
             assertEquals(mPreview.getCameraController().getFocusValue(), focus_value);
@@ -3367,7 +3413,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         }
     }
 
-    private void checkFocusAfterTakePhoto2(final boolean touch_to_focus, final boolean test_wait_capture_result, final boolean locked_focus, final boolean can_auto_focus, final boolean can_focus_area, final int saved_count) {
+    private void checkFocusAfterTakePhoto2(final boolean touch_to_focus, final boolean single_tap_photo, final boolean double_tap_photo, final boolean test_wait_capture_result, final boolean locked_focus, final boolean can_auto_focus, final boolean can_focus_area, final int saved_count) {
         // in locked focus mode, taking photo should never redo an auto-focus
         // if photo mode, we may do a refocus if the previous auto-focus failed, but not if it succeeded
         Log.d(TAG, "2 count_cameraAutoFocus: " + mPreview.count_cameraAutoFocus);
@@ -3380,14 +3426,20 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         else if( touch_to_focus ) {
             Log.d(TAG, "can_focus_area?: " + can_focus_area);
             Log.d(TAG, "hasFocusArea?: " + mPreview.hasFocusArea());
-            assertEquals(mPreview.hasFocusArea(), can_focus_area);
-            if( can_focus_area ) {
+            if( single_tap_photo || double_tap_photo ) {
+                assertFalse(mPreview.hasFocusArea());
+                assertNull(mPreview.getCameraController().getFocusAreas());
+                assertNull(mPreview.getCameraController().getMeteringAreas());
+            }
+            else if( can_focus_area ) {
+                assertTrue(mPreview.hasFocusArea());
                 assertNotNull(mPreview.getCameraController().getFocusAreas());
                 assertEquals(1, mPreview.getCameraController().getFocusAreas().size());
                 assertNotNull(mPreview.getCameraController().getMeteringAreas());
                 assertEquals(1, mPreview.getCameraController().getMeteringAreas().size());
             }
             else {
+                assertFalse(mPreview.hasFocusArea());
                 assertNull(mPreview.getCameraController().getFocusAreas());
                 // we still set metering areas
                 assertNotNull(mPreview.getCameraController().getMeteringAreas());
@@ -3676,7 +3728,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             // allow for possibility that the time has passed since taking the photo
             boolean matched = false;
             for(int i=0;i<=max_time_s && !matched;i++) {
-                Date test_date = new Date(date.getTime() - 1000*i);
+                Date test_date = new Date(date.getTime() - 1000L *i);
                 String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(test_date);
                 String expected_filename = "IMG_" + timeStamp + suffix + ".jpg";
                 Log.d(TAG, "expected name: " + expected_filename);
@@ -3794,8 +3846,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         if( focus_value.equals("focus_mode_auto") || focus_value.equals("focus_mode_macro") ) {
             manual_can_auto_focus = true;
         }
-        else if( focus_value.equals("focus_mode_continuous_picture") && !single_tap_photo ) {
-            // if single_tap_photo and continuous mode, we go straight to taking a photo rather than doing a touch to focus
+        else if( focus_value.equals("focus_mode_continuous_picture") && !single_tap_photo && !double_tap_photo ) {
+            // if single_tap_photo or double_tap_photo, and continuous mode, we go straight to taking a photo rather than doing a touch to focus
             manual_can_auto_focus = true;
         }
 
@@ -3840,7 +3892,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         else if( is_nr ) {
             suffix = "_NR";
             if( mActivity.getApplicationInterface().getNRModePref() == MyApplicationInterface.NRModePref.NRMODE_LOW_LIGHT )
-                max_time_s += 4; // takes longer to save low light photo
+                max_time_s += 6; // takes longer to save low light photo
         }
         else if( is_expo ) {
             suffix = "_" + (n_expo_images-1);
@@ -3900,11 +3952,12 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         checkFilesAfterTakePhoto(is_raw, test_wait_capture_result, files, suffix, max_time_s, date);
 
-        checkFocusAfterTakePhoto2(touch_to_focus, test_wait_capture_result, locked_focus, can_auto_focus, can_focus_area, saved_count);
+        checkFocusAfterTakePhoto2(touch_to_focus, single_tap_photo, double_tap_photo, test_wait_capture_result, locked_focus, can_auto_focus, can_focus_area, saved_count);
 
         postTakePhotoChecks(immersive_mode, exposureVisibility, exposureLockVisibility);
 
         assertFalse(mActivity.getApplicationInterface().getImageSaver().test_queue_blocked);
+        assertTrue( mPreview.getCameraController() == null || mPreview.getCameraController().count_camera_parameters_exception == 0 );
     }
 
     public void testTakePhoto() throws InterruptedException {
@@ -4744,12 +4797,15 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             Log.d(TAG, "test requires camera2 api");
             return;
         }
+
+        setToDefault();
+
         if( !mPreview.supportsFocus() ) {
-            // if no focus, then the photo will be taken on th UI thread
+            // if no focus, then the photo will be taken on the UI thread
+            Log.d(TAG, "test requires focus");
             return;
         }
 
-        setToDefault();
         switchToFocusValue("focus_mode_auto");
 
         mPreview.getCameraController().test_release_during_photo = true;
@@ -5232,6 +5288,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     /** Tests the use of the FLAG_LAYOUT_NO_LIMITS flag introduced in 1.48.
+     *  In 1.49 this was replaced with View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION.
      */
     public void testLayoutNoLimits() throws InterruptedException {
         Log.d(TAG, "testLayoutNoLimits");
@@ -5250,21 +5307,27 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         Thread.sleep(1000);
         assertEquals(0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(0, mActivity.getMainUI().test_navigation_gap);
 
         // test changing resolution
         MainActivity.test_preview_want_no_limits_value = true;
         updateForSettings();
         Thread.sleep(1000);
-        boolean supports_no_limits = mActivity.getNavigationGap() != 0;
+        //final boolean supports_no_limits = mActivity.getNavigationGap() != 0;
+        final boolean supports_no_limits = false;
+        final boolean supports_hide_navigation = mActivity.getNavigationGap() != 0;
         Log.d(TAG, "supports_no_limits: " + supports_no_limits);
+        Log.d(TAG, "supports_hide_navigation: " + supports_hide_navigation);
 
         assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
         MainActivity.test_preview_want_no_limits_value = false;
         updateForSettings();
         Thread.sleep(1000);
         assertEquals(0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(0, mActivity.getMainUI().test_navigation_gap);
 
         if( mPreview.getCameraControllerManager().getNumberOfCameras() > 1 ) {
@@ -5273,11 +5336,13 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             switchToCamera(1);
             Thread.sleep(1000);
             assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
             assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
             MainActivity.test_preview_want_no_limits_value = false;
             switchToCamera(0);
             Thread.sleep(1000);
             assertEquals(0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            assertEquals(0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
             assertEquals(0, mActivity.getMainUI().test_navigation_gap);
         }
 
@@ -5289,6 +5354,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertTrue(mPreview.isVideo());
         Thread.sleep(1000);
         assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
         MainActivity.test_preview_want_no_limits_value = false;
         clickView(switchVideoButton);
@@ -5296,6 +5362,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertFalse(mPreview.isVideo());
         Thread.sleep(1000);
         assertEquals(0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(0, mActivity.getMainUI().test_navigation_gap);
 
         // test after restart
@@ -5303,10 +5370,12 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         restart();
         Thread.sleep(1000);
         assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
     }
 
     /** Tests the use of the FLAG_LAYOUT_NO_LIMITS flag introduced in 1.48, with the mode set from startup.
+     *  In 1.49 this was replaced with View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION.
      */
     public void testLayoutNoLimitsStartup() throws InterruptedException {
         Log.d(TAG, "testLayoutNoLimitsStartup");
@@ -5324,12 +5393,16 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         setToDefault();
 
         Thread.sleep(1000);
-        boolean supports_no_limits = mActivity.getNavigationGap() != 0;
+        //boolean supports_no_limits = mActivity.getNavigationGap() != 0;
+        final boolean supports_no_limits = false;
+        final boolean supports_hide_navigation = mActivity.getNavigationGap() != 0;
         Log.d(TAG, "supports_no_limits: " + supports_no_limits);
+        Log.d(TAG, "supports_hide_navigation: " + supports_hide_navigation);
 
         Log.d(TAG, "check FLAG_LAYOUT_NO_LIMITS");
         Log.d(TAG, "test_navigation_gap: " + mActivity.getMainUI().test_navigation_gap);
         assertEquals(supports_no_limits ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0, mActivity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        assertEquals(supports_hide_navigation ? View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION : 0, mActivity.getWindow().getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         assertEquals(mActivity.getNavigationGap(), mActivity.getMainUI().test_navigation_gap);
     }
 
@@ -5767,12 +5840,13 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
     private void takePhotoRepeatFocus(boolean locked) throws InterruptedException {
         Log.d(TAG, "takePhotoRepeatFocus");
+        setToDefault();
 
         if( !mPreview.supportsFocus() ) {
+            Log.d(TAG, "test requires focus");
             return;
         }
 
-        setToDefault();
         if( locked ) {
             switchToFocusValue("focus_mode_locked");
         }
@@ -6369,6 +6443,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             assertEquals(n_new_files-n_non_video_files, mActivity.getApplicationInterface().test_n_videos_scanned);
         }
 
+        assertTrue( mPreview.getCameraController() == null || mPreview.getCameraController().count_camera_parameters_exception == 0 );
         return n_new_files;
     }
 
@@ -6431,7 +6506,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             updateForSettings();
         }
 
-        subTestTakeVideo(false, false, false, false, null, 5000, false, 1);
+        subTestTakeVideo(false, false, false, false, null, 5000, false,
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? 0 : 1 // boo, Android 11 doesn't allow video subtitles to be saved with mediastore API!
+        );
     }
 
     /** Tests video subtitles option, when using Storage Access Framework.
@@ -6454,9 +6531,10 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     /** Tests video subtitles option, including GPS - also tests losing the connection.
+     *  Also test with Storage Access Framework, so this can run on Android 11+.
      */
-    public void testTakeVideoSubtitlesGPS() throws InterruptedException {
-        Log.d(TAG, "testTakeVideoSubtitlesGPS");
+    public void testTakeVideoSubtitlesGPSSAF() throws InterruptedException {
+        Log.d(TAG, "testTakeVideoSubtitlesGPSSAF");
 
         setToDefault();
         {
@@ -6464,6 +6542,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             SharedPreferences.Editor editor = settings.edit();
             editor.putString(PreferenceKeys.VideoSubtitlePref, "preference_video_subtitle_yes");
             editor.putBoolean(PreferenceKeys.LocationPreferenceKey, true);
+            editor.putBoolean(PreferenceKeys.UsingSAFPreferenceKey, true);
+            editor.putString(PreferenceKeys.SaveLocationSAFPreferenceKey, "content://com.android.externalstorage.documents/tree/primary%3ADCIM%2FOpenCamera");
             editor.apply();
             updateForSettings();
         }
@@ -6543,7 +6623,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertFalse(mPreview.isVideoRecordingPaused());
-                long video_time = mPreview.getVideoTime();
+                long video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 3000 - time_tol_ms );
                 assertTrue( video_time <= 3000 + time_tol_ms );
@@ -6571,7 +6651,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertTrue( mPreview.isVideoRecordingPaused() );
-                video_time = mPreview.getVideoTime();
+                video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 3000 - time_tol_ms );
                 assertTrue( video_time <= 3000 + time_tol_ms );
@@ -6601,7 +6681,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertFalse(mPreview.isVideoRecordingPaused());
-                video_time = mPreview.getVideoTime();
+                video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 6000 - time_tol_ms );
                 assertTrue( video_time <= 6000 + time_tol_ms );
@@ -6651,7 +6731,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertFalse(mPreview.isVideoRecordingPaused());
-                long video_time = mPreview.getVideoTime();
+                long video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 3000 - time_tol_ms );
                 assertTrue( video_time <= 3000 + time_tol_ms );
@@ -6681,7 +6761,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 assertEquals(pauseVideoButton.getVisibility(), View.VISIBLE);
                 assertTrue( mPreview.isVideoRecording() );
                 assertTrue( mPreview.isVideoRecordingPaused() );
-                video_time = mPreview.getVideoTime();
+                video_time = mPreview.getVideoTime(false);
                 Log.d(TAG, "video time: " + video_time);
                 assertTrue( video_time >= 3000 - time_tol_ms );
                 assertTrue( video_time <= 3000 + time_tol_ms );
@@ -6869,12 +6949,12 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 // wait until automatically stops
                 Log.d(TAG, "wait until video recording stops");
                 long time_s = System.currentTimeMillis();
-                long video_time_s = mPreview.getVideoTime();
+                long video_time_s = mPreview.getVideoTime(false);
                 // simulate remaining memory now being reduced, so we don't keep trying to restart
                 mActivity.getApplicationInterface().test_available_memory = 10000000;
                 while( mPreview.isVideoRecording() ) {
                     assertTrue( System.currentTimeMillis() - time_s <= 35000 );
-                    long video_time = mPreview.getVideoTime();
+                    long video_time = mPreview.getVideoTime(false);
                     assertTrue( video_time >= video_time_s );
                 }
                 Log.d(TAG, "video recording now stopped");
@@ -6954,6 +7034,11 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             public int doTest() {
                 if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ) {
                     assertTrue(mPreview.isVideoRecording());
+
+                    long video_time = mPreview.getVideoTime(false);
+                    long video_time_this_file = mPreview.getVideoTime(true);
+                    assertEquals(video_time, video_time_this_file);
+
                     Log.d(TAG, "wait");
                     try {
                         Thread.sleep(10000);
@@ -6972,10 +7057,10 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 // wait until automatically stops
                 Log.d(TAG, "wait until video recording stops");
                 long time_s = System.currentTimeMillis();
-                long video_time_s = mPreview.getVideoTime();
+                long video_time_s = mPreview.getVideoTime(false);
                 while( mPreview.isVideoRecording() ) {
                     assertTrue( System.currentTimeMillis() - time_s <= 8000 );
-                    long video_time = mPreview.getVideoTime();
+                    long video_time = mPreview.getVideoTime(false);
                     assertTrue( video_time >= video_time_s );
                 }
                 Log.d(TAG, "video recording now stopped - wait for restart");
@@ -6998,7 +7083,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                         Log.e(TAG, "time: " + (c_time - time_s));
                     }
                     assertTrue( c_time - time_s <= 10000 );
-                    long video_time = mPreview.getVideoTime();
+                    long video_time = mPreview.getVideoTime(false);
                     if( video_time < video_time_s )
                         Log.d(TAG, "compare: " + video_time_s + " to " + video_time);
                     assertTrue( video_time + 1 >= video_time_s );
@@ -7052,6 +7137,13 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ) {
             assertTrue( n_new_files >= 2 );
         }
+
+        // if we've restarted, the total video time should be longer than the video time for the most recent file
+        long video_time = mPreview.getVideoTime(false);
+        long video_time_this_file = mPreview.getVideoTime(true);
+        Log.d(TAG, "video_time: " + video_time);
+        Log.d(TAG, "video_time_this_file: " + video_time_this_file);
+        assertTrue(video_time > video_time_this_file + 1000);
     }
 
     /** Max filesize is for ~4.5s, and max duration is 5s, check we only get 1 video.
@@ -7080,10 +7172,10 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 // wait until automatically stops
                 Log.d(TAG, "wait until video recording stops");
                 long time_s = System.currentTimeMillis();
-                long video_time_s = mPreview.getVideoTime();
+                long video_time_s = mPreview.getVideoTime(false);
                 while( mPreview.isVideoRecording() ) {
                     assertTrue( System.currentTimeMillis() - time_s <= 8000 );
-                    long video_time = mPreview.getVideoTime();
+                    long video_time = mPreview.getVideoTime(false);
                     assertTrue( video_time >= video_time_s );
                 }
                 Log.d(TAG, "video recording now stopped - check we don't restart");
@@ -8205,8 +8297,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         int n_new_files = getNFiles() - n_files;
         Log.d(TAG, "n_new_files: " + n_new_files);
-        assertEquals(1, n_new_files);
-
+        // note, if using scoped storage without SAF (i.e., mediastore API), then the video file won't show up until after we've finished recording (IS_PENDING is set to 0)
+        assertEquals(MainActivity.useScopedStorage() && !mActivity.getStorageUtils().isUsingSAF() ? 0 : 1, n_new_files);
     }
 
     public void testTakeVideoFlashVideo() throws InterruptedException {
@@ -8629,10 +8721,19 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "gallery right: " + galleryButton.getRight());
         Log.d(TAG, "gallery top: " + galleryButton.getTop());
 
-        assertTrue(settingsButton.getRight() > (int)(0.8*display_size.x));
-        assertEquals(0, settingsButton.getTop());
-        assertEquals(display_size.x, galleryButton.getRight());
-        assertEquals(0, galleryButton.getTop());
+        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            assertTrue(settingsButton.getBottom() > (int)(0.8*display_size.y));
+            assertEquals(display_size.x, settingsButton.getRight());
+            // position may be 1 coordinate different on some devices, e.g., Galaxy Nexus
+            assertEquals((double)(display_size.y-1), (double)(galleryButton.getBottom()), 1.0+1.0e-5);
+            assertEquals(display_size.x, galleryButton.getRight());
+        }
+        else {
+            assertTrue(settingsButton.getRight() > (int)(0.8*display_size.x));
+            assertEquals(0, settingsButton.getTop());
+            assertEquals(display_size.x, galleryButton.getRight());
+            assertEquals(0, galleryButton.getTop());
+        }
 
         {
             SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
@@ -8647,10 +8748,19 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "gallery right: " + galleryButton.getRight());
         Log.d(TAG, "gallery top: " + galleryButton.getTop());
 
-        assertTrue(settingsButton.getRight() < (int)(0.2*display_size.x));
-        assertEquals(0, settingsButton.getTop());
-        assertEquals(display_size.x, galleryButton.getRight());
-        assertEquals(0, galleryButton.getTop());
+        if( mActivity.getSystemOrientation() == MainActivity.SystemOrientation.PORTRAIT ) {
+            assertTrue(settingsButton.getBottom() < (int)(0.2*display_size.y));
+            assertEquals(display_size.x, settingsButton.getRight());
+            // position may be 1 coordinate different on some devices, e.g., Galaxy Nexus
+            assertEquals((double)(display_size.y-1), (double)(galleryButton.getBottom()), 1.0+1.0e-5);
+            assertEquals(display_size.x, galleryButton.getRight());
+        }
+        else {
+            assertTrue(settingsButton.getRight() < (int)(0.2*display_size.x));
+            assertEquals(0, settingsButton.getTop());
+            assertEquals(display_size.x, galleryButton.getRight());
+            assertEquals(0, galleryButton.getTop());
+        }
 
         assertFalse(mActivity.popupIsOpen());
         clickView(popupButton);
@@ -9828,6 +9938,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         assertEquals(0, mPreview.count_cameraTakePicture);
 
+        int n_old_files = getNFiles();
+        Log.d(TAG, "n_old_files: " + n_old_files);
+
         View takePhotoButton = mActivity.findViewById(net.sourceforge.opencamera.R.id.take_photo);
         clickView(takePhotoButton);
 
@@ -9837,6 +9950,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
         assertEquals(1, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        int n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(1, n_files);
         testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, false);
 
         // now again with location
@@ -9868,12 +9984,16 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
         assertEquals(2, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(2, n_files);
         testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, true);
 
-        // now again with custom text
+        // now again with location and custom text
         {
             SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
             SharedPreferences.Editor editor = settings.edit();
+            editor.putBoolean(PreferenceKeys.LocationPreferenceKey, true);
             editor.putString(PreferenceKeys.TextStampPreferenceKey, "Test stamp!£$");
             editor.apply();
             updateForSettings();
@@ -9893,6 +10013,9 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
         assertEquals(3, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(3, n_files);
         testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, true);
 
         // now test with auto-stabilise
@@ -9900,6 +10023,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             assertFalse(mActivity.getApplicationInterface().getDrawPreview().getStoredAutoStabilisePref());
             SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
             SharedPreferences.Editor editor = settings.edit();
+            editor.putString(PreferenceKeys.TextStampPreferenceKey, "");
             editor.putBoolean(PreferenceKeys.AutoStabilisePreferenceKey, true);
             editor.apply();
             updateForSettings();
@@ -9914,9 +10038,30 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
         assertEquals(4, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(4, n_files);
         testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, true);
 
+        // now again with auto-stabilise angle 0
+
+        mActivity.test_have_angle = true;
+        mActivity.test_angle = 0.0f;
+
+        clickView(takePhotoButton);
+
+        Log.d(TAG, "wait until finished taking photo");
+        waitForTakePhoto();
+        this.getInstrumentation().waitForIdleSync();
+        Log.d(TAG, "photo count: " + mPreview.count_cameraTakePicture);
+        assertEquals(5, mPreview.count_cameraTakePicture);
         mActivity.waitUntilImageQueueEmpty();
+        n_files = getNFiles() - n_old_files;
+        Log.d(TAG, "n_files: " + n_files);
+        assertEquals(5, n_files);
+        testExif(mActivity.test_last_saved_image, mActivity.test_last_saved_imageuri, true);
+
+        mActivity.test_have_angle = false;
     }
 
     /* Tests we can stamp date/time and location to photo.
@@ -10930,7 +11075,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         setToDefault();
 
-        int display_orientation = mPreview.getDisplayRotation();
+        int display_orientation = mActivity.getApplicationInterface().getDisplayRotation();
         Log.d(TAG, "display_orientation = " + display_orientation);
 
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mActivity);
@@ -10939,7 +11084,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         editor.apply();
         updateForSettings();
 
-        int new_display_orientation = mPreview.getDisplayRotation();
+        int new_display_orientation =  mActivity.getApplicationInterface().getDisplayRotation();
         Log.d(TAG, "new_display_orientation = " + new_display_orientation);
         assertEquals(new_display_orientation, ((display_orientation + 2) % 4));
     }
@@ -11918,7 +12063,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         subTestTakePhoto(false, false, true, true, false, false, false, false);
         Log.d(TAG, "test_capture_results: " + mPreview.getCameraController().test_capture_results);
         assertEquals(mPreview.getCameraController().test_capture_results, n_back_photos + 1);
-        if( mActivity.getPreview().getCameraController().captureResultHasIso() && mActivity.getPreview().getCameraController().captureResultIso() >= CameraController.ISO_FOR_DARK )
+        if( mActivity.getPreview().getCameraController().captureResultHasIso() && HDRProcessor.sceneIsLowLight( mActivity.getPreview().getCameraController().captureResultIso(), mActivity.getPreview().getCameraController().captureResultExposureTime() ) )
             assertEquals(CameraController.N_IMAGES_NR_DARK_LOW_LIGHT, mActivity.getPreview().getCameraController().getBurstTotal());
         // reset
         mActivity.getApplicationInterface().setNRMode("preference_nr_mode_normal");
@@ -12278,10 +12423,41 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         return bitmap;
     }*/
 
+    /** Converts a path to a Uri for com.android.providers.media.documents.
+     */
+    private Uri getDocumentUri(String filename) throws FileNotFoundException {
+        Log.d(TAG, "getDocumentUri: " + filename);
+
+        // convert from File path format to Storage Access Framework form
+        Uri treeUri = Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADCIM%2FtestOpenCamera");
+        Log.d(TAG, "treeUri: " + treeUri);
+        if( !filename.startsWith(images_base_path) ) {
+            Log.e(TAG, "unknown base for: " + filename);
+            throw new FileNotFoundException();
+        }
+        String stem = filename.substring(images_base_path.length());
+        Uri stemUri = Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADCIM" + stem.replace("/", "%2F"));
+        Log.d(TAG, "stem: " + stem);
+        Log.d(TAG, "stemUri: " + stemUri);
+        //String docID = "primary:DCIM" + stem;
+        String docID = DocumentsContract.getTreeDocumentId(stemUri);
+        Log.d(TAG, "docID: " + docID);
+        Uri uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docID);
+
+        if( uri == null ) {
+            throw new FileNotFoundException();
+        }
+        return uri;
+    }
+
     private Bitmap getBitmapFromFile(String filename) throws FileNotFoundException {
         return getBitmapFromFile(filename, 1);
     }
 
+    /** Loads bitmap from supplied filename.
+     *  Note that on Android 10+ (with scoped storage), this uses Storage Access Framework, which
+     *  means Open Camera must have SAF permission to the folder DCIM/testOpenCamera.
+     */
     private Bitmap getBitmapFromFile(String filename, int inSampleSize) throws FileNotFoundException {
         Log.d(TAG, "getBitmapFromFile: " + filename);
         BitmapFactory.Options options = new BitmapFactory.Options();
@@ -12293,15 +12469,45 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             options.inDensity = inSampleSize;
             options.inTargetDensity = 1;
         }
-        Bitmap bitmap = BitmapFactory.decodeFile(filename, options);
+
+        Uri uri = null;
+        Bitmap bitmap;
+
+        if( MainActivity.useScopedStorage() ) {
+            uri = getDocumentUri(filename);
+            Log.d(TAG, "uri: " + uri);
+            InputStream is = mActivity.getContentResolver().openInputStream(uri);
+            bitmap = BitmapFactory.decodeStream(is, null, options);
+            try {
+                is.close();
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+            bitmap = BitmapFactory.decodeFile(filename, options);
+        }
         if( bitmap == null )
             throw new FileNotFoundException();
         Log.d(TAG, "    done: " + bitmap);
 
         // now need to take exif orientation into account, as some devices or camera apps store the orientation in the exif tag,
         // which getBitmap() doesn't account for
+        ParcelFileDescriptor parcelFileDescriptor = null;
+        FileDescriptor fileDescriptor;
         try {
-            ExifInterface exif = new ExifInterface(filename);
+            ExifInterface exif = null;
+            if( uri != null ) {
+                parcelFileDescriptor = mActivity.getContentResolver().openFileDescriptor(uri, "r");
+                if( parcelFileDescriptor != null ) {
+                    fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+                    exif = new ExifInterface(fileDescriptor);
+                }
+            }
+            else {
+                exif = new ExifInterface(filename);
+            }
             if( exif != null ) {
                 int exif_orientation_s = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
                 boolean needs_tf = false;
@@ -12343,6 +12549,16 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         }
         catch(IOException e) {
             e.printStackTrace();
+        }
+        finally {
+            if( parcelFileDescriptor != null ) {
+                try {
+                    parcelFileDescriptor.close();
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
         /*{
             for(int y=0;y<bitmap.getHeight();y++) {
@@ -12696,6 +12912,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     private void checkHistogramDetails(HistogramDetails hdrHistogramDetails, int exp_min_value, int exp_median_value, int exp_max_value) {
+        Log.d(TAG, "checkHistogramDetails");
         Log.d(TAG, "compare min value " + hdrHistogramDetails.min_value + " to expected " + exp_min_value);
         Log.d(TAG, "compare median value " + hdrHistogramDetails.median_value + " to expected " + exp_median_value);
         Log.d(TAG, "compare max value " + hdrHistogramDetails.max_value + " to expected " + exp_max_value);
@@ -12706,10 +12923,11 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         assertTrue(Math.abs(exp_max_value - hdrHistogramDetails.max_value) <= 3);
     }
 
-    final private String hdr_images_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/testOpenCamera/testdata/hdrsamples/";
-    final private String avg_images_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/testOpenCamera/testdata/avgsamples/";
-    final private String logprofile_images_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/testOpenCamera/testdata/logprofilesamples/";
-    final private String panorama_images_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/testOpenCamera/testdata/panoramasamples/";
+    final private String images_base_path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath();
+    final private String hdr_images_path = images_base_path + "/testOpenCamera/testdata/hdrsamples/";
+    final private String avg_images_path = images_base_path + "/testOpenCamera/testdata/avgsamples/";
+    final private String logprofile_images_path = images_base_path + "/testOpenCamera/testdata/logprofilesamples/";
+    final private String panorama_images_path = images_base_path + "/testOpenCamera/testdata/panoramasamples/";
 
     /** Tests HDR algorithm on test samples "saintpaul".
      */
@@ -12734,7 +12952,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         //checkHistogramDetails(hdrHistogramDetails, 1, 39, 253);
         //checkHistogramDetails(hdrHistogramDetails, 1, 44, 253);
         //checkHistogramDetails(hdrHistogramDetails, 1, 42, 253);
-        checkHistogramDetails(hdrHistogramDetails, 1, 24, 254);
+        //checkHistogramDetails(hdrHistogramDetails, 1, 24, 254);
+        checkHistogramDetails(hdrHistogramDetails, 2, 30, 254);
     }
 
     /** Tests HDR algorithm on test samples "saintpaul", but with 5 images.
@@ -14110,7 +14329,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         // ISO 100, exposure time 1/417s, but pass in -1 since these are HDRNTests
         HistogramDetails hdrHistogramDetails = subTestHDR(inputs, "testHDR49_output.jpg", false, -1, -1);
 
-        checkHistogramDetails(hdrHistogramDetails, 0, 75, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 75, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 81, 254);
     }
 
     /** Tests HDR algorithm on test samples "testHDR49".
@@ -14150,7 +14370,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         HistogramDetails hdrHistogramDetails = subTestHDR(inputs, "testHDR49_exp5_output.jpg", false, -1, -1);
 
-        checkHistogramDetails(hdrHistogramDetails, 0, 72, 244);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 72, 244);
+        checkHistogramDetails(hdrHistogramDetails, 0, 78, 243);
     }
 
     /** Tests HDR algorithm on test samples "testHDR50".
@@ -14222,7 +14443,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         HistogramDetails hdrHistogramDetails = subTestHDR(inputs, "testHDR53_output.jpg", false, 103, 1000000000L/5381);
 
-        checkHistogramDetails(hdrHistogramDetails, 0, 55, 254);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 55, 254);
+        checkHistogramDetails(hdrHistogramDetails, 0, 64, 255);
     }
 
     /** Tests HDR algorithm on test samples "testHDR54".
@@ -14535,7 +14757,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         try {
             // initialise allocation from first two bitmaps
             //int inSampleSize = mActivity.getApplicationInterface().getHDRProcessor().getAvgSampleSize(inputs.size());
-            int inSampleSize = mActivity.getApplicationInterface().getHDRProcessor().getAvgSampleSize(iso);
+            int inSampleSize = mActivity.getApplicationInterface().getHDRProcessor().getAvgSampleSize(iso, exposure_time);
             Bitmap bitmap0 = getBitmapFromFile(inputs.get(0), inSampleSize);
             Bitmap bitmap1 = getBitmapFromFile(inputs.get(1), inSampleSize);
             int width = bitmap0.getWidth();
@@ -14544,7 +14766,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             float avg_factor = 1.0f;
             List<Long> times = new ArrayList<>();
             long time_s = System.currentTimeMillis();
-            HDRProcessor.AvgData avg_data = mActivity.getApplicationInterface().getHDRProcessor().processAvg(bitmap0, bitmap1, avg_factor, iso, zoom_factor);
+            HDRProcessor.AvgData avg_data = mActivity.getApplicationInterface().getHDRProcessor().processAvg(bitmap0, bitmap1, avg_factor, iso, exposure_time, zoom_factor);
             Allocation allocation = avg_data.allocation_out;
             times.add(System.currentTimeMillis() - time_s);
             // processAvg recycles both bitmaps
@@ -14558,7 +14780,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
                 Bitmap new_bitmap = getBitmapFromFile(inputs.get(i), inSampleSize);
                 avg_factor = (float)i;
                 time_s = System.currentTimeMillis();
-                mActivity.getApplicationInterface().getHDRProcessor().updateAvg(avg_data, width, height, new_bitmap, avg_factor, iso, zoom_factor);
+                mActivity.getApplicationInterface().getHDRProcessor().updateAvg(avg_data, width, height, new_bitmap, avg_factor, iso, exposure_time, zoom_factor);
                 times.add(System.currentTimeMillis() - time_s);
                 // updateAvg recycles new_bitmap
                 if( cb != null ) {
@@ -15004,7 +15226,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         //checkHistogramDetails(hdrHistogramDetails, 12, 46, 205);
         //checkHistogramDetails(hdrHistogramDetails, 12, 44, 209);
         //checkHistogramDetails(hdrHistogramDetails, 12, 44, 202);
-        checkHistogramDetails(hdrHistogramDetails, 5, 16, 190);
+        //checkHistogramDetails(hdrHistogramDetails, 5, 16, 190);
+        checkHistogramDetails(hdrHistogramDetails, 5, 19, 199);
     }
 
     /** Tests Avg algorithm on test samples "testAvg7".
@@ -15328,7 +15551,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         //checkHistogramDetails(hdrHistogramDetails, 0, 30, 254);
         //checkHistogramDetails(hdrHistogramDetails, 0, 27, 255);
         //checkHistogramDetails(hdrHistogramDetails, 0, 20, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 17, 254);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 17, 254);
+        checkHistogramDetails(hdrHistogramDetails, 0, 31, 255);
     }
 
     /** Tests Avg algorithm on test samples "testAvg13".
@@ -15396,7 +15620,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             }
         });
 
-        //checkHistogramDetails(hdrHistogramDetails, 1, 39, 253);
+        checkHistogramDetails(hdrHistogramDetails, 0, 25, 245);
     }
 
     /** Tests Avg algorithm on test samples "testAvg15".
@@ -15421,7 +15645,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
             }
         });
 
-        //checkHistogramDetails(hdrHistogramDetails, 1, 39, 253);
+        checkHistogramDetails(hdrHistogramDetails, 0, 38, 254);
     }
 
     /** Tests Avg algorithm on test samples "testAvg16".
@@ -15846,7 +16070,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 21, 255);
         //checkHistogramDetails(hdrHistogramDetails, 0, 18, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 8, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 8, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 13, 255);
     }
 
     /** Tests Avg algorithm on test samples "testAvg29".
@@ -15959,7 +16184,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         });
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 24, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 9, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 9, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 13, 255);
     }
 
     /** Tests Avg algorithm on test samples "testAvg32".
@@ -15991,7 +16217,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 34, 255);
         //checkHistogramDetails(hdrHistogramDetails, 0, 13, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 36, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 36, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 61, 254);
     }
 
     /** Tests Avg algorithm on test samples "testAvg33".
@@ -16238,7 +16465,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 50, 255);
         //checkHistogramDetails(hdrHistogramDetails, 0, 19, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 50, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 50, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 67, 255);
     }
 
     /** Tests Avg algorithm on test samples "testAvg41".
@@ -16272,7 +16500,8 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         });
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 49, 255);
-        checkHistogramDetails(hdrHistogramDetails, 0, 37, 255);
+        //checkHistogramDetails(hdrHistogramDetails, 0, 37, 255);
+        checkHistogramDetails(hdrHistogramDetails, 0, 59, 254);
     }
 
     /** Tests Avg algorithm on test samples "testAvg42".
@@ -16715,7 +16944,18 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         HistogramDetails hdrHistogramDetails = subTestLogProfile(image_path, "testLogProfile2_output.jpg");
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 58, 243);
-        checkHistogramDetails(hdrHistogramDetails, 0, 41, 241);
+
+        CameraController2 camera_controller2 = (CameraController2)mPreview.getCameraController();
+        TonemapCurve curve = camera_controller2.testGetTonemapCurve();
+        Log.d(TAG, "point count: " + curve.getPointCount(0));
+        if( curve.getPointCount(0) == 32 ) {
+            // special case codepath for Galaxy S10e tonemap curves bugs means we get slightly different
+            // result
+            checkHistogramDetails(hdrHistogramDetails, 0, 35, 241);
+        }
+        else {
+            checkHistogramDetails(hdrHistogramDetails, 0, 41, 241);
+        }
     }
 
     /** Tests video log profile algorithm on test samples in "testLogProfile3".
@@ -16755,7 +16995,18 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         HistogramDetails hdrHistogramDetails = subTestLogProfile(image_path, "testLogProfile1_extra_strong_output.jpg");
 
         //checkHistogramDetails(hdrHistogramDetails, 2, 67, 254);
-        checkHistogramDetails(hdrHistogramDetails, 0, 13, 254);
+
+        CameraController2 camera_controller2 = (CameraController2)mPreview.getCameraController();
+        TonemapCurve curve = camera_controller2.testGetTonemapCurve();
+        Log.d(TAG, "point count: " + curve.getPointCount(0));
+        if( curve.getPointCount(0) == 32 ) {
+            // special case codepath for Galaxy S10e tonemap curves bugs means we get slightly different
+            // result
+            checkHistogramDetails(hdrHistogramDetails, 0, 8, 254);
+        }
+        else {
+            checkHistogramDetails(hdrHistogramDetails, 0, 13, 254);
+        }
     }
 
     /** Tests video log profile algorithm on test samples in "testAvg20".
@@ -16775,7 +17026,18 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         HistogramDetails hdrHistogramDetails = subTestLogProfile(image_path, "testLogProfile2_extra_strong_output.jpg");
 
         //checkHistogramDetails(hdrHistogramDetails, 0, 126, 250);
-        checkHistogramDetails(hdrHistogramDetails, 0, 66, 244);
+
+        CameraController2 camera_controller2 = (CameraController2)mPreview.getCameraController();
+        TonemapCurve curve = camera_controller2.testGetTonemapCurve();
+        Log.d(TAG, "point count: " + curve.getPointCount(0));
+        if( curve.getPointCount(0) == 32 ) {
+            // special case codepath for Galaxy S10e tonemap curves bugs means we get slightly different
+            // result
+            checkHistogramDetails(hdrHistogramDetails, 0, 51, 244);
+        }
+        else {
+            checkHistogramDetails(hdrHistogramDetails, 0, 66, 244);
+        }
     }
 
     /** Tests video log profile algorithm on test samples in "testLogProfile3".
@@ -16798,12 +17060,92 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
         checkHistogramDetails(hdrHistogramDetails, 0, 170, 255);
     }
 
+    /** Returns the mediastore Uri for the supplied filename inside the supplied baseUri, or null
+     *  if an entry can't be found.
+     */
+    private Uri getUriFromName(Uri baseUri, String name) {
+        Uri uri = null;
+        String [] projection = new String[]{MediaStore.Images.ImageColumns._ID};
+        Cursor cursor = null;
+        try {
+            cursor = mActivity.getContentResolver().query(baseUri, projection, MediaStore.Images.ImageColumns.DISPLAY_NAME + " LIKE ?", new String[]{name}, null);
+            if( cursor != null && cursor.moveToFirst() ) {
+                Log.d(TAG, "found: " + cursor.getCount());
+                long id = cursor.getLong(0);
+                uri = ContentUris.withAppendedId(baseUri, id);
+                Log.d(TAG, "id: " + id);
+                Log.d(TAG, "uri: " + uri);
+            }
+        }
+        catch(Exception e) {
+            Log.e(TAG, "Exception trying to find uri from filename");
+            e.printStackTrace();
+        }
+        finally {
+            if( cursor != null ) {
+                cursor.close();
+            }
+        }
+        return uri;
+    }
+
     private void saveBitmap(Bitmap bitmap, String name) throws IOException {
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/" + name);
-        OutputStream outputStream = new FileOutputStream(file);
+        Log.d(TAG, "saveBitmap: " + name);
+
+        File file = null;
+        ContentValues contentValues = null;
+        Uri uri = null;
+        OutputStream outputStream;
+        if( MainActivity.useScopedStorage() ) {
+            Uri folder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ?
+                    MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY) :
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+
+            // first try to delete pre-existing image
+            Uri old_uri = getUriFromName(folder, name);
+            if( old_uri != null ) {
+                Log.d(TAG, "delete: " + old_uri);
+                mActivity.getContentResolver().delete(old_uri, null, null);
+            }
+
+            contentValues = new ContentValues();
+            contentValues.put(MediaStore.Images.Media.DISPLAY_NAME, name);
+            String extension = name.substring(name.lastIndexOf("."));
+            String mime_type = mActivity.getStorageUtils().getImageMimeType(extension);
+            Log.d(TAG, "mime_type: " + mime_type);
+            contentValues.put(MediaStore.Images.Media.MIME_TYPE, mime_type);
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
+                String relative_path = Environment.DIRECTORY_DCIM + File.separator;
+                Log.d(TAG, "relative_path: " + relative_path);
+                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, relative_path);
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 1);
+            }
+
+            uri = mActivity.getContentResolver().insert(folder, contentValues);
+            Log.d(TAG, "saveUri: " + uri);
+            if( uri == null ) {
+                throw new IOException();
+            }
+            outputStream = mActivity.getContentResolver().openOutputStream(uri);
+        }
+        else {
+            file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + File.separator + name);
+            outputStream = new FileOutputStream(file);
+        }
+
         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream);
         outputStream.close();
-        mActivity.getStorageUtils().broadcastFile(file, true, false, true);
+
+        if( MainActivity.useScopedStorage() ) {
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ) {
+                contentValues.clear();
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0);
+                mActivity.getContentResolver().update(uri, contentValues, null, null);
+            }
+        }
+        else {
+            mActivity.getStorageUtils().broadcastFile(file, true, false, true);
+        }
     }
 
     /**

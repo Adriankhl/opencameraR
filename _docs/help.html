@@ -31,16 +31,15 @@
 <!-- End Cookie Consent plugin -->
 
 <!-- Google Analytics -->
-<!-- anonymizeIp is set: unclear if this is needed for EU GDPR, but just in case -->
+<!-- anonymize_ip is set: unclear if this is needed for EU GDPR, but just in case -->
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-38364448-5"></script>
 <script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-  ga('create', 'UA-38364448-5', 'auto');
-  ga('set', 'anonymizeIp', true);
-  ga('send', 'pageview');
+  gtag('config', 'UA-38364448-5', { 'anonymize_ip': true });
 </script>
 
 <!-- Google adsense auto ads -->
@@ -124,7 +123,7 @@ a photo. In some cases, you can also hold (long press) for a continuous burst:</
     smaller video icon will switch to video mode. The photo and video icons will then swap: click the larger video icon to
     start/stop video recording, and click the smaller photo icon to switch back to photo mode.</p>
 
-<p><img src="switch_camera.png" alt="Switch Camera icon" width="32" height="32"><b>Switch camera</b> - Switches between front and back camera (if your
+<p><img src="baseline_switch_camera_white_48.png" alt="Switch Camera icon" width="32" height="32"><b>Switch camera</b> - Switches between front and back camera (if your
 device has both front and back cameras). If your device has more than one front and/or back camera, then this will switch
 between the first front and back camera.</p>
 
@@ -195,7 +194,8 @@ will be available which instead work by making the screen light up (note, front 
     </li>
     <li><img src="focus_mode_manual.png" alt="Manual focus icon" width="32" height="32"><b>Manual</b> -
         A slider appears allowing you to manually control the focus distance (only available if Camera2
-        API is used).
+        API is used). Also see the options "Focus assist" and "Focus peaking" under Settings/Camera preview/
+        which may be useful when using manual focus.
     </li>
     <li><img src="focus_mode_fixed.png" alt="Fixed focus icon" width="32" height="32"><b>Fixed</b> -
         The focus remains fixed.
@@ -226,7 +226,8 @@ will be available which instead work by making the screen light up (note, front 
     taken, at infinite focus distance. Focus bracketing is typically used with
     <a href="https://en.wikipedia.org/wiki/Focus_stacking">Focus stacking</a> software to merge the images into a single
     photo. Note that whilst taking a set of focus bracketed photos, you can cancel the set by pressing the "take photo"
-    button again.</li>
+    button again. Also see the options "Focus assist" and "Focus peaking" under Settings/Camera preview/
+    which may be useful when adjusting the focus distances.</li>
 </ul></li>
 <li><b>Auto-level</b> - Enable the auto-level feature for photos (see
 <a href="#auto_stabilise">below</a>). (Only available if the device has enough memory.)</li>
@@ -296,8 +297,8 @@ cached location). If the location isn't available, a dash will be shown through 
 photos look right whether you hold the device in "portrait" or "landscape" mode. But Open Camera has the option to rotate the
 photos so they are perfectly level, so your shots come out looking perfectly level every time!</p>
 
-<p><a href="auto_level_v_1_48_web.jpg">
-<img src="auto_level_v_1_48_web.jpg" style="max-width:100%" alt="Screenshots demonstrating auto-level" title="Screenshots demonstrating auto-level">
+<p><a href="auto_level_v_1_49_web.jpg">
+<img src="auto_level_v_1_49_web.jpg" style="max-width:100%" alt="Screenshots demonstrating auto-level" title="Screenshots demonstrating auto-level">
 </a></p>
 
 <p>The above shows a rather exaggerated example - in practice, you can probably take better photos, but this feature ensures they
@@ -345,8 +346,6 @@ you can change to "Low Light" mode, which further improves results in dark scene
 mode, it will take a burst of images for a duration of around 5 seconds. For best results, use a tripod, or try to hold the
 camera as steady as possible.</p>
 
-<p>See my <a href="https://sourceforge.net/p/opencamera/blog/2018/09/noise-reduction-photo-mode/">blog post</a> for more details.</p>
-
 <p><a name="dro"><b>DRO</b></a></p>
 
 <p>Dynamic Range Optimisation (DRO) is a technique that optimises the dynamic range available in the image. In particular, dark
@@ -360,13 +359,13 @@ see <a href="#dro_vs_hdr">DRO vs HDR</a>.</p>
 
 <p>High Dynamic Range Imaging (HDR) is a technique where the camera takes multiple shots at different exposures, and combines them
 into a single image. A typical problem in photography is that a scene may contain a brightness range that is wider than what can be
-captured in a single shot. Varying the exposure (whether by touching on the screen, or exposure compentation or manual exposure) might
-make darker regions brighter, but leave other areas over-exposured. Or reducing the exposure to prevent over-exposure may result in
+captured in a single shot. Varying the exposure (whether by touching on the screen, or exposure compensation or manual exposure) might
+make darker regions brighter, but leave other areas over-exposed. Or reducing the exposure to prevent over-exposure may result in
 the rest of the scene being too dark. HDR uses an algorithm to combine the best parts of each image, and adjusts the colors so that
 the full range of brightness values are captured in the scene:</p>
 
-<p><a href="hdr_20160901_194227.jpg">
-<img src="hdr_20160901_194227_thumb.jpg" style="max-width:100%" alt="Images demonstrating HDR" title="Images demonstrating HDR">
+<p><a href="testHDR11_cropped_result_web.jpg">
+<img src="testHDR11_cropped_result_thumb.jpg" style="max-width:100%" alt="Images demonstrating HDR" title="Images demonstrating HDR">
 </a></p>
 
 <p>The left set of three images show the individual exposures, the right the final HDR image.</p>
@@ -402,13 +401,6 @@ three separate images, rather than reprocessing a single image.</li>
 <p>In scenes with high dynamic range, HDR should do better at capturing the high dynamic range (although NR should still be better
 than Standard photo mode). Though NR still has the advantage that it is less prone to ghosting and misalignment. NR is also better
 suited to working in a wide range of scenes.</p>
-
-<p>The set of images below shows: Standard photo on the left, Noise Reduction in the middle, HDR on the right. There is less overexposure
-in the sky in the Noise Reduction result, but the HDR mode does even better.</p>
-
-<p><a href="avg_image_test45.jpg">
-<img src="avg_image_test45_thumb.jpg" style="max-width:100%" alt="Screenshots demonstrating Noise Reduction vs HDR" title="Screenshots demonstrating Noise Reduction vs HDR">
-</a></p>
 
 <p>In summary: NR is better if you just want a "works best in most cases" option. HDR may be a better choice specifically in
 scenes with high dynamic range, that also don't have movement in the scene.</p>
@@ -494,7 +486,7 @@ affects taking photos.</p>
 
 <p><b>Pause after taking photo</b> - If ticked, after taking a photo the display will pause, with options to share
 <img src="share.png" alt="Share icon" width="32" height="32"> or delete
-<img src="trash.png" alt="Trash icon" width="32" height="32"> the
+<img src="baseline_delete_white_48.png" alt="Trash icon" width="32" height="32"> the
 photo. To keep the photo and continue, touch the screen, press back, or take another photo. Note that this isn't supported
 when holding the shutter button to take a continuous burst of photos.</p>
 
@@ -541,7 +533,7 @@ be in portrait. This option allows fixing the camera to either be in portrait or
 <a href="#auto_stabilise">auto-level</a> is also enabled, it will have the effect of aligning photos to the nearest
 90 degrees.</p>
 
-<p><a name="save_location"><b>Save location</b></a> - Select the folder to store the photos in.</p>
+<p><a name="save_location"><b>Save location</b></a> - Select the folder to store the resultant photos or videos in.</p>
 <ul>
     <li><b>On Android 9 or earlier:</b> This opens a file dialog. Click on a folder (or "Parent Folder") to navigate through
         the filesystem. Select "New Folder" to create a new folder in the currently displayed folder. Select "Use Folder"
@@ -551,16 +543,17 @@ be in portrait. This option allows fixing the camera to either be in portrait or
         will be a subfolder of DCIM on your internal storage. You can specify subfolders with the "/"
         character. For example, specifying Camera/holiday will save inside DCIM/Camera/holiday/
         on your internal storage.</li>
-    <li><b>If "Use Storage Access Framework" is enabled</b>: Then on any Android version, this option
+    <li><b>If "Storage Access Framework" is enabled</b>: Then on any Android version, this option
         will show up the Android standard file chooser - navigate to the desired folder, and click "SELECT" or
         "ALLOW ACCESS" (wording varies depending on Android version).</li>
 </ul>
 <p>Once you have specified a new save location, you can long press on the Gallery icon to quickly switch between recent save
     locations. If you want to save to an SD card, see "How can I save to my external SD card?" under the <a href="#faq">FAQ</a>.</p>
 
-<p><b>Use Storage Access Framework</b> - If selected, Open Camera will instead use the Android
+<p><b>Storage Access Framework</b> - If selected, Open Camera will instead use the Android
 <a href="https://developer.android.com/guide/topics/providers/document-provider.html">Storage Access Framework</a>. This
 has some advantages, such as using the standard Android file picker, and being the only way to save to SD cards on Android 5+.
+In some cases it may allow you to save to cloud or local storage providers provided by other apps or services.
 Furthermore on Android 10+, it is the only way to save outside of the DCIM/ folder. (Requires Android 5.0 or higher.)</p>
 
 <!--Enter the folder to store the photos in. This can be either a relative path (e.g.,
@@ -582,10 +575,10 @@ can also select UTC <a href="https://en.wikipedia.org/wiki/Coordinated_Universal
 For the latter option, a "Z" will be appended to the filename (e.g., "IMG_20160524_155116Z.jpg"). The Z (Zulu) suffix
 is a standard convention for identifying UTC timestamps.</p>
 
-<p><b>Show camera when locked</b> - If you have a lock screen on your device (e.g., PIN to unlock), Open Camera by
-default will show above the lock screen - i.e., if locked, you won't have to enter the PIN to use Open Camera. The
-device still needs to be unlocked in order to go to the Settings or Gallery. If you would prefer Open Camera to always
-be unavailable when your device is locked, you can disable this option.</p>
+<p><b>Show camera when locked</b> - If you have a lock screen on your device (e.g., PIN to unlock), if this option
+    is enabled Open Camera will show above the lock screen - i.e., if locked, you won't have to enter the PIN to
+    use Open Camera. The device still needs to be unlocked in order to go to the Settings or Gallery. If you would
+    prefer Open Camera to always be unavailable when your device is locked, this option should be disabled.</p>
 
 <p><b>Perform auto-focus on startup</b> - Whether Open Camera should auto-focus when starting the camera. Some devices
 have a bug where the flash turns on when this happens, so a workaround is to disable this option.</p>
@@ -661,9 +654,7 @@ image should be drawn with.</p>
 <p><b>Show free memory</b> - Whether to display the remaining storage space of the device.</p>
 
 <p><b>Show ISO</b> - If selected, the current ISO, exposure time and frame rate (FPS) will be displayed (only available if Camera2
-    API is used). The text will be shown in red when the auto-exposure routine is scanning. In flash auto mode, a flash symbol will
-    also indicate when flash will fire. Note that this is not an absolute guarantee - when you take a photo, the camera will make an
-    updated decision on whether to fire the flash, which in some cases may disagree with whether the flash symbol was displayed.</p>
+    API is used). The text will be shown in red when the auto-exposure routine is scanning.</p>
 
 <p><b>Show a histogram</b> - Allows displaying an on-screen histogram (only available if Camera2 API is used). Note that the
     histogram reflects the currently display on-screen preview, and will not necessarily be accurate for the final resultant photograph,
@@ -977,7 +968,7 @@ your device supports optical image stabilization (OIS).</p>
 
 <p><b>Video format</b> - Allows choice of various video file formats and codecs. Please test before using, as some may
 not work properly on all devices! Also note:</p><ul>
-    <li>WebM does not support recording video (at the time of writing, it seems encoding in Vorbis audio format is
+    <li>WebM does not support recording audio (at the time of writing, it seems encoding in Vorbis audio format is
     <a href="https://developer.android.com/guide/topics/media/media-formats#audio-formats">not supported</a> on
     Android).</li>
     <li>WebM does not support storing location data ("Store location data" option).</li>
@@ -1040,13 +1031,17 @@ behaviour of these buttons).</p>
 
 <p><b>Video subtitles</b> - This option is analogous to the "Stamp photos" option, but rather than embedding text into
 the video itself, it stores the text in a separate subtitles
-(<a href="https://matroska.org/technical/specs/subtitles/srt.html">".SRT"</a>) file. Most decent video players should support
+(<a href="https://www.matroska.org/technical/subtitles.html#srt-subtitles">".SRT"</a>) file. Most decent video players should support
 SRT files, and use them to display the information as subtitles. The subtitles will record the date and time. If "Store location data" is enabled (see
 "Location settings" below), then the current location latitude and longitude coordinates will also be recorded (if the location is
 known). Similarly for "Store compass direction". Note that you can control the formatting style for date, time and location using
-the options under the "Photo settings" menu (Datestamp format, Timestamp format, GPS stamp format, Distance unit).
-Note that on Android 10+, using this option means the ".SRT" files will show in most gallery apps as separate unplayable video
-files. A workaround is to enable Settings/More camera controls/"Use Storage Access Framework".</p>
+    the options under the "Photo settings" menu (Datestamp format, Timestamp format, GPS stamp format, Distance unit).</p>
+<ul>
+    <li>Note that on Android 10, using this option means the ".SRT" files will show in most gallery apps as separate unplayable video
+        files. A workaround is to enable Settings/More camera controls/"Storage Access Framework".</li>
+    <li>On Android 11+, this option is only available if Settings/More camera controls/"Storage Access Framework" is
+        enabled. This is due to changes in Android 11 which affect how applications are able to save files.</li>
+</ul>
 
 <p><b>Video bitrate (approx)</b> - If set to a value other than "default", the default video bitrate is overridden. Higher values mean better
     quality video, but the files take up more disk space. Note that some values may be unsupported by your device, and may
@@ -1130,9 +1125,6 @@ specified by using this option.</p>
 <p><b>Misc:</b></p>
 
 <p><b>Online help</b> - Load this web page.</p>
-
-<p><b>Donate to support development</b> - Loads the page for
-<a href="https://play.google.com/store/apps/details?id=harman.mark.donation">my donation app</a>.</p>
 
 <p><b>Camera API</b> - If set to "Camera2 API", this enables support for the Camera2 API that was introduced
 in Android 5. Changing this setting will cause Open Camera to restart. Camera2 API enables more advanced features
@@ -1228,21 +1220,16 @@ e.g., "extSdCard".</li>
 <li><b>Android 4.4</b> - Unfortunately it is not possible for 3rd party apps to write to external SD cards.
 <b>This is not a bug or missing feature in Open Camera</b>, rather that
 <a href="http://www.androidpolice.com/2014/02/17/external-blues-google-has-brought-big-changes-to-sd-cards-in-kitkat-and-even-samsung-may-be-implementing-them/">Google
-have blocked write access to external SD cards in Android 4.4</a>. There is one exception: if you use a
-folder in <small>Android/data/net.sourceforge.opencamera/</small> on your SD card (use the "New folder" option to create
-the folders/sub-folders if necessary), that should allow saving to the SD card. <b>Note that all files in this
-folder will be deleted if you uninstall Open Camera</b>, so be careful that you don't lose your photo/videos
-if you use this method, and then uninstall!</li>
+have blocked write access to external SD cards in Android 4.4</a>.</li>
 <li><b>Android 5.0 onwards</b> - The restrictions on SD cards introduced in Android 4.4 still apply, however
-instead you can enable Settings/More camera controls/"Use Storage Access Framework", and this should allow you
+instead you can enable Settings/More camera controls/"Storage Access Framework", and this should allow you
 to save to external SD cards. If when choosing a folder, you only see "Recent", you may need to click on the
 three dots at the top right to open the menu, to enable showing the drives (e.g., "Show internal storage").</li>
 <li><b>Android 6.0 onwards</b> - From Android 6, some devices support "Adoptable Storage" allowing you to
 select to use
 an SD card as internal storage. Note that not all devices support this, even if running Android 6 or later. If your device
 doesn't support this, or you want to instead use an SD card as "portable storage", you'll have to use
-the Storage Access Framework method as with Android 5 (or the <small>Android/data/net.sourceforge.opencamera/</small> method as
-with Android 4.4).</li>
+the Storage Access Framework method as with Android 5.</li>
 </ul>
 
 <p><b>Can you implement disabling shutter sound for my phone?</b> -
@@ -1261,7 +1248,7 @@ with Android 4.4).</li>
 <p><b>Photos or videos fail to save!</b> - Firstly, if you're trying to save to an
 external SD card, see "How can I save to my external SD card?" above. Otherwise:</p>
 <ul>
-    <li>If Settings/More camera controls/"Use Storage Access Framework" is enabled,
+    <li>If Settings/More camera controls/"Storage Access Framework" is enabled,
     in some cases the permission may be lost, try rechoosing the save location (from
     Settings/More camera controls/"Save location").</li>
     <li>If not using Storage Access Framework, but you have changed the save location,
@@ -1273,7 +1260,7 @@ external SD card, see "How can I save to my external SD card?" above. Otherwise:
 <p><b>I switched to a new phone, and now something doesn't work!</b> - Google's auto-backup will
 typically transfer settings to a new phone, but this may mean a camera-specific setting is no
 longer relevant. In particular, if you set a non-default save location, it may be that the path is
-not valid on the new device, or if using Settings/More camera controls/"Use Storage Access Framework",
+not valid on the new device, or if using Settings/More camera controls/"Storage Access Framework",
 you may need to rechoose the save location (from Settings/More camera controls/"Save location") to
 grant permission to the new device. You can use Settings/Settings manager/"Reset settings" to reset
 Open Camera to its original state, to rule out any issues from an Android backup from another
@@ -1484,6 +1471,8 @@ can paste the information into your web browser, email or whatever.</p>
 <a href="http://sourceforge.net/p/opencamera/discussion/">forums</a>.
 For some enquiries you may prefer to use email.
 Please contact me at <a href="mailto:mark.harman.apps@gmail.com?subject=Open%20Camera">mark.harman.apps@gmail.com</a>.
+    <!-- if I change my email, remember also to update the contact for privacy policy
+        in privacy_oc.html , as well as email address contact for in-app privacy policy -->
 Please note that I get a <i>lot</i> of emails
 for Open Camera these days - I try to reply as many as I can, but this is not always feasible. I do however
 read every email and forum post.</p>

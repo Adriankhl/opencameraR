@@ -24,16 +24,15 @@
 <!-- End Cookie Consent plugin -->
 
 <!-- Google Analytics -->
-<!-- anonymizeIp is set: unclear if this is needed for EU GDPR, but just in case -->
+<!-- anonymize_ip is set: unclear if this is needed for EU GDPR, but just in case -->
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-38364448-5"></script>
 <script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-  ga('create', 'UA-38364448-5', 'auto');
-  ga('set', 'anonymizeIp', true);
-  ga('send', 'pageview');
+  gtag('config', 'UA-38364448-5', { 'anonymize_ip': true });
 </script>
 
 </head>
@@ -168,16 +167,15 @@ manual controls, RAW and 120fps video.</p>
         API. Known issues are:</p>
 <ul>
         <li>Slow motion and high speed frame rate video doesn't work (see below for more details).</li>
-        <li>The maximum manual shutter speed allowed for third party camera applications is 0.1s (most devices
-                seem to allow at least 0.5s).</li>
         <li>The "Image quality" setting has no effect for JPEGs (unless post-processing options such as auto-level or
         photo stamp are applied). This has also been reported for other Samsung devices; I also have the same
         issue with other third party camera applications on my S10e. See
         <a href="https://sourceforge.net/p/opencamera/discussion/general/thread/1abb56eb/">this thread</a>
         for details.</li>
 </ul>
-<p>Both rear physical cameras are available to Open Camera; also the two modes for the front camera ("cropped" and
-        "wide") are available to Open Camera.<p>
+<p>Both rear physical cameras (standard and ultra wide) are available to Open Camera; also the two modes for the front camera
+        ("cropped" and "wide") are available to Open Camera. Note however that at least some Samsung devices do not expose all
+        of their cameras for third party applications.<p>
 
 <p>More generally I have occasionally tested on various Samsung devices using their remote test labs - although useful, this is limited
         compared to owning a real device (especially when the test labs are dark!)</p>
@@ -205,7 +203,7 @@ manual controls, RAW and 120fps video.</p>
         <a href="https://filmicpro.helpscoutdocs.com/article/42-samsung-note-9-filmic-pro-v6-compatibility-guide">Note 9</a> (these articles
         are for Filmic Pro, but the issues faced likely affect all third party camera applications, including Open Camera).</p>
 
-<p>On a positive note, the Galaxy Note 4 and 5 were used with Open Camera to film
+<p>On a related note, the Galaxy Note 4 and 5 were used with Open Camera to film
         <a href="https://sourceforge.net/p/opencamera/blog/2015/10/cai-lan-gong---worlds-first-feature-film-shot-with-a-smartphone-at-4k-resolution/">the
                 world's first 4K feature film shot on a phone</a>.</p>
 

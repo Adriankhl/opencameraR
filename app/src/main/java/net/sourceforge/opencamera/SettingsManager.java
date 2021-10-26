@@ -22,7 +22,6 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.Map;
-import java.util.Set;
 
 /** Code for options for saving and restoring settings.
  */
@@ -216,10 +215,9 @@ public class SettingsManager {
             xmlSerializer.startTag(null, doc_tag);
 
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(main_activity);
-            Set set = sharedPreferences.getAll().entrySet();
-            for( Object aSet : set) {
-                Map.Entry entry = (Map.Entry) aSet;
-                String key = (String)entry.getKey();
+            Map<String, ?> map = sharedPreferences.getAll();
+            for( Map.Entry<String, ?> entry : map.entrySet()) {
+                String key = entry.getKey();
                 Object value = entry.getValue();
                 if( key != null ) {
                     String tag_type = null;
@@ -245,9 +243,7 @@ public class SettingsManager {
                     if( tag_type != null ) {
                         xmlSerializer.startTag(null, tag_type);
                         xmlSerializer.attribute(null, "key", key);
-                        if( value != null ) {
-                            xmlSerializer.attribute(null, "value", value.toString());
-                        }
+                        xmlSerializer.attribute(null, "value", value.toString());
                         xmlSerializer.endTag(null, tag_type);
                     }
                 }

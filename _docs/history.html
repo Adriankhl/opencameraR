@@ -24,16 +24,15 @@
 <!-- End Cookie Consent plugin -->
 
 <!-- Google Analytics -->
-<!-- anonymizeIp is set: unclear if this is needed for EU GDPR, but just in case -->
+<!-- anonymize_ip is set: unclear if this is needed for EU GDPR, but just in case -->
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-38364448-5"></script>
 <script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-  ga('create', 'UA-38364448-5', 'auto');
-  ga('set', 'anonymizeIp', true);
-  ga('send', 'pageview');
+  gtag('config', 'UA-38364448-5', { 'anonymize_ip': true });
 </script>
 
 </head>
@@ -48,6 +47,48 @@
 <p>&lt; <small><a href="index.html">Main Page.</a></small></p>
 
 <pre>
+Version 1.49.1 (2021/09/20)
+
+FIXED   Crop guides weren't drawn correctly in portrait orientation in 1.49.
+FIXED   Diagonals grid wasn't drawn correctly in portrait orientation in 1.49.
+
+Version 1.49 (2021/09/07)
+
+FIXED   Crash when failing to save photos/videos with mediastore (Android 10+ if not using Storage
+        Access Framework).
+FIXED   Crash related to original camera API.
+FIXED   Crash when using photo stamp with auto-level when angle is zero.
+FIXED   Couldn't exit immersive mode on Android 11.
+FIXED   Behaviour where widescreen preview aspect ratios show under on-screen navigation bar wasn't
+        working properly on Android 11.
+FIXED   Manual white balance had inverted effect.
+FIXED   Video subtitles file didn't work properly when video file restarted due to max filesize.
+FIXED   Taking a photo in RAW only, then clicking on the gallery thumbnail would sometimes
+        incorrectly open an earlier non-RAW photo or video.
+FIXED   Corrected pitch and compass line lengths for portrait vs landscape orientations.
+FIXED   Single and double tap options to take photo weren't working correctly in panorama mode.
+FIXED   When using manual ISO seekbar, sometimes incorrect ISO button would be highlighted.
+UPDATED Now supports portrait and landscape system orientations, rather than being locked to
+        landscape system orientation.
+UPDATED Double tap to take photo option no longer performs a touch to focus, this now only happens
+        from a single tap.
+UPDATED Improved performance when opening camera and clicking on gallery icon (mainly relevant for
+        using Storage Access Framework with Android 10+ when save folder has large number of files).
+UPDATED Set max preview exposure time to be 1/5s instead of 1/12s, for when using manual exposure.
+UPDATED Support longer exposure time (1/5s) on some Samsung Galaxy S devices.
+UPDATED Improvements to brightness levels for Noise Reduction, DRO and HDR photo modes (images
+        coming out too dark in some cases).
+UPDATED Improvement to Noise Reduction photo mode quality (improved ability to distinguish noise
+        from ghosting effects).
+UPDATED Improvement to Noise Reduction photo mode to avoid overexposing in lower light scenes.
+UPDATED Improved choosing when to use 8 images for Noise Reduction photo mode.
+UPDATED Optimisations for DRO and NR photo modes on Samsung devices.
+UPDATED Accessibility improvement, set hints for EditTexts.
+UPDATED Now targetting Android 11. Due to changes in Android 11 this means "video subtitles" option
+        is now only available when saving with
+        Settings/More camera controls/"Storage Access Framework" enabled.
+UPDATED Updated some user interface icons.
+
 Version 1.48.3 (2020/11/20)
 
 FIXED   Possible crash for panorama if failing to crop due to poor transformations; now fails

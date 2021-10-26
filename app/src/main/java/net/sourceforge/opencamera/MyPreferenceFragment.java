@@ -34,8 +34,9 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.TwoStatePreference;
+import android.text.Html;
 import android.text.SpannableString;
-//import android.text.Spanned;
+import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -1438,17 +1439,11 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
 
                         // clickable text is only supported if we call setMovementMethod on the TextView - which means we need to create
                         // our own for the AlertDialog!
-                        final float scale = getActivity().getResources().getDisplayMetrics().density;
                         TextView textView = new TextView(getActivity());
                         textView.setText(span);
                         textView.setMovementMethod(LinkMovementMethod.getInstance());
                         textView.setTextAppearance(getActivity(), android.R.style.TextAppearance_Medium);
-                        ScrollView scrollView = new ScrollView(getActivity());
-                        scrollView.addView(textView);
-                        // padding values from /sdk/platforms/android-18/data/res/layout/alert_dialog.xml
-                        textView.setPadding((int)(5*scale+0.5f), (int)(5*scale+0.5f), (int)(5*scale+0.5f), (int)(5*scale+0.5f));
-                        scrollView.setPadding((int)(14*scale+0.5f), (int)(2*scale+0.5f), (int)(10*scale+0.5f), (int)(12*scale+0.5f));
-                        alertDialog.setView(scrollView);
+                        addTextViewForAlertDialog(alertDialog, textView);
                         //alertDialog.setMessage(about_string);
 
                         alertDialog.setPositiveButton(android.R.string.ok, null);
@@ -1508,6 +1503,8 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
                         alertDialog.setTitle(R.string.preference_save_settings_filename);
 
                         final EditText editText = new EditText(getActivity());
+                        // set hint instead of content description for EditText, see https://support.google.com/accessibility/android/answer/6378120
+                        editText.setHint(getResources().getString(R.string.preference_save_settings_filename));
                         alertDialog.setView(editText);
 
                         final MainActivity main_activity = (MainActivity)MyPreferenceFragment.this.getActivity();
@@ -1623,8 +1620,21 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
         setupDependencies();
     }
 
+    /** Adds a TextView to an AlertDialog builder, placing it inside a scrollview and adding appropriate padding.
+     */
+    private void addTextViewForAlertDialog(AlertDialog.Builder alertDialog, TextView textView) {
+        final float scale = getActivity().getResources().getDisplayMetrics().density;
+        ScrollView scrollView = new ScrollView(getActivity());
+        scrollView.addView(textView);
+        // padding values from /sdk/platforms/android-18/data/res/layout/alert_dialog.xml
+        textView.setPadding((int)(5*scale+0.5f), (int)(5*scale+0.5f), (int)(5*scale+0.5f), (int)(5*scale+0.5f));
+        scrollView.setPadding((int)(14*scale+0.5f), (int)(2*scale+0.5f), (int)(10*scale+0.5f), (int)(12*scale+0.5f));
+        alertDialog.setView(scrollView);
+    }
+
     /** Programmatically set up dependencies for preference types (e.g., ListPreference) that don't
-     *  support this in xml (such as SwitchPreference and CheckBoxPreference).
+     *  support this in xml (such as SwitchPreference and CheckBoxPreference), or where this depends
+     *  on the device (e.g., Android version).
      */
     private void setupDependencies() {
         // set up dependency for preference_audio_noise_control_sensitivity on preference_audio_control
@@ -1653,6 +1663,14 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
                 }
             });
             setVideoProfileGammaDependency(pref.getValue()); // ensure dependency is enabled/disabled as required for initial value
+        }
+
+        if( !MyApplicationInterface.mediastoreSupportsVideoSubtitles() ) {
+            // video subtitles only supported with SAF on Android 11+
+            pref = (ListPreference)findPreference("preference_video_subtitle");
+            if( pref != null ) {
+                pref.setDependency("preference_using_saf");
+            }
         }
     }
 
@@ -1686,7 +1704,19 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
 
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(MyPreferenceFragment.this.getActivity());
         alertDialog.setTitle(R.string.preference_privacy_policy);
-        alertDialog.setMessage(R.string.preference_privacy_policy_text);
+
+        //SpannableString span = new SpannableString(getActivity().getResources().getString(R.string.preference_privacy_policy_text));
+        //Linkify.addLinks(span, Linkify.WEB_URLS | Linkify.EMAIL_ADDRESSES);
+        Spanned span = Html.fromHtml(getActivity().getResources().getString(R.string.preference_privacy_policy_text));
+        // clickable text is only supported if we call setMovementMethod on the TextView - which means we need to create
+        // our own for the AlertDialog!
+        TextView textView = new TextView(getActivity());
+        textView.setText(span);
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
+        textView.setTextAppearance(getActivity(), android.R.style.TextAppearance_Medium);
+        addTextViewForAlertDialog(alertDialog, textView);
+        //alertDialog.setMessage(R.string.preference_privacy_policy_text);
+
         alertDialog.setPositiveButton(android.R.string.ok, null);
         alertDialog.setNegativeButton(R.string.preference_privacy_policy_online, new DialogInterface.OnClickListener() {
             @Override
@@ -1887,7 +1917,15 @@ public class MyPreferenceFragment extends PreferenceFragment implements OnShared
      */
     public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
         if( MyDebug.LOG )
-            Log.d(TAG, "onSharedPreferenceChanged");
+            Log.d(TAG, "onSharedPreferenceChanged: " + key);
+
+        if( key == null ) {
+            // On Android 11+, when targetting Android 11+, this method is called with key==null
+            // if preferences are cleared. Unclear if this happens here in practice, but return
+            // just in case.
+            return;
+        }
+
         Preference pref = findPreference(key);
         if( pref instanceof TwoStatePreference ) {
             TwoStatePreference twoStatePref = (TwoStatePreference)pref;

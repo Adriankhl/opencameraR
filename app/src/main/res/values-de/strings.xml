@@ -111,7 +111,6 @@
     <string name="preference_audio_noise_control_sensitivity_summary">Mikroempfindlichkeit für lautes Geräusch</string>
     <string name="preference_save_location">Speicherort</string>
     <string name="preference_save_location_summary">Ordner, wo die Fotos/Videos gespeichert werden</string>
-    <string name="preference_using_saf">Benutze Storage Access Framework</string>
     <string name="preference_using_saf_summary">Für das Speichern der Fotos/Videos Storage Access Framework verwenden</string>
     <string name="preference_save_photo_prefix">Foto-Präfix</string>
     <string name="preference_save_photo_prefix_summary">Den Präfix für die Dateinamen der Fotos einstellen</string>
@@ -303,8 +302,6 @@
     <string name="no_permission">BERECHTIGUNGEN NICHT VERFÜGBAR</string>
     <string name="permission_rationale_title">Berechtigung benötigt</string>
     <string name="permission_rationale_camera">Kamera Berechtigung wird benötigt um die Kamera zu aktivieren</string>
-    <string name="permission_rationale_storage">Speicher-Berechtiung benötigt zum Speichern von Fotos</string>
-    <string name="permission_rationale_record_audio">Mikrofon-Berechtigung benötigt um Audio mit dem Video aufzuzeichnen</string>
     <string name="permission_rationale_location">Location-Berechtigung für das Geotagging benötigt (Speicherung der Standortdaten in
         Fotos und Videos). Location-Berechtigung wird auch benötigt, um eine Verbindung zu Bluetooth LE Fernbedienungen herzustellen.</string>
 
@@ -797,8 +794,6 @@
     <string name="preference_water_type_summary">Für Unterwassergehäuse, verbessert die Genauigkeit bei korrekter Auswahl der Wasserart.</string>
     <string name="remote_connected">Fernsteurung verbunden</string>
 
-    <string name="preference_remote_type_kraken">Kraken Smart Housing</string>
-
     <string name="preference_stamp_geo_address">Verwende Adressen</string>
     <!-- preference_stamp_geo_address_summary defined below -->
     <string name="preference_stamp_geo_address_both">Zeige zusätzlich zur GPS-Position die zugehörige Adresse an</string>
@@ -908,7 +903,7 @@
 
     <string name="intro_text">Zum Fokussieren berühren und blaue Kamerataste drücken, um Bilder aufzunehmen.
         \n\nUm die maximale Bildschirmhelligkeit zu deaktivieren, siehe Einstellungen/Benutzeroberfläche/\"Maximale Helligkeit erzwingen\".
-        Zur Speicherung auf der SD-Karte auf Android 5+, siehe Einstellungen/Mehr Kamera-Einstellungen…/\"Benutze Storage Access Framework\".
+        Zur Speicherung auf der SD-Karte auf Android 5+, siehe Einstellungen/Mehr Kamera-Einstellungen…/\"Storage Access Framework\".
         Für weitere Hilfe, klicke auf  \"Online-Hilfe\" in den Einstellungen.
     </string>
 
