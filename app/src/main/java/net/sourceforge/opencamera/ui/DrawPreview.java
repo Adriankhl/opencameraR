@@ -1976,8 +1976,8 @@ public class DrawPreview {
 
             if( preview.supportsZoom() && show_zoom_pref ) {
                 float zoom_ratio = preview.getZoomRatio();
-                // only show when actually zoomed in
-                if( zoom_ratio > 1.0f + 1.0e-5f ) {
+                // Always show zoom ratio here
+                if( zoom_ratio > 0.0 ) {
                     // Convert the dps to pixels, based on density scale
                     p.setTextSize(14 * scale + 0.5f); // convert dps to pixels
                     p.setTextAlign(Paint.Align.CENTER);

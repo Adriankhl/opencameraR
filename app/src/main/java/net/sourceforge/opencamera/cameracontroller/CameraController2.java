@@ -393,6 +393,7 @@ public class CameraController2 extends CameraController {
             return exif_orientation;
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.R)
         private void setupBuilder(CaptureRequest.Builder builder, boolean is_still) {
             //builder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
             //builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
@@ -1832,6 +1833,7 @@ public class CameraController2 extends CameraController {
         class MyStateCallback extends CameraDevice.StateCallback {
             boolean callback_done; // must sychronize on this and notifyAll when setting to true
             boolean first_callback = true; // Google Camera says we may get multiple callbacks, but only the first indicates the status of the camera opening operation
+            @RequiresApi(api = Build.VERSION_CODES.R)
             @Override
             public void onOpened(@NonNull CameraDevice cam) {
                 if( MyDebug.LOG )
@@ -2372,8 +2374,9 @@ public class CameraController2 extends CameraController {
             camera_features.zoom_ratios.add((int)(min_zoom * 100));
             double zoom = min_zoom;
 
+            // Compute default zoom, i start from 1 since 0 correspond to min_zoom
             boolean done_default_zoom = false;
-            for(int i=0;i<n_steps-1;i++) {
+            for(int i=1;i<n_steps-1;i++) {
                 zoom *= scale_factor;
                 camera_features.zoom_ratios.add((int)(zoom*100));
                 if(zoom >= 1.0 && !done_default_zoom) {
@@ -4400,6 +4403,7 @@ public class CameraController2 extends CameraController {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public void clearPreviewFpsRange() {
         if( MyDebug.LOG )
@@ -5097,6 +5101,7 @@ public class CameraController2 extends CameraController {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     private void createPreviewRequest() {
         if( MyDebug.LOG )
             Log.d(TAG, "createPreviewRequest");
@@ -5871,6 +5876,7 @@ public class CameraController2 extends CameraController {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     private void takePictureAfterPrecapture() {
         if( MyDebug.LOG )
             Log.d(TAG, "takePictureAfterPrecapture");
@@ -6137,6 +6143,7 @@ public class CameraController2 extends CameraController {
         return focus_distances;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     private void takePictureBurstBracketing() {
         if( MyDebug.LOG )
             Log.d(TAG, "takePictureBurstBracketing");
@@ -6476,6 +6483,7 @@ public class CameraController2 extends CameraController {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     private void takePictureBurst(boolean continuing_fast_burst) {
         if( MyDebug.LOG )
             Log.d(TAG, "takePictureBurst");
@@ -6820,6 +6828,7 @@ public class CameraController2 extends CameraController {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     private void runPrecapture() {
         if( MyDebug.LOG )
             Log.d(TAG, "runPrecapture");
@@ -7027,6 +7036,7 @@ public class CameraController2 extends CameraController {
         return fake_precapture_use_flash;
     }
     
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public void takePicture(final PictureCallback picture, final ErrorCallback error) {
         if( MyDebug.LOG )
@@ -7183,6 +7193,7 @@ public class CameraController2 extends CameraController {
         playSound(MediaActionSound.START_VIDEO_RECORDING);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public void initVideoRecorderPostPrepare(MediaRecorder video_recorder, boolean want_photo_video_recording) throws CameraControllerException {
         if( MyDebug.LOG )
@@ -7213,6 +7224,7 @@ public class CameraController2 extends CameraController {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public void reconnect() throws CameraControllerException {
         if( MyDebug.LOG )
@@ -7399,6 +7411,7 @@ public class CameraController2 extends CameraController {
             super.onCaptureProgressed(session, request, partialResult); // API docs say this does nothing, but call it just to be safe (as with Google Camera)
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.R)
         @Override
         public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
             /*if( MyDebug.LOG )
@@ -7497,6 +7510,7 @@ public class CameraController2 extends CameraController {
             }
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.R)
         private void handleStateChange(CaptureRequest request, CaptureResult result) {
             // use Integer instead of int, so can compare to null: Google Play crashes confirmed that this can happen; Google Camera also ignores cases with null af state
             Integer af_state = result.get(CaptureResult.CONTROL_AF_STATE);
@@ -7825,6 +7839,7 @@ public class CameraController2 extends CameraController {
 
         /** Processes either a partial or total result.
          */
+        @RequiresApi(api = Build.VERSION_CODES.R)
         private void process(CaptureRequest request, CaptureResult result) {
             /*if( MyDebug.LOG )
             Log.d(TAG, "process, state: " + state);*/
