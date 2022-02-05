@@ -1,3 +1,6 @@
+# This project is not maintained anymore
+Since the [graphene os camera](https://github.com/GrapheneOS/Camera) is becoming pretty good, instead of dealing with the legacy code here, I would recommend contributing to their codebase.
+
 # opencameraR
 A fork of [open camera](https://sourceforge.net/p/opencamera/code/ci/master/tree/).
 Making use of API 30 (requires Android 11) to support multiple camera better.
